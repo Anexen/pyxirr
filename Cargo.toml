@@ -1,0 +1,15 @@
+[package]
+name = "pyxirr"
+version = "0.1.0"
+authors = ["Anexen"]
+edition = "2018"
+description = ""
+
+[lib]
+name = "pyxirr"
+crate-type = ["cdylib"]
+
+[dependencies]
+chrono = "0.4"
+pyo3 = { version = "0.13", features = ["extension-module"] }
+financial = "1.1.2"
