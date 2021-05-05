@@ -1,9 +1,12 @@
 [package]
 name = "pyxirr"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Anexen"]
 edition = "2018"
-description = ""
+description = "Rust-powered collection of financial functions."
+readme = "README.md"
+homepage = "https://github.com/Anexen/pyxirr"
+keywords = ["financial", "xirr", "xnpv"]
 
 [lib]
 name = "pyxirr"
@@ -13,3 +16,8 @@ crate-type = ["cdylib"]
 chrono = "0.4"
 pyo3 = { version = "0.13", features = ["extension-module"] }
 financial = "1.1.2"
+
+[package.metadata.maturin]
+classifiers = [
+    "Programming Language :: Rust",
+]
