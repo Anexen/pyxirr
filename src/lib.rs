@@ -1,6 +1,6 @@
 use chrono::{DateTime, NaiveDate, Utc};
 use pyo3::prelude::*;
-use pyo3::types::{PyDate, PyDateAccess, PyDateTime, PyIterator, PyTimeAccess};
+use pyo3::types::{PyDate, PyDateAccess, PyDateTime, PyIterator, PyTimeAccess, PyTuple};
 use pyo3::{create_exception, exceptions, wrap_pyfunction};
 
 create_exception!(pyxirr, InvalidPaymentsError, exceptions::PyException);
@@ -30,16 +30,51 @@ where
         .collect::<PyResult<Vec<T>>>()
 }
 
-#[pyfunction]
-fn xirr(py: Python, dates: &PyAny, payments: &PyAny) -> PyResult<f64> {
+fn prepare_columnar_xirr_data(
+    py: Python,
+    dates: &PyAny,
+    amounts: &PyAny,
+) -> PyResult<(Vec<DateTime<Utc>>, Vec<f64>)> {
     let dates: Vec<DateTime<_>> = match extract_iterable::<&PyDateTime>(py, dates) {
         Ok(dates) => dates.into_iter().map(extract_date_time).collect(),
         Err(_) => extract_iterable::<&PyDate>(py, dates)?.into_iter().map(extract_date).collect(),
     };
 
-    let payments = extract_iterable::<f64>(py, payments)?;
+    let amounts = extract_iterable::<f64>(py, amounts)?;
 
-    let result = financial::xirr(&payments, &dates[..], None)
+    Ok((dates, amounts))
+}
+
+fn prepare_xirr_data(py: Python, data: &PyAny) -> PyResult<(Vec<DateTime<Utc>>, Vec<f64>)> {
+    // dates is an iterable of tuples (date, amount)
+    // extract_date(p.get_item(0).unwrap().extract::<&PyDate>()?
+
+    let payments: Vec<&PyTuple> = extract_iterable::<&PyTuple>(py, data)?;
+    let dates = (&payments)
+        .into_iter()
+        .map(|t| t.get_item(0).extract::<&PyDate>())
+        .collect::<PyResult<Vec<&PyDate>>>()?
+        .into_iter()
+        .map(extract_date)
+        .collect::<Vec<DateTime<Utc>>>();
+
+    let amounts = (&payments)
+        .into_iter()
+        .map(|t| t.get_item(1).extract::<f64>())
+        .collect::<PyResult<Vec<f64>>>()?;
+
+    Ok((dates.to_owned(), amounts.to_owned()))
+}
+
+#[pyfunction(amounts = "None", guess = "0.1")]
+fn xirr(py: Python, dates: &PyAny, amounts: Option<&PyAny>, guess: Option<f64>) -> PyResult<f64> {
+    let data = if amounts.is_none() {
+        prepare_xirr_data(py, dates)?
+    } else {
+        prepare_columnar_xirr_data(py, dates, amounts.unwrap())?
+    };
+
+    let result = financial::xirr(&data.1, &data.0[..], guess)
         .map_err(|e| exceptions::PyValueError::new_err(e))?;
 
     Ok(result)
