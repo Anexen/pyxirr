@@ -62,7 +62,7 @@ fn prepare_xirr_data(py: Python, data: &PyAny) -> PyResult<(Vec<DateTime<Utc>>, 
 }
 
 #[pyfunction(amounts = "None", guess = "0.1")]
-fn xirr(py: Python, dates: &PyAny, amounts: Option<&PyAny>, guess: Option<f64>) -> PyResult<f64> {
+pub fn xirr(py: Python, dates: &PyAny, amounts: Option<&PyAny>, guess: Option<f64>) -> PyResult<f64> {
     let data = if amounts.is_none() {
         prepare_xirr_data(py, dates)?
     } else {
@@ -76,7 +76,7 @@ fn xirr(py: Python, dates: &PyAny, amounts: Option<&PyAny>, guess: Option<f64>) 
 }
 
 #[pyfunction(amounts = "None")]
-fn xnpv(py: Python, rate: f64, dates: &PyAny, amounts: Option<&PyAny>) -> PyResult<f64> {
+pub fn xnpv(py: Python, rate: f64, dates: &PyAny, amounts: Option<&PyAny>) -> PyResult<f64> {
     let data = if amounts.is_none() {
         prepare_xirr_data(py, dates)?
     } else {
@@ -97,12 +97,4 @@ fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add("InvalidPaymentsError", py.get_type::<InvalidPaymentsError>())?;
 
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn simple() {
-        assert!(1 == 1)
-    }
 }

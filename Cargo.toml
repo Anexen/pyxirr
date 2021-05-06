@@ -8,16 +8,34 @@ readme = "README.md"
 homepage = "https://github.com/Anexen/pyxirr"
 keywords = ["financial", "xirr", "xnpv"]
 
-[lib]
-name = "pyxirr"
-crate-type = ["cdylib"]
-
-[dependencies]
-chrono = "0.4"
-pyo3 = { version = "0.13", features = ["extension-module"] }
-financial = "1.1.2"
-
 [package.metadata.maturin]
 classifiers = [
+    "Topic :: Office/Business :: Financial",
     "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
 ]
+provides-extra = ["bench"]
+requires-dist = [
+    "xirr==0.1.6[bench]",
+    "finance-calculator==0.0.6[bench]",
+]
+
+[lib]
+name = "pyxirr"
+crate-type = ["rlib", "cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.13", default-features = false }
+chrono = "0.4"
+financial = "1.1.2"
+
+[[bench]]
+name = "main"
+harness = false
+
+[dev-dependencies]
+criterion = {version = "0.3", features = ["html_reports"] }
+
+[features]
+default = ["pyo3/default", "pyo3/extension-module"]
+tests = ["pyo3/macros", "pyo3/auto-initialize"]
