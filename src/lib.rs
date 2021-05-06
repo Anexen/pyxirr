@@ -1,9 +1,26 @@
-use chrono::{DateTime, NaiveDate, Utc};
+use chrono::{DateTime, NaiveDate, Utc, Duration};
 use pyo3::prelude::*;
 use pyo3::types::{PyDate, PyDateAccess, PyIterator, PyTuple};
 use pyo3::{create_exception, exceptions, wrap_pyfunction};
 
+mod xirr;
+
 create_exception!(pyxirr, InvalidPaymentsError, exceptions::PyException);
+
+pub struct DateRange(pub NaiveDate, pub NaiveDate);
+
+impl Iterator for DateRange {
+    type Item = NaiveDate;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.0 <= self.1 {
+            let next = self.0 + Duration::days(1);
+            Some(std::mem::replace(&mut self.0, next))
+        } else {
+            None
+        }
+    }
+}
 
 fn extract_date(date: &PyDate) -> DateTime<Utc> {
     DateTime::from_utc(
@@ -62,7 +79,12 @@ fn prepare_xirr_data(py: Python, data: &PyAny) -> PyResult<(Vec<DateTime<Utc>>, 
 }
 
 #[pyfunction(amounts = "None", guess = "0.1")]
-pub fn xirr(py: Python, dates: &PyAny, amounts: Option<&PyAny>, guess: Option<f64>) -> PyResult<f64> {
+pub fn xirr(
+    py: Python,
+    dates: &PyAny,
+    amounts: Option<&PyAny>,
+    guess: Option<f64>,
+) -> PyResult<f64> {
     let data = if amounts.is_none() {
         prepare_xirr_data(py, dates)?
     } else {
@@ -71,6 +93,25 @@ pub fn xirr(py: Python, dates: &PyAny, amounts: Option<&PyAny>, guess: Option<f6
 
     let result = financial::xirr(&data.1, &data.0[..], guess)
         .map_err(|e| exceptions::PyValueError::new_err(e))?;
+
+    Ok(result)
+}
+
+#[pyfunction(guess = "0.1")]
+pub fn faster_xirr(py: Python, data: &PyAny, guess: Option<f64>) -> PyResult<f64> {
+    let data = extract_iterable::<&PyTuple>(py, data)?
+        .into_iter()
+        .map(|p| {
+            let date = p.get_item(0).extract::<&PyDate>().and_then(|x| {
+                Ok(NaiveDate::from_ymd(x.get_year(), x.get_month() as u32, x.get_day() as u32))
+            })?;
+            let amount = p.get_item(1).extract::<f64>()?;
+            Ok(xirr::Payment { date, amount })
+        })
+        .collect::<PyResult<Vec<xirr::Payment>>>()?;
+
+    let result =
+        xirr::compute(&data).map_err(|e| exceptions::PyValueError::new_err(e.to_string()))?;
 
     Ok(result)
 }
@@ -92,6 +133,7 @@ pub fn xnpv(py: Python, rate: f64, dates: &PyAny, amounts: Option<&PyAny>) -> Py
 #[pymodule]
 fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(xirr))?;
+    m.add_wrapped(wrap_pyfunction!(faster_xirr))?;
     m.add_wrapped(wrap_pyfunction!(xnpv))?;
 
     m.add("InvalidPaymentsError", py.get_type::<InvalidPaymentsError>())?;
