@@ -1,12 +1,42 @@
+[![rust-lang.org](https://img.shields.io/badge/Made%20with-Rust-red)](https://www.rust-lang.org/)
+[![License](https://img.shields.io/github/license/Anexen/pyxirr.svg)](https://github.com/Anexen/pyxirr/blob/master/LICENSE.txt)
+[![pypi](https://img.shields.io/pypi/v/pyxirr.svg)](https://pypi.org/project/pyxirr/)
+
 # PyXIRR
 
 Rust-powered collection of financial functions.
+
+Features:
+ - correct
+ - blazingly fast
+ - works with iterators
+ - no external dependencies
 
 # Installation
 
 ```
 pip install pyxirr
 ```
+
+# Benchmarks
+
+Rust implementation has been tested against existing [xirr](https://pypi.org/project/xirr/) package
+(uses [scipy.optimize](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.newton.html) under the hood)
+and the [implementation from the Stack Overflow](https://stackoverflow.com/a/11503492) (pure python).
+
+| Implementation | Sample size |  Execution time |
+| -------------- | :---------: | --------------: |
+| pyxirr (Rust)  |     100     |  **_45.89 us_** |
+| xirr (scipy)   |     100     |       790.76 us |
+| pure Python    |     100     |        14.37 ms |
+| pyxirr (Rust)  |    1000     | **_404.03 us_** |
+| xirr (scipy)   |    1000     |         3.47 ms |
+| pure Python    |    1000     |        35.97 ms |
+| pyxirr (Rust)  |    10000    |   **_3.58 ms_** |
+| xirr (scipy)   |    10000    |        28.04 ms |
+| pure Python    |    10000    |         24.23 s |
+
+PyXIRR is ~10-20x faster than other solutions!
 
 # Usage
 
@@ -20,7 +50,7 @@ Function signature:
 # 2. Single iterable of tuples (date, amount)
 
 DateLike = Union[datetime.date, datetime.datetime]
-Amount = Union[int, foat, Decimal]
+Amount = Union[int, float, Decimal]
 
 def xirr(
     dates: Union[Iterable[DateLike], Iterable[Tuple[DateLike, Amount]]]
@@ -62,10 +92,11 @@ def xnpv(
 Example:
 
 ```python
+from pyxirr import xnpv
+
 xnpv(0.1, dates, amounts)
 xnpv(0.1, zip(dates, amounts))
 ```
-
 
 # Development
 
