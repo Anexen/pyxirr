@@ -206,15 +206,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
-name = "financial"
-version = "1.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "14607c6a4291cafd95c875de67397b8f3a9d5e5d20ad929c53894b8e3187a5cb"
-dependencies = [
- "chrono",
-]
-
-[[package]]
 name = "ghost"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -539,7 +530,6 @@ version = "0.2.0"
 dependencies = [
  "chrono",
  "criterion",
- "financial",
  "pyo3",
 ]
 

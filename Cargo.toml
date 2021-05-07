@@ -14,11 +14,10 @@ classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
 ]
-provides-extra = ["bench"]
-requires-dist = [
-    "xirr==0.1.6; extra == 'bench'",
-    "finance-calculator==0.0.6; extra == 'bench'",
-]
+# provides-extra = ["bench"]
+# requires-dist = [
+#     "xirr==0.1.6; extra == 'bench'",
+# ]
 
 [lib]
 name = "pyxirr"
@@ -31,7 +30,6 @@ harness = false
 [dependencies]
 pyo3 = { version = "0.13" }
 chrono = "0.4"
-financial = "1.1.2"
 
 [dev-dependencies]
 criterion = {version = "0.3", features = ["html_reports"] }

@@ -1,26 +1,3 @@
-// Copyright 2018 Chandra Sekar S
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-//! # XIRR
-//!
-//! `xirr` implements the XIRR function found in spreadsheet applications like LibreOffice Calc.
-//!
-//! # Example
-//!
-//! ```
-//! ```
-
 use chrono::prelude::*;
 use std::error::Error;
 use std::fmt;
@@ -30,16 +7,15 @@ const MAX_ERROR: f64 = 1e-10;
 const MAX_COMPUTE_WITH_GUESS_ITERATIONS: u32 = 50;
 
 /// A payment made or received on a particular date.
-///
 /// `amount` must be negative for payment made and positive for payment received.
+/// TODO: FromPyObject trait
 #[derive(Copy, Clone)]
 pub struct Payment {
     pub date: NaiveDate,
     pub amount: f64,
 }
 
-/// An error returned when the payments provided to [`compute`](fn.compute.html) do not contain
-/// both negative and positive payments.
+/// An error returned when the payments do not contain both negative and positive payments.
 #[derive(Debug)]
 pub struct InvalidPaymentsError;
 
@@ -51,22 +27,11 @@ impl Display for InvalidPaymentsError {
 
 impl Error for InvalidPaymentsError {}
 
-/// Calculates the internal rate of return of a series of irregular payments.
-///
-/// It tries to identify the rate of return using Newton's method with an initial guess of 0.1.
-/// If that does not provide a solution, it attempts with guesses from -0.99 to 0.99
-/// in increments of 0.01 and returns f64:NAN if not succeeded.
-///
-/// # Errors
-///
-/// This function will return [`InvalidPaymentsError`](struct.InvalidPaymentsError.html)
-/// if both positive and negative payments are not provided.
-
-pub fn compute(payments: &Vec<Payment>) -> Result<f64, InvalidPaymentsError> {
+pub fn xirr(payments: &Vec<Payment>, guess: Option<f64>) -> Result<f64, InvalidPaymentsError> {
     validate(payments)?;
 
     let deltas = precalculate_deltas(&payments);
-    let mut rate = compute_with_guess(&payments, &deltas, 0.1);
+    let mut rate = compute_with_guess(&payments, &deltas, guess.unwrap_or(0.1));
     let mut guess = -0.99;
 
     while guess < 1.0 && (rate.is_nan() || rate.is_infinite()) {
@@ -77,12 +42,13 @@ pub fn compute(payments: &Vec<Payment>) -> Result<f64, InvalidPaymentsError> {
     Ok(rate)
 }
 
+/// Calculate the net present value of a series of payments at irregular intervals.
 pub fn xnpv(rate: f64, payments: &Vec<Payment>) -> Result<f64, InvalidPaymentsError> {
     validate(payments)?;
 
     let deltas = precalculate_deltas(&payments);
 
-    Ok(xirr(payments, &deltas, rate))
+    Ok(xirr_result(payments, &deltas, rate))
 }
 
 fn precalculate_deltas(payments: &Vec<Payment>) -> Vec<f64> {
@@ -94,7 +60,7 @@ fn compute_with_guess(payments: &Vec<Payment>, deltas: &Vec<f64>, guess: f64) ->
     let mut rate = guess;
 
     for _ in 0..MAX_COMPUTE_WITH_GUESS_ITERATIONS {
-        let div = xirr(payments, deltas, rate) / xirr_deriv(payments, deltas, rate);
+        let div = xirr_result(payments, deltas, rate) / xirr_result_deriv(payments, deltas, rate);
         rate += div;
 
         if div.abs() <= MAX_ERROR {
@@ -105,11 +71,11 @@ fn compute_with_guess(payments: &Vec<Payment>, deltas: &Vec<f64>, guess: f64) ->
     f64::NAN
 }
 
-fn xirr(payments: &Vec<Payment>, deltas: &Vec<f64>, rate: f64) -> f64 {
+fn xirr_result(payments: &Vec<Payment>, deltas: &Vec<f64>, rate: f64) -> f64 {
     payments.iter().zip(deltas).map(|(p, exp)| p.amount / (1.0 + rate).powf(*exp)).sum()
 }
 
-fn xirr_deriv(payments: &Vec<Payment>, deltas: &Vec<f64>, rate: f64) -> f64 {
+fn xirr_result_deriv(payments: &Vec<Payment>, deltas: &Vec<f64>, rate: f64) -> f64 {
     payments.iter().zip(deltas).map(|(p, exp)| p.amount * exp / (1.0 + rate).powf(exp + 1.0)).sum()
 }
 
@@ -137,7 +103,7 @@ mod tests {
             Payment { date: "2015-10-17".parse().unwrap(), amount: -3000.0 },
         ];
 
-        let result = compute(&payments).unwrap();
+        let result = xirr(&payments, None).unwrap();
         let expected = 0.1635371584432640;
 
         assert!((result - expected).abs() <= MAX_ERROR);
