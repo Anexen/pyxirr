@@ -1,16 +1,22 @@
 [![rust-lang.org](https://img.shields.io/badge/Made%20with-Rust-red)](https://www.rust-lang.org/)
-[![License](https://img.shields.io/github/license/Anexen/pyxirr.svg)](https://github.com/Anexen/pyxirr/blob/master/LICENSE.txt)
+[![License](https://img.shields.io/github/license/Anexen/pyxirr.svg)](https://github.com/Anexen/pyxirr/blob/master/LICENSE)
 [![pypi](https://img.shields.io/pypi/v/pyxirr.svg)](https://pypi.org/project/pyxirr/)
+[![versions](https://img.shields.io/pypi/pyversions/pyxirr.svg)](https://pypi.org/project/pyxirr/)
+
+https://github.com/peliot/XIRR-and-XNPV/blob/master/financial.py
+https://stackoverflow.com/questions/46668172/calculating-xirr-in-python
 
 # PyXIRR
 
 Rust-powered collection of financial functions.
 
 Features:
- - correct
- - blazingly fast
- - works with iterators
- - no external dependencies
+
+- correct
+- blazingly fast
+- works with iterators
+- works with unordered input
+- no external dependencies
 
 # Installation
 
@@ -45,18 +51,26 @@ PyXIRR is ~10-20x faster than other solutions!
 Function signature:
 
 ```python
-# You have two options:
+# You have three options:
 # 1. Two iterables for dates and amounts
 # 2. Single iterable of tuples (date, amount)
+# 3. A dictionary {date: amount}
 
 DateLike = Union[datetime.date, datetime.datetime]
 Amount = Union[int, float, Decimal]
+Payment = Tuple[DateLike, Amount]
+
+DateLikeArray = Iterable[DateLike]
+AmountArray = Iterable[Amount]
+CashFlowTable = Iterable[Payment]
+CashFlowDict = Dict[DateLike, Amount]
 
 def xirr(
-    dates: Union[Iterable[DateLike], Iterable[Tuple[DateLike, Amount]]]
-    amounts Optional[Iterable[Amount]] = None
-    guess: Optional[float] = None
+    dates: Union[CashFlowTable, CashFlowDict, DateLikeArray]
+    amounts: Optional[AmountArray] = None
+    guess: Optional[float] = None,
 )
+
 ```
 
 Example:
@@ -65,13 +79,15 @@ Example:
 from datetime import date
 from pyxirr import xirr
 
-dates = [date(2020, 1, 1), date(2020, 2, 1)]
-amounts = [-100, 125]
+dates = [date(2020, 1, 1), date(2021, 1, 1), date(2022, 1, 1)]
+amounts = [-1000, 1000, 1000]
 
-xirr(dates, amounts)
-
-# list of tuples is also possible:
+# feed columnar data
+xirr(dates, iter(amounts))
+# feed an iterable of tuples
 xirr(zip(dates, amounts))
+# feed a dictionary
+xirr(dict(zip(dates, amounts)))
 ```
 
 ## xnpv
@@ -79,12 +95,12 @@ xirr(zip(dates, amounts))
 Function signature:
 
 ```python
-# similar to xirr: iterable of tuples or two iterables
+# similar to xirr: iterable of tuples or two iterables or dict
 
 def xnpv(
     rate: float,
-    dates: Union[Iterable[DateLike], Iterable[Tuple[DateLike, Amount]]]
-    amounts Optional[Iterable[Amount]] = None
+    dates: Union[CashFlowTable, CashFlowDict, DateLikeArray]
+    amounts: Optional[AmountArray] = None
 )
 
 ```
@@ -97,6 +113,17 @@ from pyxirr import xnpv
 xnpv(0.1, dates, amounts)
 xnpv(0.1, zip(dates, amounts))
 ```
+
+# Roadmap
+
+- [ ] NumPy support
+- [x] XIRR
+- [x] XNPV
+- [ ] FV
+- [ ] PV
+- [ ] NPV
+- [ ] IRR
+- [ ] MIRR
 
 # Development
 

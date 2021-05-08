@@ -1,4 +1,6 @@
 use chrono::prelude::*;
+use pyo3::types::{PyAny, PyDate, PyDateAccess, PyTuple};
+use pyo3::{FromPyObject, PyResult};
 use std::error::Error;
 use std::fmt;
 use std::fmt::{Display, Formatter};
@@ -8,11 +10,26 @@ const MAX_COMPUTE_WITH_GUESS_ITERATIONS: u32 = 50;
 
 /// A payment made or received on a particular date.
 /// `amount` must be negative for payment made and positive for payment received.
-/// TODO: FromPyObject trait
-#[derive(Copy, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Payment {
     pub date: NaiveDate,
     pub amount: f64,
+}
+
+impl<'s> FromPyObject<'s> for Payment {
+    fn extract(obj: &'s PyAny) -> PyResult<Self> {
+        let tup = obj.extract::<&PyTuple>()?;
+        let py_date = tup.get_item(0).extract::<&PyDate>()?;
+
+        Ok(Self {
+            date: NaiveDate::from_ymd(
+                py_date.get_year(),
+                py_date.get_month() as u32,
+                py_date.get_day() as u32,
+            ),
+            amount: tup.get_item(1).extract()?,
+        })
+    }
 }
 
 /// An error returned when the payments do not contain both negative and positive payments.

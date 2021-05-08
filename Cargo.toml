@@ -39,6 +39,8 @@ chrono = "0.4"
 
 [dev-dependencies]
 criterion = {version = "0.3", features = ["html_reports"] }
+rstest = "0.9"
+csv = "1"
 
 [features]
 default = ["pyo3/extension-module"]

@@ -62,7 +62,7 @@ pub fn benchmark(c: &mut Criterion) {
         let xdata = PyDict::from_sequence(py, data.into()).unwrap();
 
         group.sample_size(128).bench_function(BenchmarkId::new("rust", sample_size), |b| {
-            b.iter(|| pyxirr::xirr(py, black_box(data), black_box(None), black_box(None)))
+            b.iter(|| pyxirr::xirr(black_box(data), black_box(None), black_box(None)))
         });
 
         group.sample_size(64).bench_function(BenchmarkId::new("scipy", sample_size), |b| {
