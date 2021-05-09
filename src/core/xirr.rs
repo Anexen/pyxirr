@@ -44,7 +44,7 @@ impl Display for InvalidPaymentsError {
 
 impl Error for InvalidPaymentsError {}
 
-pub fn xirr(payments: &Vec<Payment>, guess: Option<f64>) -> Result<f64, InvalidPaymentsError> {
+pub fn xirr(payments: &[Payment], guess: Option<f64>) -> Result<f64, InvalidPaymentsError> {
     validate(payments)?;
 
     let deltas = precalculate_deltas(&payments);
@@ -60,7 +60,7 @@ pub fn xirr(payments: &Vec<Payment>, guess: Option<f64>) -> Result<f64, InvalidP
 }
 
 /// Calculate the net present value of a series of payments at irregular intervals.
-pub fn xnpv(rate: f64, payments: &Vec<Payment>) -> Result<f64, InvalidPaymentsError> {
+pub fn xnpv(rate: f64, payments: &[Payment]) -> Result<f64, InvalidPaymentsError> {
     validate(payments)?;
 
     let deltas = precalculate_deltas(&payments);
@@ -68,12 +68,12 @@ pub fn xnpv(rate: f64, payments: &Vec<Payment>) -> Result<f64, InvalidPaymentsEr
     Ok(xirr_result(payments, &deltas, rate))
 }
 
-fn precalculate_deltas(payments: &Vec<Payment>) -> Vec<f64> {
+fn precalculate_deltas(payments: &[Payment]) -> Vec<f64> {
     let min_date = payments.iter().min_by_key(|p| p.date).unwrap().date;
     return payments.iter().map(|p| (p.date - min_date).num_days() as f64 / 365.0).collect();
 }
 
-fn compute_with_guess(payments: &Vec<Payment>, deltas: &Vec<f64>, guess: f64) -> f64 {
+fn compute_with_guess(payments: &[Payment], deltas: &[f64], guess: f64) -> f64 {
     let mut rate = guess;
 
     for _ in 0..MAX_COMPUTE_WITH_GUESS_ITERATIONS {
@@ -88,15 +88,15 @@ fn compute_with_guess(payments: &Vec<Payment>, deltas: &Vec<f64>, guess: f64) ->
     f64::NAN
 }
 
-fn xirr_result(payments: &Vec<Payment>, deltas: &Vec<f64>, rate: f64) -> f64 {
+fn xirr_result(payments: &[Payment], deltas: &[f64], rate: f64) -> f64 {
     payments.iter().zip(deltas).map(|(p, exp)| p.amount / (1.0 + rate).powf(*exp)).sum()
 }
 
-fn xirr_result_deriv(payments: &Vec<Payment>, deltas: &Vec<f64>, rate: f64) -> f64 {
+fn xirr_result_deriv(payments: &[Payment], deltas: &[f64], rate: f64) -> f64 {
     payments.iter().zip(deltas).map(|(p, exp)| p.amount * exp / (1.0 + rate).powf(exp + 1.0)).sum()
 }
 
-fn validate(payments: &Vec<Payment>) -> Result<(), InvalidPaymentsError> {
+fn validate(payments: &[Payment]) -> Result<(), InvalidPaymentsError> {
     let positive = payments.iter().any(|p| p.amount > 0.0);
     let negative = payments.iter().any(|p| p.amount < 0.0);
 
@@ -104,39 +104,5 @@ fn validate(payments: &Vec<Payment>) -> Result<(), InvalidPaymentsError> {
         Ok(())
     } else {
         Err(InvalidPaymentsError)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_xirr_unordered() {
-        let payments = vec![
-            Payment { date: "2015-06-11".parse().unwrap(), amount: -1000.0 },
-            Payment { date: "2015-07-21".parse().unwrap(), amount: -9000.0 },
-            Payment { date: "2018-06-10".parse().unwrap(), amount: 20000.0 },
-            Payment { date: "2015-10-17".parse().unwrap(), amount: -3000.0 },
-        ];
-
-        let result = xirr(&payments, None).unwrap();
-        let expected = 0.1635371584432640;
-
-        assert!((result - expected).abs() <= MAX_ERROR);
-    }
-
-    #[test]
-    fn test_xnpv() {
-        let payments = vec![
-            Payment { date: "2015-06-11".parse().unwrap(), amount: -1000.0 },
-            Payment { date: "2015-07-21".parse().unwrap(), amount: -9000.0 },
-            Payment { date: "2018-06-10".parse().unwrap(), amount: 20000.0 },
-            Payment { date: "2015-10-17".parse().unwrap(), amount: -3000.0 },
-        ];
-        let result = xnpv(0.1, &payments).unwrap();
-        let expected = 2218.42566365671;
-
-        assert!((result - expected).abs() <= MAX_ERROR);
     }
 }

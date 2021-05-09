@@ -64,62 +64,37 @@ fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::{extract_payments, core::Payment};
+    use super::{core::Payment, extract_payments};
     use chrono::NaiveDate;
     use pyo3::prelude::*;
-    use pyo3::types::PyDict;
+    use pyo3::types::{PyDate, PyDict, PyFloat, PyList, PyTuple};
 
-    // fn get_samples() -> &PyAny {}
+    fn get_samples(py: Python) -> Vec<&PyAny> {
+        vec![
+            PyDate::new(py, 2020, 1, 1).unwrap().as_ref(),
+            PyFloat::new(py, -100.123).as_ref(),
+            PyDate::new(py, 2020, 2, 1).unwrap().as_ref(),
+            PyFloat::new(py, 64.3).as_ref(),
+        ]
+    }
+
+    fn expected_payments() -> Vec<Payment> {
+        vec![
+            Payment { date: NaiveDate::from_ymd(2020, 1, 1), amount: -100.123 },
+            Payment { date: NaiveDate::from_ymd(2020, 2, 1), amount: 64.3 },
+        ]
+    }
 
     #[test]
     fn test_extract_from_tuples() -> PyResult<()> {
         let gil = Python::acquire_gil();
         let py = gil.python();
 
-        let date = py.import("datetime")?.getattr("date")?;
-        let locals = PyDict::new(py);
-        locals.set_item("date", date)?;
-
-        let data = py.eval(
-            "iter([(date(2020, 1, 1), -100.123), (date(2020, 2, 1), 64.3)])",
-            None,
-            Some(locals),
-        )?;
+        let data = PyList::new(py, get_samples(py).chunks(2).map(|n| PyTuple::new(py, n)));
 
         let result = extract_payments(data, None)?;
 
-        let expected = vec![
-            Payment { date: NaiveDate::from_ymd(2020, 1, 1), amount: -100.123 },
-            Payment { date: NaiveDate::from_ymd(2020, 2, 1), amount: 64.3 },
-        ];
-
-        assert_eq!(result, expected);
-        Ok(())
-    }
-
-    #[test]
-    fn test_extract_from_iterators() -> PyResult<()> {
-        let gil = Python::acquire_gil();
-        let py = gil.python();
-
-        let date = py.import("datetime")?.getattr("date")?;
-        let locals = PyDict::new(py);
-        locals.set_item("date", date)?;
-
-        let data = py.eval(
-            "dict([(date(2020, 1, 1), -100.123), (date(2020, 2, 1), 64.3)])",
-            None,
-            Some(locals),
-        )?;
-
-        let result = extract_payments(data, None)?;
-
-        let expected = vec![
-            Payment { date: NaiveDate::from_ymd(2020, 1, 1), amount: -100.123 },
-            Payment { date: NaiveDate::from_ymd(2020, 2, 1), amount: 64.3 },
-        ];
-
-        assert_eq!(result, expected);
+        assert_eq!(result, expected_payments());
         Ok(())
     }
 
@@ -128,21 +103,30 @@ mod tests {
         let gil = Python::acquire_gil();
         let py = gil.python();
 
-        let date = py.import("datetime")?.getattr("date")?;
-        let locals = PyDict::new(py);
-        locals.set_item("date", date)?;
+        let data = PyDict::new(py);
 
-        let dates = py.eval("[date(2020, 1, 1), date(2020, 2, 1)]", None, Some(locals))?;
-        let amounts = py.eval("iter([-100.123, 64.3])", None, None)?;
+        for chunk in get_samples(py).chunks(2) {
+            data.set_item(chunk[0], chunk[1])?;
+        }
+
+        let result = extract_payments(data, None)?;
+
+        assert_eq!(result, expected_payments());
+        Ok(())
+    }
+
+    #[test]
+    fn test_extract_from_iterators() -> PyResult<()> {
+        let gil = Python::acquire_gil();
+        let py = gil.python();
+
+        let s = get_samples(py);
+        let dates = PyList::new(py, s.iter().cloned().step_by(2).collect::<Vec<&PyAny>>());
+        let amounts = PyList::new(py, s.into_iter().skip(1).step_by(2).collect::<Vec<&PyAny>>());
 
         let result = extract_payments(dates, Some(amounts))?;
 
-        let expected = vec![
-            Payment { date: NaiveDate::from_ymd(2020, 1, 1), amount: -100.123 },
-            Payment { date: NaiveDate::from_ymd(2020, 2, 1), amount: 64.3 },
-        ];
-
-        assert_eq!(result, expected);
+        assert_eq!(result, expected_payments());
         Ok(())
     }
 }
