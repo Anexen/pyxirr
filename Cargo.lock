@@ -535,7 +535,7 @@ dependencies = [
 
 [[package]]
 name = "pyxirr"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "chrono",
  "criterion",
