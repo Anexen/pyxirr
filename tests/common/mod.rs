@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use pyxirr::core::Payment;
 
 const MAX_ERROR: f64 = 1e-10;

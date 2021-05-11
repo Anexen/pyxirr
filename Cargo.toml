@@ -20,11 +20,6 @@ classifiers = [
 	"Programming Language :: Python :: 3.9",
 ]
 
-# provides-extra = ["bench"]
-# requires-dist = [
-#     "xirr==0.1.6; extra == 'bench'",
-# ]
-
 [lib]
 name = "pyxirr"
 crate-type = ["rlib", "cdylib"]
