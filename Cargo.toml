@@ -34,7 +34,8 @@ name = "main"
 harness = false
 
 [dependencies]
-pyo3 = { version = "0.13" }
+pyo3 = "0.13"
+# numpy = "0.13"
 chrono = "0.4"
 
 [dev-dependencies]

@@ -16,10 +16,16 @@ where
 
 fn extract_payments(dates: &PyAny, amounts: Option<&PyAny>) -> PyResult<Vec<Payment>> {
     if amounts.is_none() {
-        if dates.is_instance::<PyDict>().unwrap_or(false) {
+        if dates.is_instance::<PyDict>()? {
             extract_iterable::<Payment>(dates.call_method0("items")?)
         } else {
-            extract_iterable::<Payment>(dates)
+            let values = match dates.get_type().name()? {
+                "DataFrame" => dates.getattr("values")?.getattr("T")?,
+                "ndarray" => dates.getattr("T")?,
+                _ => dates,
+            };
+
+            extract_iterable::<Payment>(values)
         }
     } else {
         Python::with_gil(|py| {

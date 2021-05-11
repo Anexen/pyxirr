@@ -1,6 +1,6 @@
 use chrono::prelude::*;
-use pyo3::types::{PyAny, PyDate, PyDateAccess, PyTuple};
-use pyo3::{FromPyObject, PyResult};
+use pyo3::types::{PyAny, PyDate, PyDateAccess};
+use pyo3::{exceptions, FromPyObject, PyResult};
 use std::error::Error;
 use std::fmt;
 use std::fmt::{Display, Formatter};
@@ -16,19 +16,35 @@ pub struct Payment {
     pub amount: f64,
 }
 
+fn extract_date(py_date: &PyDate) -> NaiveDate {
+    NaiveDate::from_ymd(py_date.get_year(), py_date.get_month() as u32, py_date.get_day() as u32)
+}
+
 impl<'s> FromPyObject<'s> for Payment {
     fn extract(obj: &'s PyAny) -> PyResult<Self> {
-        let tup = obj.extract::<&PyTuple>()?;
-        let py_date = tup.get_item(0).extract::<&PyDate>()?;
+        let date: &PyAny = obj.get_item(0)?;
+        let amount: f64 = obj.get_item(1)?.extract()?;
 
-        Ok(Self {
-            date: NaiveDate::from_ymd(
-                py_date.get_year(),
-                py_date.get_month() as u32,
-                py_date.get_day() as u32,
-            ),
-            amount: tup.get_item(1).extract()?,
-        })
+        let date = if date.is_instance::<PyDate>()? {
+            extract_date(date.downcast::<PyDate>()?)
+        } else {
+            match date.get_type().name()? {
+                "datetime64" => NaiveDate::from_num_days_from_ce(
+                    date.call_method1("astype", ("datetime64[D]",))?
+                        .call_method1("astype", ("int64",))?
+                        .extract()?,
+                ),
+                "Timestamp" => extract_date(date.call_method0("date")?.downcast::<PyDate>()?),
+                other => {
+                    return Err(exceptions::PyTypeError::new_err(format!(
+                        "Type {:?} is not understood",
+                        other
+                    )))
+                }
+            }
+        };
+
+        Ok(Payment { date, amount })
     }
 }
 
