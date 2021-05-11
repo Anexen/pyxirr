@@ -1,0 +1,4 @@
+maturin==0.10.*
+xirr==0.1.6
+numpy==1.*
+pandas==1.*

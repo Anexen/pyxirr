@@ -41,36 +41,7 @@ and the [implementation from the Stack Overflow](https://stackoverflow.com/a/115
 
 PyXIRR is ~10-20x faster than other solutions!
 
-# Usage
-
-## xirr
-
-Function signature:
-
-```python
-# You have three options:
-# 1. Two iterables for dates and amounts
-# 2. Single iterable of tuples (date, amount)
-# 3. A dictionary {date: amount}
-
-DateLike = Union[datetime.date, datetime.datetime]
-Amount = Union[int, float, Decimal]
-Payment = Tuple[DateLike, Amount]
-
-DateLikeArray = Iterable[DateLike]
-AmountArray = Iterable[Amount]
-CashFlowTable = Iterable[Payment]
-CashFlowDict = Dict[DateLike, Amount]
-
-def xirr(
-    dates: Union[CashFlowTable, CashFlowDict, DateLikeArray]
-    amounts: Optional[AmountArray] = None
-    guess: Optional[float] = None,
-)
-
-```
-
-Example:
+# Examples
 
 ```python
 from datetime import date
@@ -80,19 +51,58 @@ dates = [date(2020, 1, 1), date(2021, 1, 1), date(2022, 1, 1)]
 amounts = [-1000, 1000, 1000]
 
 # feed columnar data
-xirr(dates, iter(amounts))
+xirr(dates, amounts)
+# feed iterators
+xirr(iter(dates), (x for x in amounts))
 # feed an iterable of tuples
 xirr(zip(dates, amounts))
 # feed a dictionary
 xirr(dict(zip(dates, amounts)))
 ```
 
-## xnpv
-
-Function signature:
+Numpy and Pandas support
 
 ```python
-# similar to xirr: iterable of tuples or two iterables or dict
+import numpy as np
+import pandas as pd
+
+# feed numpy array
+xirr(np.array([dates, amounts]))
+xirr(np.array(dates), np.array(amounts))
+# feed DataFrame (columns names doesn't matter; ordering matters)
+xirr(pd.DataFrame({"a": dates, "b": amounts}))
+```
+
+# API reference
+
+Let's define type annotations:
+
+```python
+DateLike = Union[datetime.date, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+Amount = Union[int, float, Decimal]
+Payment = Tuple[DateLike, Amount]
+
+DateLikeArray = Iterable[DateLike]
+AmountArray = Iterable[Amount]
+CashFlowTable = Iterable[Payment]
+CashFlowDict = Dict[DateLike, Amount]
+
+```
+
+## XIRR
+
+```python
+def xirr(
+    dates: Union[CashFlowTable, CashFlowDict, DateLikeArray]
+    amounts: Optional[AmountArray] = None
+    guess: Optional[float] = None,
+)
+
+```
+
+## XNPV
+
+```python
 
 def xnpv(
     rate: float,
@@ -102,18 +112,9 @@ def xnpv(
 
 ```
 
-Example:
-
-```python
-from pyxirr import xnpv
-
-xnpv(0.1, dates, amounts)
-xnpv(0.1, zip(dates, amounts))
-```
-
 # Roadmap
 
-- [ ] NumPy support
+- [x] NumPy support
 - [x] XIRR
 - [x] XNPV
 - [ ] FV
@@ -134,9 +135,29 @@ $ export PYO3_PYTHON_VERSION=3.8.6
 $ PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install ${PYO3_PYTHON_VERSION}
 ```
 
+Install dev-requirements
+
 ```bash
-# running tests
+$ pip install -r dev-requirements.txt
+```
+
+### Building
+
+```bash
+$ matirun develop
+```
+
+### Testing
+
+```bash
 $ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/${PYO3_PYTHON_VERSION}/lib cargo tests --no-default-features --features tests
-# running benches
-$ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/${PYO3_PYTHON_VERSION}/lib cargo bench --no-default-features --features tests
+```
+
+# Building and distribution
+
+This library uses [matirun](https://github.com/PyO3/maturin) to build and distribute python wheels.
+
+```bash
+$ docker run --rm -v $(pwd):/io konstin2/maturin build --release --manylinux 2010 --strip
+$ docker run --rm -v $(pwd):/io konstin2/maturin upload target/wheels/pyxirr-<version>*
 ```

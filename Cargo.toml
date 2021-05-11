@@ -1,6 +1,6 @@
 [package]
 name = "pyxirr"
-version = "0.2.1"
+version = "0.3.0"
 authors = ["Anexen"]
 edition = "2018"
 description = "Rust-powered collection of financial functions."
@@ -20,11 +20,6 @@ classifiers = [
 	"Programming Language :: Python :: 3.9",
 ]
 
-# provides-extra = ["bench"]
-# requires-dist = [
-#     "xirr==0.1.6; extra == 'bench'",
-# ]
-
 [lib]
 name = "pyxirr"
 crate-type = ["rlib", "cdylib"]
@@ -34,7 +29,8 @@ name = "main"
 harness = false
 
 [dependencies]
-pyo3 = { version = "0.13" }
+pyo3 = "0.13"
+# numpy = "0.13"
 chrono = "0.4"
 
 [dev-dependencies]
