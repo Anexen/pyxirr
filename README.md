@@ -131,8 +131,7 @@ See the following issues for the details: [#341](https://github.com/PyO3/pyo3/is
 If you are using `pyenv`, make sure you have the shared library installed (check for `${PYENV_ROOT}/versions/<version>/lib/libpython3.so` file).
 
 ```bash
-$ export PYO3_PYTHON_VERSION=3.8.6
-$ PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install ${PYO3_PYTHON_VERSION}
+$ PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install <version>
 ```
 
 Install dev-requirements
@@ -144,20 +143,20 @@ $ pip install -r dev-requirements.txt
 ### Building
 
 ```bash
-$ matirun develop
+$ maturin develop
 ```
 
 ### Testing
 
 ```bash
-$ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/${PYO3_PYTHON_VERSION}/lib cargo tests --no-default-features --features tests
+$ make test
 ```
 
 # Building and distribution
 
-This library uses [matirun](https://github.com/PyO3/maturin) to build and distribute python wheels.
+This library uses [maturin](https://github.com/PyO3/maturin) to build and distribute python wheels.
 
 ```bash
-$ docker run --rm -v $(pwd):/io konstin2/maturin build --release --manylinux 2010 --strip
-$ docker run --rm -v $(pwd):/io konstin2/maturin upload target/wheels/pyxirr-<version>*
+$ make release
+$ make publish version=<pyxirr_version>
 ```
