@@ -1,6 +1,6 @@
 [package]
 name = "pyxirr"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Anexen"]
 edition = "2018"
 description = "Rust-powered collection of financial functions."
@@ -30,7 +30,7 @@ harness = false
 
 [dependencies]
 pyo3 = "0.13"
-# numpy = "0.13"
+numpy = "0.13"
 chrono = "0.4"
 
 [dev-dependencies]

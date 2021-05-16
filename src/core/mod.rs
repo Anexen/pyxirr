@@ -1,3 +1,5 @@
+mod models;
 mod xirr;
 
-pub use xirr::{xirr, xnpv, Payment};
+pub use models::{DateLike, InvalidPaymentsError, Payment};
+pub use xirr::{xirr, xnpv};

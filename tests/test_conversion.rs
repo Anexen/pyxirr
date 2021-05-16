@@ -4,14 +4,13 @@ use rstest::*;
 
 mod common;
 
-use common::assert_almost_eq;
 use pyxirr;
 
 // -------------------- TEST DATA -----------------------------------
 
 const EXPECTED: f64 = 0.6164943046;
 
-fn dates(py: Python) -> &PyList {
+fn get_dates(py: Python) -> &PyList {
     PyList::new(
         py,
         vec![
@@ -22,7 +21,7 @@ fn dates(py: Python) -> &PyList {
     )
 }
 
-fn amounts(py: Python) -> &PyList {
+fn get_amounts(py: Python) -> &PyList {
     PyList::new(
         py,
         vec![
@@ -39,10 +38,12 @@ fn get_locals<'p>(py: Python<'p>, extra_imports: Option<&[&str]>) -> &'p PyDict 
     let builtins = PyModule::import(py, "builtins").unwrap();
 
     let mut locals = vec![
-        ("amounts", amounts(py).as_ref()),
-        ("dates", dates(py).as_ref()),
+        ("amounts", get_amounts(py).as_ref()),
+        ("dates", get_dates(py).as_ref()),
         ("iter", builtins.getattr("iter").unwrap()),
+        ("list", builtins.getattr("list").unwrap()),
         ("zip", builtins.getattr("zip").unwrap()),
+        ("map", builtins.getattr("map").unwrap()),
     ];
 
     for &name in extra_imports.unwrap_or_default() {
@@ -64,7 +65,7 @@ fn test_extract_from_iter() {
         pyxirr::xirr(dates_iter, Some(amounts_gen), None)
     });
 
-    assert_almost_eq(result.unwrap(), EXPECTED);
+    assert_almost_eq!(result.unwrap(), EXPECTED);
 }
 
 #[rstest]
@@ -74,16 +75,26 @@ fn test_extract_from_tuples() {
         let cash_flow = py.eval("zip(dates, amounts)", Some(locals), None).unwrap();
         pyxirr::xirr(cash_flow, None, None)
     });
-    assert_almost_eq(result.unwrap(), EXPECTED);
+    assert_almost_eq!(result.unwrap(), EXPECTED);
+}
+
+#[rstest]
+fn test_extract_from_lists() {
+    let result = Python::with_gil(|py| {
+        let locals = get_locals(py, None);
+        let cash_flow = py.eval("map(list, zip(dates, amounts))", Some(locals), None).unwrap();
+        pyxirr::xirr(cash_flow, None, None)
+    });
+    assert_almost_eq!(result.unwrap(), EXPECTED);
 }
 
 #[rstest]
 fn test_extract_from_dict() {
     let result = Python::with_gil(|py| {
-        let data = dates(py).iter().zip(amounts(py)).into_py_dict(py);
+        let data = get_dates(py).iter().zip(get_amounts(py)).into_py_dict(py);
         pyxirr::xirr(data, None, None)
     });
-    assert_almost_eq(result.unwrap(), EXPECTED);
+    assert_almost_eq!(result.unwrap(), EXPECTED);
 }
 
 #[rstest]
@@ -94,7 +105,7 @@ fn test_extract_from_numpy_object_array() {
         pyxirr::xirr(data, None, None)
     });
 
-    assert_almost_eq(result.unwrap(), EXPECTED);
+    assert_almost_eq!(result.unwrap(), EXPECTED);
 }
 
 #[rstest]
@@ -106,11 +117,11 @@ fn test_extract_from_numpy_arrays() {
         pyxirr::xirr(dates, Some(amounts), None)
     });
 
-    assert_almost_eq(result.unwrap(), EXPECTED);
+    assert_almost_eq!(result.unwrap(), EXPECTED);
 }
 
 #[rstest]
-fn test_extract_from_dataframe() {
+fn test_extract_from_pandas_dataframe() {
     let result = Python::with_gil(|py| {
         let locals = get_locals(py, Some(&["pandas"]));
         let data = py
@@ -119,7 +130,31 @@ fn test_extract_from_dataframe() {
         pyxirr::xirr(data, None, None)
     });
 
-    assert_almost_eq(result.unwrap(), EXPECTED);
+    assert_almost_eq!(result.unwrap(), EXPECTED);
+}
+
+#[rstest]
+fn test_extract_from_pandas_series() {
+    let result = Python::with_gil(|py| {
+        let locals = get_locals(py, Some(&["pandas"]));
+        let dates = py.eval("pandas.Series(dates)", Some(locals), None).unwrap();
+        let amounts = py.eval("pandas.Series(amounts)", Some(locals), None).unwrap();
+        pyxirr::xirr(dates, Some(amounts), None)
+    });
+
+    assert_almost_eq!(result.unwrap(), EXPECTED);
+}
+
+#[rstest]
+fn test_extract_from_mixed_iterables() {
+    let result = Python::with_gil(|py| {
+        let locals = get_locals(py, Some(&["pandas", "numpy"]));
+        let dates = py.eval("map(pandas.Timestamp, dates)", Some(locals), None).unwrap();
+        let amounts = py.eval("numpy.array(amounts)", Some(locals), None).unwrap();
+        pyxirr::xirr(dates, Some(amounts), None)
+    });
+
+    assert_almost_eq!(result.unwrap(), EXPECTED);
 }
 
 #[rstest]
@@ -141,5 +176,5 @@ fn test_pandas_read_csv(#[case] input: &str, #[case] expected: f64) {
         pyxirr::xirr(data, None, None)
     });
 
-    assert_almost_eq(result.unwrap(), expected);
+    assert_almost_eq!(result.unwrap(), expected);
 }
