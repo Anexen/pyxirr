@@ -26,10 +26,28 @@ pub fn xnpv(rate: f64, dates: &PyAny, amounts: Option<&PyAny>) -> PyResult<f64> 
     Ok(result)
 }
 
+#[pyfunction(guess = "0.1")]
+pub fn irr(amounts: &PyAny, guess: Option<f64>) -> PyResult<f64> {
+    let amounts = conversions::extract_amount_series(amounts)?;
+
+    let result = core::irr(&amounts, guess)
+        .map_err(|e| exceptions::PyValueError::new_err(e.to_string()))?;
+
+    Ok(result)
+}
+
+#[pyfunction]
+pub fn npv(rate: f64, amounts: &PyAny) -> PyResult<f64> {
+    let payments = conversions::extract_amount_series(amounts)?;
+    Ok(core::npv(rate, &payments))
+}
+
 #[pymodule]
 fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(xirr))?;
     m.add_wrapped(wrap_pyfunction!(xnpv))?;
+    m.add_wrapped(wrap_pyfunction!(irr))?;
+    m.add_wrapped(wrap_pyfunction!(npv))?;
 
     m.add("InvalidPaymentsError", py.get_type::<InvalidPaymentsError>())?;
 

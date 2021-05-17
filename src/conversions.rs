@@ -36,7 +36,7 @@ fn extract_amount_series_from_numpy(series: &PyAny) -> PyResult<Vec<f64>> {
         .to_vec()?)
 }
 
-fn extract_amount_series(series: &PyAny) -> PyResult<Vec<f64>> {
+pub fn extract_amount_series(series: &PyAny) -> PyResult<Vec<f64>> {
     match series.get_type().name()? {
         "Series" => extract_amount_series_from_numpy(series.getattr("values")?),
         "ndarray" => extract_amount_series_from_numpy(series),
