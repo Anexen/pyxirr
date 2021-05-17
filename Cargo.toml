@@ -40,9 +40,3 @@ csv = "1"
 
 [features]
 default = ["pyo3/extension-module"]
-
-[profile.release]
-opt-level = 3
-debug = false
-lto = true
-codegen-units = 1
