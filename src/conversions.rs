@@ -44,37 +44,44 @@ pub fn extract_amount_series(series: &PyAny) -> PyResult<Vec<f64>> {
     }
 }
 
-pub fn extract_payments(dates: &PyAny, amounts: Option<&PyAny>) -> PyResult<Vec<Payment>> {
-    let dates_vec: Vec<DateLike>;
-    let amounts_vec: Vec<f64>;
+pub fn extract_payments(
+    dates: &PyAny,
+    amounts: Option<&PyAny>,
+) -> PyResult<(Vec<DateLike>, Vec<f64>)> {
+    if amounts.is_some() {
+        return Ok((extract_date_series(dates)?, extract_amount_series(amounts.unwrap())?));
+    };
 
-    if amounts.is_none() {
-        if dates.is_instance::<PyDict>()? {
-            return extract_iterable::<Payment>(dates.call_method0("items")?);
-        }
-
-        match dates.get_type().name()? {
-            "DataFrame" => {
-                let frame = dates;
-                let columns = frame.getattr("columns")?;
-                dates_vec = extract_date_series(frame.get_item(columns.get_item(0)?)?)?;
-                amounts_vec = extract_amount_series(frame.get_item(columns.get_item(1)?)?)?;
-            }
-            "ndarray" => {
-                let array = dates;
-                dates_vec = extract_date_series(array.get_item(0)?)?;
-                amounts_vec = extract_amount_series(array.get_item(1)?)?;
-            }
-            _ => return extract_iterable::<Payment>(dates),
-        };
-    } else {
-        dates_vec = extract_date_series(dates)?;
-        amounts_vec = extract_amount_series(amounts.unwrap())?
+    if dates.is_instance::<PyDict>()? {
+        return Ok((
+            extract_iterable::<DateLike>(dates.call_method0("keys")?)?,
+            extract_iterable::<f64>(dates.call_method0("values")?)?,
+        ));
     }
 
-    Ok(dates_vec
-        .into_iter()
-        .zip(amounts_vec)
-        .map(|(date, amount)| Payment { date, amount })
-        .collect())
+    match dates.get_type().name()? {
+        "DataFrame" => {
+            let frame = dates;
+            let columns = frame.getattr("columns")?;
+            return Ok((
+                extract_date_series(frame.get_item(columns.get_item(0)?)?)?,
+                extract_amount_series(frame.get_item(columns.get_item(1)?)?)?,
+            ));
+        }
+        "ndarray" => {
+            let array = dates;
+            return Ok((
+                extract_date_series(array.get_item(0)?)?,
+                extract_amount_series(array.get_item(1)?)?,
+            ));
+        }
+        _ => {
+            let data = extract_iterable::<Payment>(dates)?;
+            return Ok((
+                data.iter().map(|p| p.date).collect(),
+                data.iter().map(|p| p.amount).collect(),
+            ));
+        }
+    };
 }
+

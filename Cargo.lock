@@ -590,7 +590,6 @@ version = "0.3.1"
 dependencies = [
  "chrono",
  "criterion",
- "csv",
  "numpy",
  "pyo3",
  "rstest",

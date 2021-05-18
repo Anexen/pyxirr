@@ -8,9 +8,9 @@ create_exception!(pyxirr, InvalidPaymentsError, exceptions::PyException);
 
 #[pyfunction(amounts = "None", guess = "0.1")]
 pub fn xirr(dates: &PyAny, amounts: Option<&PyAny>, guess: Option<f64>) -> PyResult<f64> {
-    let payments = conversions::extract_payments(dates, amounts)?;
+    let (dates, amounts) = conversions::extract_payments(dates, amounts)?;
 
-    let result = core::xirr(&payments, guess)
+    let result = core::xirr(&dates, &amounts, guess)
         .map_err(|e| exceptions::PyValueError::new_err(e.to_string()))?;
 
     Ok(result)
@@ -18,9 +18,9 @@ pub fn xirr(dates: &PyAny, amounts: Option<&PyAny>, guess: Option<f64>) -> PyRes
 
 #[pyfunction(amounts = "None")]
 pub fn xnpv(rate: f64, dates: &PyAny, amounts: Option<&PyAny>) -> PyResult<f64> {
-    let payments = conversions::extract_payments(dates, amounts)?;
+    let (dates, amounts) = conversions::extract_payments(dates, amounts)?;
 
-    let result = core::xnpv(rate, &payments)
+    let result = core::xnpv(rate, &dates, &amounts)
         .map_err(|e| exceptions::PyValueError::new_err(e.to_string()))?;
 
     Ok(result)

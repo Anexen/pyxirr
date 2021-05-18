@@ -2,14 +2,11 @@
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use pyo3::prelude::*;
-use pyo3::types::*;
 
 use pyxirr;
 
 #[path = "../tests/common/mod.rs"]
 mod common;
-
-use common::load_payments;
 
 // https://stackoverflow.com/questions/8919718/financial-python-library-that-has-xirr-and-xnpv-function
 const TOP_STACK_OVERFLOW_ANSWER: &str = r#"
@@ -47,10 +44,10 @@ fn comparison(c: &mut Criterion) {
     let mut group = c.benchmark_group("XIRR");
 
     for sample_size in &[100, 1000, 10000] {
-        let (data, _) =
-            load_payments(py, &format!("tests/samples/random_{}.csv", sample_size), false);
-
-        let xdata = PyDict::from_sequence(py, data.into()).unwrap();
+        let input = &format!("tests/samples/random_{}.csv", sample_size);
+        let loader = common::PaymentsLoader::from_csv(py, input);
+        let data = loader.to_records();
+        let xdata = loader.to_dict();
 
         group.sample_size(128).bench_function(BenchmarkId::new("rust", sample_size), |b| {
             b.iter(|| pyxirr::xirr(black_box(data), black_box(None), black_box(None)))
@@ -77,29 +74,27 @@ fn benchmark(c: &mut Criterion) {
     let gil = Python::acquire_gil();
     let py = gil.python();
 
-    let locals = vec![
-        ("sample", PyString::new(py, input).as_ref()),
-        ("pd", PyModule::import(py, "pandas").unwrap()),
-    ]
-    .into_py_dict(py);
-
-    let pure = load_payments(py, input, false);
-    let columnar = load_payments(py, input, true);
-
-    let frame =
-        py.eval("pd.read_csv(sample, header=None, parse_dates=[0])", Some(locals), None).unwrap();
-
     let mut group = c.benchmark_group("Performance");
 
+    let loader = common::PaymentsLoader::from_csv(py, input);
+
     group.bench_function(BenchmarkId::new("python", ""), |b| {
-        b.iter(|| pyxirr::xirr(black_box(pure.0), black_box(None), black_box(None)))
+        let pure = loader.to_records();
+        b.iter(|| pyxirr::xirr(black_box(pure), black_box(None), black_box(None)))
     });
 
     group.bench_function(BenchmarkId::new("columnar", ""), |b| {
-        b.iter(|| pyxirr::xirr(black_box(columnar.0), black_box(columnar.1), black_box(None)))
+        let columnar = loader.to_columns();
+        b.iter(|| pyxirr::xirr(black_box(columnar.0), black_box(Some(columnar.1)), black_box(None)))
+    });
+
+    group.bench_function(BenchmarkId::new("dict", ""), |b| {
+        let data = loader.to_dict();
+        b.iter(|| pyxirr::xirr(black_box(data), black_box(None), black_box(None)))
     });
 
     group.bench_function(BenchmarkId::new("pandas", ""), |b| {
+        let frame = common::pd_read_csv(py, input);
         b.iter(|| pyxirr::xirr(black_box(frame), black_box(None), black_box(None)))
     });
 

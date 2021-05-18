@@ -164,15 +164,7 @@ fn test_extract_from_mixed_iterables() {
 #[case("tests/samples/random_10000.csv", 0.350185149995)]
 fn test_pandas_read_csv(#[case] input: &str, #[case] expected: f64) {
     let result = Python::with_gil(|py| {
-        let locals = vec![
-            ("sample", PyString::new(py, input).as_ref()),
-            ("pd", PyModule::import(py, "pandas").unwrap()),
-        ]
-        .into_py_dict(py);
-
-        let data = py
-            .eval("pd.read_csv(sample, header=None, parse_dates=[0])", Some(locals), None)
-            .unwrap();
+        let data = common::pd_read_csv(py, input);
         pyxirr::xirr(data, None, None)
     });
 

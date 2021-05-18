@@ -120,9 +120,9 @@ impl Display for InvalidPaymentsError {
 
 impl Error for InvalidPaymentsError {}
 
-pub fn validate(payments: &[Payment]) -> Result<(), InvalidPaymentsError> {
-    let positive = payments.iter().any(|p| p.amount > 0.0);
-    let negative = payments.iter().any(|p| p.amount < 0.0);
+pub fn validate(payments: &[f64]) -> Result<(), InvalidPaymentsError> {
+    let positive = payments.iter().any(|&p| p > 0.0);
+    let negative = payments.iter().any(|&p| p < 0.0);
 
     if positive && negative {
         Ok(())
