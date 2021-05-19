@@ -15,4 +15,4 @@ release:
 	docker run --rm -v $(PWD):/io konstin2/maturin build --release --manylinux 2010 --strip
 
 publish:
-	docker run --rm -it -v $(PWD):/io konstin2/maturin upload target/wheels/pyxirr-$(version)*
+	maturin upload target/wheels/pyxirr-$(version)*

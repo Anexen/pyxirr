@@ -119,8 +119,8 @@ def xnpv(
 - [x] XNPV
 - [ ] FV
 - [ ] PV
-- [ ] NPV
-- [ ] IRR
+- [x] NPV
+- [x] IRR
 - [ ] MIRR
 
 # Development
@@ -149,7 +149,7 @@ $ maturin develop
 ### Testing
 
 ```bash
-$ make test
+$ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/3.8.6/lib cargo test --no-default-features
 ```
 
 # Building and distribution
@@ -157,6 +157,6 @@ $ make test
 This library uses [maturin](https://github.com/PyO3/maturin) to build and distribute python wheels.
 
 ```bash
-$ make release
-$ make publish version=<pyxirr_version>
+$ docker run --rm -v $(pwd):/io konstin2/maturin build --release --manylinux 2010 --strip
+$ maturin upload target/wheels/pyxirr-${version}*
 ```
