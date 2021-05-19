@@ -26,20 +26,39 @@ jobs:
           profile: minimal
           override: true
 
-      - name: Build Wheels - ${{ matrix.os }}
+      - name: Install dev-requirements
+        run: pip install -r dev-requirements.txt
+
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Test
+        run: cargo test --no-default-features --release
+
+      # - name: Test no numpy installed works
+      #   run: |
+      #     pip uninstall numpy -y
+      #     cargo test --release --no-default-features --features no-numpy
+
+      - name: Build Wheels - Linux
         if: matrix.os == 'ubuntu-latest'
         uses: messense/maturin-action@v1
         with:
           manylinux: auto
           args: -i python${{ matrix.python-version }} --release --out dist --no-sdist --strip
 
-      - name: Build Wheels - ${{ matrix.os }}
+      - name: Build Wheels - MacOS
         if: matrix.os == 'macos-latest'
         uses: messense/maturin-action@v1
         with:
           args: -i python --release --universal2 --out dist --no-sdist --strip
 
-      - name: Build Wheels - ${{ matrix.os }}
+      - name: Build Wheels - Windows
         if: matrix.os == 'windows-latest'
         uses: messense/maturin-action@v1
         with:
@@ -63,6 +82,8 @@ jobs:
         with:
           python-version: 3.9
 
+      - run: pip install maturin
+
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
@@ -75,4 +96,4 @@ jobs:
         if: github.event_name == 'release' && github.event.action == 'created'
         env:
           MATURIN_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: maturin publish --username ${{ secrets.PYPI_USERNAME }}
+        run: maturin publish --username __token__
