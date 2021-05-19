@@ -110,23 +110,29 @@ impl<'p> FromPyObject<'p> for Payment {
 
 /// An error returned when the payments do not contain both negative and positive payments.
 #[derive(Debug)]
-pub struct InvalidPaymentsError;
+pub struct InvalidPaymentsError(String);
 
 impl Display for InvalidPaymentsError {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        "negative and positive payments are required".fmt(f)
+        self.0.fmt(f)
     }
 }
 
 impl Error for InvalidPaymentsError {}
 
-pub fn validate(payments: &[f64]) -> Result<(), InvalidPaymentsError> {
+pub fn validate(payments: &[f64], dates: Option<&[DateLike]>) -> Result<(), InvalidPaymentsError> {
+    if dates.is_some() && payments.len() != dates.unwrap_or_default().len() {
+        return Err(InvalidPaymentsError(
+            "the amounts and dates arrays are of different lengths".into(),
+        ));
+    }
+
     let positive = payments.iter().any(|&p| p > 0.0);
     let negative = payments.iter().any(|&p| p < 0.0);
 
     if positive && negative {
         Ok(())
     } else {
-        Err(InvalidPaymentsError)
+        Err(InvalidPaymentsError("negative and positive payments are required".into()))
     }
 }

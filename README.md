@@ -78,6 +78,9 @@ xirr(pd.DataFrame({"a": dates, "b": amounts}))
 Let's define type annotations:
 
 ```python
+# `None` if the calculation fails to converge or result is not finite (`inf` or `nan`)
+FiniteOrNone = Optional[float]
+
 DateLike = Union[datetime.date, datetime.datetime, numpy.datetime64, pandas.Timestamp]
 Amount = Union[int, float, Decimal]
 Payment = Tuple[DateLike, Amount]
@@ -86,30 +89,48 @@ DateLikeArray = Iterable[DateLike]
 AmountArray = Iterable[Amount]
 CashFlowTable = Iterable[Payment]
 CashFlowDict = Dict[DateLike, Amount]
-
 ```
+
+## Exceptions
+
+- `InvalidPaymentsError`. Occurs if either:
+  - the amounts and dates arrays (`AmountArray`, `DateLikeArray`) are of different lengths
+  - the given arrays do not contain at least one negative and at least one positive value
 
 ## XIRR
 
 ```python
+# raises: InvalidPaymentsError
 def xirr(
-    dates: Union[CashFlowTable, CashFlowDict, DateLikeArray]
-    amounts: Optional[AmountArray] = None
+    dates: Union[CashFlowTable, CashFlowDict, DateLikeArray],
+    amounts: Optional[AmountArray] = None,
     guess: Optional[float] = None,
-)
-
+) -> FiniteOrNone
 ```
 
 ## XNPV
 
 ```python
-
+# raises: InvalidPaymentsError
 def xnpv(
     rate: float,
-    dates: Union[CashFlowTable, CashFlowDict, DateLikeArray]
-    amounts: Optional[AmountArray] = None
-)
+    dates: Union[CashFlowTable, CashFlowDict, DateLikeArray],
+    amounts: Optional[AmountArray] = None,
+) -> FiniteOrNone
+```
 
+## IRR
+
+```python
+# raises: InvalidPaymentsError
+def irr(amounts: AmountArray, guess: Optional[float] = None) -> FiniteOrNone
+```
+
+## NPV
+
+```python
+# raises: InvalidPaymentsError
+def npv(rate: float, amounts: AmountArray) -> FiniteOrNone
 ```
 
 # Roadmap

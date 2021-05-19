@@ -11,8 +11,8 @@ use common::{xnpv_expected_result, PaymentsLoader};
 fn test_xnpv_samples(#[case] input: &str) {
     let rate = 0.1;
     let result = Python::with_gil(|py| {
-        let payments = PaymentsLoader::from_csv(py, input).to_columns();
-        pyxirr::xnpv(rate, payments.0, Some(payments.1)).unwrap()
+        let payments = PaymentsLoader::from_csv(py, input).to_records();
+        pyxirr::xnpv(rate, payments, None).unwrap().unwrap()
     });
     assert_almost_eq!(result, xnpv_expected_result(rate, input));
 }

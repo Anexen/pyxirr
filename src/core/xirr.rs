@@ -6,7 +6,7 @@ pub fn xirr(
     amounts: &[f64],
     guess: Option<f64>,
 ) -> Result<f64, InvalidPaymentsError> {
-    validate(amounts)?;
+    validate(amounts, Some(dates))?;
 
     let deltas = precalculate_deltas(&dates);
     let mut guess = guess.unwrap_or_else(|| initial_guess(&dates, &amounts));
@@ -24,7 +24,7 @@ pub fn xirr(
 
 /// Calculate the net present value of a series of payments at irregular intervals.
 pub fn xnpv(rate: f64, dates: &[DateLike], amounts: &[f64]) -> Result<f64, InvalidPaymentsError> {
-    validate(amounts)?;
+    validate(amounts, Some(dates))?;
 
     let deltas = precalculate_deltas(&dates);
 
