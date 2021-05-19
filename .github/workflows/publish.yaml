@@ -50,7 +50,7 @@ jobs:
         uses: messense/maturin-action@v1
         with:
           manylinux: auto
-          args: -i python${{ matrix.python-version }} --release --out dist --no-sdist --strip
+          args: -i python${{ matrix.python-version }} --release --out dist --strip
 
       - name: Build Wheels - MacOS
         if: matrix.os == 'macos-latest'
