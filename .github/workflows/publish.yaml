@@ -72,19 +72,19 @@ jobs:
         uses: messense/maturin-action@v1
         with:
           manylinux: auto
-          args: -i python${{ matrix.python-version }} --release --strip
+          args: -i python${{ matrix.python-version }} --release --out dist --strip
 
       - name: Build Wheels - MacOS
         if: matrix.os == 'macos-latest'
         uses: messense/maturin-action@v1
         with:
-          args: -i python --release --universal2 --no-sdist --strip
+          args: -i python --release --universal2 --out dist --no-sdist --strip
 
       - name: Build Wheels - Windows
         if: matrix.os == 'windows-latest'
         uses: messense/maturin-action@v1
         with:
-          args: -i python --release --no-sdist --strip
+          args: -i python --release --out dist --no-sdist --strip
 
       - name: Upload wheels
         uses: actions/upload-artifact@v2
@@ -109,11 +109,11 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: target/wheels/pyxirr*.whl
+          files: dist/pyxirr*.whl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: PyPi publish
         env:
           MATURIN_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: maturin publish --username __token__
+        run: maturin upload --username __token__ dist
