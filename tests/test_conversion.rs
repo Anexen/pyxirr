@@ -15,9 +15,10 @@ fn get_locals<'p>(py: Python<'p>, input: &str, extra_imports: Option<&[&str]>) -
         ("dates", data.0),
         ("amounts", data.1),
         ("iter", builtins.getattr("iter").unwrap()),
-        ("list", builtins.getattr("list").unwrap()),
         ("zip", builtins.getattr("zip").unwrap()),
         ("map", builtins.getattr("map").unwrap()),
+        ("list", builtins.getattr("list").unwrap()),
+        ("int", builtins.getattr("int").unwrap()),
     ];
 
     for &name in extra_imports.unwrap_or_default() {
@@ -146,6 +147,18 @@ fn test_extract_from_datetime_and_decimal() {
             .unwrap();
         let amounts = py.eval("map(decimal.Decimal, amounts)", Some(locals), None).unwrap();
         pyxirr::xirr(dates, Some(amounts), None)
+    });
+
+    assert_almost_eq!(result.unwrap(), xirr_expected_result(input));
+}
+
+#[rstest]
+fn test_extract_from_integer_amounts() {
+    let input = "tests/samples/unordered.csv";
+    let result = Python::with_gil(|py| {
+        let locals = get_locals(py, input, None);
+        let amounts = py.eval("map(int, amounts)", Some(locals), None).unwrap();
+        pyxirr::xirr(locals.get_item("dates").unwrap(), Some(amounts), None)
     });
 
     assert_almost_eq!(result.unwrap(), xirr_expected_result(input));
