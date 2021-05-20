@@ -1,4 +1,4 @@
-name: Publish
+name: CI
 
 on:
   push:
@@ -35,10 +35,10 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Test
         run: cargo test --no-default-features --release
-      # - name: Test no numpy installed works
-      #   run: |
-      #     pip uninstall numpy -y
-      #     cargo test --release --no-default-features --features no-numpy
+      - name: Test no numpy installed works
+        run: |
+          pip uninstall numpy -y
+          cargo test --release --no-default-features --features nonumpy
 
 
   build:
@@ -115,10 +115,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish to PyPi
+      - name: PyPi publish
         env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: |
-          pip install --upgrade twine
-          twine upload --skip-existing pyxirr*
+          MATURIN_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: find . -name 'pyxirr*' | xargs -l maturin upload --skip-existing --username __token__

@@ -78,6 +78,7 @@ fn test_extract_from_dict() {
 }
 
 #[rstest]
+#[cfg_attr(feature = "nonumpy", ignore)]
 fn test_extract_from_numpy_object_array() {
     let input = "tests/samples/unordered.csv";
     let result = Python::with_gil(|py| {
@@ -90,6 +91,7 @@ fn test_extract_from_numpy_object_array() {
 }
 
 #[rstest]
+#[cfg_attr(feature = "nonumpy", ignore)]
 fn test_extract_from_numpy_arrays() {
     let input = "tests/samples/unordered.csv";
     let result = Python::with_gil(|py| {
@@ -103,6 +105,7 @@ fn test_extract_from_numpy_arrays() {
 }
 
 #[rstest]
+#[cfg_attr(feature = "nonumpy", ignore)]
 fn test_extract_from_pandas_dataframe() {
     let input = "tests/samples/unordered.csv";
     let result = Python::with_gil(|py| {
@@ -114,6 +117,7 @@ fn test_extract_from_pandas_dataframe() {
 }
 
 #[rstest]
+#[cfg_attr(feature = "nonumpy", ignore)]
 fn test_extract_from_pandas_series() {
     let input = "tests/samples/unordered.csv";
     let result = Python::with_gil(|py| {
@@ -127,6 +131,7 @@ fn test_extract_from_pandas_series() {
 }
 
 #[rstest]
+#[cfg_attr(feature = "nonumpy", ignore)]
 fn test_extract_from_mixed_iterables() {
     let input = "tests/samples/unordered.csv";
     let result = Python::with_gil(|py| {

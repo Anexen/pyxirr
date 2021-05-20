@@ -44,3 +44,4 @@ rstest_reuse = "0.1"
 [features]
 default = ["pyo3/extension-module"]
 bench = ["criterion"]
+nonumpy = []
