@@ -115,7 +115,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: PyPi publish
+      - name: Publish to PyPi
         env:
-          MATURIN_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: maturin upload --username __token__
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          pip install --upgrade twine
+          twine upload --skip-existing pyxirr*
