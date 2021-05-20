@@ -35,5 +35,6 @@ jobs:
           name: Rust Benchmark
           tool: 'cargo'
           output-file-path: output.txt
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Use personal access token instead of GITHUB_TOKEN due to https://github.community/t5/GitHub-Actions/Github-action-not-triggering-gh-pages-upon-push/td-p/26869/highlight/false
+          github-token: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
           auto-push: true
