@@ -18,6 +18,7 @@ jobs:
           toolchain: nightly
           profile: minimal
           override: true
+      - run: pip install -r bench-requirements.txt
       - name: Run benchmark
         run: cargo +nightly bench comparison | tee output.txt
       - name: Store benchmark result
