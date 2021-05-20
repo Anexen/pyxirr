@@ -1,0 +1,7 @@
+[build-system]
+requires = ["maturin>=0.10,<0.11"]
+build-backend = "maturin"
+
+[tool.maturin]
+sdist-include = ["Cargo.lock"]
+strip = "on"
