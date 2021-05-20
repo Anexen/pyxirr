@@ -18,6 +18,14 @@ jobs:
           toolchain: nightly
           profile: minimal
           override: true
+      - uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            ~/.cache/pip
+            target
+          key: ubuntu-latest-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: pip install -r bench-requirements.txt
       - name: Run benchmark
         run: cargo +nightly bench comparison | tee output.txt
