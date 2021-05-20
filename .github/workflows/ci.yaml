@@ -3,6 +3,7 @@ name: Publish
 on:
   push:
     branches: [main]
+    pull_request:
     tags: ["v*"]
 
 jobs:
@@ -43,6 +44,7 @@ jobs:
   build:
     needs: test
     runs-on: ${{ matrix.os }}
+    if: startsWith(github.ref, 'refs/tags/')
     strategy:
       matrix:
         python-version: [3.6, 3.7, 3.8, 3.9]
@@ -72,25 +74,25 @@ jobs:
         uses: messense/maturin-action@v1
         with:
           manylinux: auto
-          args: -i python${{ matrix.python-version }} --release --out dist --strip
+          args: -i python${{ matrix.python-version }} --release --strip
 
       - name: Build Wheels - MacOS
         if: matrix.os == 'macos-latest'
         uses: messense/maturin-action@v1
         with:
-          args: -i python --release --universal2 --out dist --no-sdist --strip
+          args: -i python --release --universal2 --no-sdist --strip
 
       - name: Build Wheels - Windows
         if: matrix.os == 'windows-latest'
         uses: messense/maturin-action@v1
         with:
-          args: -i python --release --out dist --no-sdist --strip
+          args: -i python --release --no-sdist --strip
 
       - name: Upload wheels
         uses: actions/upload-artifact@v2
         with:
           name: wheels
-          path: dist
+          path: target/wheels
 
   publish:
     needs: build
@@ -109,11 +111,11 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          files: dist/pyxirr*.whl
+          files: pyxirr*.whl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: PyPi publish
         env:
           MATURIN_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: maturin upload --username __token__ dist
+        run: maturin upload --username __token__
