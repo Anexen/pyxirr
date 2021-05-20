@@ -6,9 +6,10 @@ edition = "2018"
 description = "Rust-powered collection of financial functions."
 readme = "README.md"
 homepage = "https://github.com/Anexen/pyxirr"
-keywords = ["python", "fast", "financial", "xirr", "xnpv", "irr", "npv"]
+keywords = ["fast", "financial", "xirr", "xnpv", "irr", "npv"]
 
 [package.metadata.maturin]
+requires-python = ">3.6,<3.10"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Topic :: Office/Business :: Financial",

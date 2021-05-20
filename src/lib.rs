@@ -48,12 +48,18 @@ pub fn npv(rate: f64, amounts: &PyAny) -> PyResult<Option<f64>> {
     Ok(finite_or_none(result))
 }
 
+#[pyfunction(pmt_at_begining = "false")]
+pub fn fv(rate: f64, nper: f64, pmt: f64, pv: f64, pmt_at_begining: Option<bool>) -> f64 {
+    core::fv(rate, nper, pmt, pv, pmt_at_begining.unwrap_or(false))
+}
+
 #[pymodule]
 fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(xirr))?;
     m.add_wrapped(wrap_pyfunction!(xnpv))?;
     m.add_wrapped(wrap_pyfunction!(irr))?;
     m.add_wrapped(wrap_pyfunction!(npv))?;
+    m.add_wrapped(wrap_pyfunction!(fv))?;
 
     m.add("InvalidPaymentsError", py.get_type::<InvalidPaymentsError>())?;
 

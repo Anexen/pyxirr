@@ -82,6 +82,8 @@ Let's define type annotations:
 FiniteOrNone = Optional[float]
 
 DateLike = Union[datetime.date, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+Rate = float  # rate as decimal, not percentage, normally between [-1, 1]
+Guess = Optional[Rate]
 Amount = Union[int, float, Decimal]
 Payment = Tuple[DateLike, Amount]
 
@@ -104,7 +106,7 @@ CashFlowDict = Dict[DateLike, Amount]
 def xirr(
     dates: Union[CashFlowTable, CashFlowDict, DateLikeArray],
     amounts: Optional[AmountArray] = None,
-    guess: Optional[float] = None,
+    guess: Guess = None,
 ) -> FiniteOrNone
 ```
 
@@ -113,7 +115,7 @@ def xirr(
 ```python
 # raises: InvalidPaymentsError
 def xnpv(
-    rate: float,
+    rate: Rate,
     dates: Union[CashFlowTable, CashFlowDict, DateLikeArray],
     amounts: Optional[AmountArray] = None,
 ) -> FiniteOrNone
@@ -121,16 +123,34 @@ def xnpv(
 
 ## IRR
 
+Compute the Internal Rate of Return (IRR)
+
 ```python
 # raises: InvalidPaymentsError
-def irr(amounts: AmountArray, guess: Optional[float] = None) -> FiniteOrNone
+def irr(amounts: AmountArray, guess: Guess = None) -> FiniteOrNone
 ```
 
 ## NPV
 
+Compute the Net Present Value.
+
 ```python
 # raises: InvalidPaymentsError
-def npv(rate: float, amounts: AmountArray) -> FiniteOrNone
+def npv(rate: Rate, amounts: AmountArray) -> FiniteOrNone
+```
+
+## FV
+
+Compute the future value.
+
+```python
+def fv(
+    rate: Rate, # Rate of interest per period
+    nper: int, # Number of compounding periods
+    pmt: Amount, # Payment
+    pv: Amount, # Present value
+    pmt_at_begining: bool = False  # When payments are due
+) -> FiniteOrNone
 ```
 
 # Roadmap
@@ -138,10 +158,10 @@ def npv(rate: float, amounts: AmountArray) -> FiniteOrNone
 - [x] NumPy support
 - [x] XIRR
 - [x] XNPV
-- [ ] FV
-- [ ] PV
 - [x] NPV
 - [x] IRR
+- [x] FV
+- [ ] PV
 - [ ] MIRR
 
 # Development
@@ -153,7 +173,7 @@ If you are using `pyenv`, make sure you have the shared library installed (check
 
 ```bash
 $ PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install <version>
-```
+````
 
 Install dev-requirements
 
