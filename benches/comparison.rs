@@ -79,14 +79,13 @@ macro_rules! bench_python {
 }
 
 bench_rust!(bench_rust_100, "tests/samples/random_100.csv");
+bench_rust!(bench_rust_500, "tests/samples/random_500.csv");
 bench_rust!(bench_rust_1000, "tests/samples/random_1000.csv");
-bench_rust!(bench_rust_10000, "tests/samples/random_10000.csv");
 
 bench_scipy!(bench_scipy_100, "tests/samples/random_100.csv");
+bench_scipy!(bench_scipy_500, "tests/samples/random_500.csv");
 bench_scipy!(bench_scipy_1000, "tests/samples/random_1000.csv");
-bench_scipy!(bench_scipy_10000, "tests/samples/random_10000.csv");
 
 bench_python!(bench_python_100, "tests/samples/random_100.csv");
+bench_python!(bench_python_500, "tests/samples/random_500.csv");
 bench_python!(bench_python_1000, "tests/samples/random_1000.csv");
-// toooooo slooooooow
-// bench_python!(bench_python_10000, "tests/samples/random_10000.csv");
