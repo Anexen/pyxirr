@@ -12,15 +12,11 @@ body {
   font-size: 1em;
   font-weight: 400;
 }
-header {
-  margin-bottom: 8px;
-  display: flex;
-  flex-direction: column;
-}
 main {
   width: 100%;
   display: flex;
   flex-direction: column;
+  align-items: center;
 }
 a {
   color: #3273dc;
@@ -47,7 +43,7 @@ button:hover {
 .small {
   font-size: 0.75rem;
 }
-footer {
+header {
   margin-top: 16px;
   display: flex;
   align-items: center;
@@ -77,4 +73,18 @@ footer {
 }
 .benchmark-chart {
   max-width: 1000px;
+}
+
+.benchmark-table {
+  line-height: 1.5;
+  color: #000 !important;
+  box-sizing: inherit;
+  font-size: 15px;
+  margin-top: 20px;
+  margin-bottom: 40px;
+  border-collapse: collapse;
+  width: 500px;
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
 }
