@@ -25,17 +25,10 @@ classifiers = [
 name = "pyxirr"
 crate-type = ["rlib", "cdylib"]
 
-[[bench]]
-name = "main"
-harness = false
-
 [dependencies]
 pyo3 = "0.13"
 numpy = "0.13"
 chrono = "0.4"
-
-# because dev-dependencies are not allowed to be optional
-criterion = {version = "0.3", features = ["html_reports"], optional = true }
 
 [dev-dependencies]
 rstest = "0.10"
@@ -43,5 +36,4 @@ rstest_reuse = "0.1"
 
 [features]
 default = ["pyo3/extension-module"]
-bench = ["criterion"]
 nonumpy = []

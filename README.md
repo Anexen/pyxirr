@@ -27,19 +27,13 @@ Rust implementation has been tested against existing [xirr](https://pypi.org/pro
 (uses [scipy.optimize](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.newton.html) under the hood)
 and the [implementation from the Stack Overflow](https://stackoverflow.com/a/11503492) (pure python).
 
-| Implementation | Sample size |  Execution time |
-| -------------- | :---------: | --------------: |
-| pyxirr (Rust)  |     100     |  **_45.89 us_** |
-| xirr (scipy)   |     100     |       790.76 us |
-| pure Python    |     100     |        14.37 ms |
-| pyxirr (Rust)  |    1000     | **_404.03 us_** |
-| xirr (scipy)   |    1000     |         3.47 ms |
-| pure Python    |    1000     |        35.97 ms |
-| pyxirr (Rust)  |    10000    |   **_3.58 ms_** |
-| xirr (scipy)   |    10000    |        28.04 ms |
-| pure Python    |    10000    |         24.23 s |
+![bench](static/bench.png)
 
 PyXIRR is ~10-20x faster than other solutions!
+
+Powered by [github-action-benchmark](https://github.com/rhysd/github-action-benchmark).
+
+Live benchmarks are hosted on [Github Pages](https://anexen.github.io/pyxirr/dev/bench).
 
 # Examples
 

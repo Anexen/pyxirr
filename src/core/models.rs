@@ -69,7 +69,7 @@ impl<'s> FromPyObject<'s> for DateLike {
             }
 
             other => Err(exceptions::PyTypeError::new_err(format!(
-                "Type {:?} is not understood",
+                "Type {:?} is not understood. Expected: date",
                 other
             ))),
         }

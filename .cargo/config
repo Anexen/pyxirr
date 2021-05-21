@@ -4,6 +4,12 @@ debug = false
 lto = true
 codegen-units = 1
 
+[profile.bench]
+opt-level = 3
+debug = false
+lto = true
+codegen-units = 1
+
 [target.x86_64-apple-darwin]
 rustflags = [
   "-C", "link-arg=-undefined",
