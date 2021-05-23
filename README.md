@@ -72,8 +72,9 @@ xirr(pd.DataFrame({"a": dates, "b": amounts}))
 Let's define type annotations:
 
 ```python
-# `None` if the calculation fails to converge or result is not finite (`inf` or `nan`)
-FiniteOrNone = Optional[float]
+# `None` if the calculation fails to converge or result is NAN.
+# could return `inf` or `-inf`
+FloatOrNone = Optional[float]
 
 DateLike = Union[datetime.date, datetime.datetime, numpy.datetime64, pandas.Timestamp]
 Rate = float  # rate as decimal, not percentage, normally between [-1, 1]
@@ -101,7 +102,7 @@ def xirr(
     dates: Union[CashFlowTable, CashFlowDict, DateLikeArray],
     amounts: Optional[AmountArray] = None,
     guess: Guess = None,
-) -> FiniteOrNone
+) -> FloatOrNone
 ```
 
 ## XNPV
@@ -112,7 +113,7 @@ def xnpv(
     rate: Rate,
     dates: Union[CashFlowTable, CashFlowDict, DateLikeArray],
     amounts: Optional[AmountArray] = None,
-) -> FiniteOrNone
+) -> FloatOrNone
 ```
 
 ## IRR
@@ -121,7 +122,7 @@ Compute the Internal Rate of Return (IRR)
 
 ```python
 # raises: InvalidPaymentsError
-def irr(amounts: AmountArray, guess: Guess = None) -> FiniteOrNone
+def irr(amounts: AmountArray, guess: Guess = None) -> FloatOrNone
 ```
 
 ## NPV
@@ -130,7 +131,7 @@ Compute the Net Present Value.
 
 ```python
 # raises: InvalidPaymentsError
-def npv(rate: Rate, amounts: AmountArray) -> FiniteOrNone
+def npv(rate: Rate, amounts: AmountArray) -> FloatOrNone
 ```
 
 ## FV
@@ -144,7 +145,33 @@ def fv(
     pmt: Amount, # Payment
     pv: Amount, # Present value
     pmt_at_begining: bool = False  # When payments are due
-) -> FiniteOrNone
+) -> FloatOrNone
+```
+
+## PV
+
+Compute the present value.
+
+```python
+def pv(
+    rate: Rate, # Rate of interest per period
+    nper: int, # Number of compounding periods
+    pmt: Amount, # Payment
+    fv: Amount = 0, # Future value
+    pmt_at_begining: bool = False  # When payments are due
+) -> FloatOrNone
+```
+
+## MIRR
+
+Modified internal rate of return.
+
+```python
+def pv(
+    values: AmountArray, # Cash flows. Must contain at least one positive and one negative value or nan is returned.
+    finance_rate: Rate, # Interest rate paid on the cash flows
+    reinvest_rate: Rate, # Interest rate received on the cash flows upon reinvestment
+) -> FloatOrNone
 ```
 
 # Roadmap
@@ -155,8 +182,10 @@ def fv(
 - [x] NPV
 - [x] IRR
 - [x] FV
-- [ ] PV
-- [ ] MIRR
+- [x] PV
+- [x] MIRR
+- [ ] Improve docs, add more tests
+- [ ] other functions from [numpy-financial](https://numpy.org/numpy-financial/latest/index.html)
 
 # Development
 
@@ -167,7 +196,7 @@ If you are using `pyenv`, make sure you have the shared library installed (check
 
 ```bash
 $ PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install <version>
-````
+```
 
 Install dev-requirements
 

@@ -1,5 +1,13 @@
+use std::iter::successors;
+
 const MAX_ERROR: f64 = 1e-10;
 const MAX_COMPUTE_WITH_GUESS_ITERATIONS: u32 = 50;
+
+// pre calculating powers for performance
+pub fn powers(base: f64, n: usize, start_from_zero: bool) -> Vec<f64> {
+    let (start, n) = if start_from_zero { (1.0, n + 1) } else { (base, n) };
+    successors(Some(start), |x| Some(x * base)).take(n).collect()
+}
 
 pub fn find_root_newton_raphson<Func, Deriv>(start: f64, f: Func, d: Deriv) -> f64
 where
@@ -22,7 +30,6 @@ where
     f64::NAN
 }
 
-#[allow(dead_code)]
 pub fn find_root_newton_raphson_with_default_deriv<Func>(start: f64, f: Func) -> f64
 where
     Func: Fn(f64) -> f64,

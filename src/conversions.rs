@@ -1,7 +1,7 @@
-use crate::core::{DateLike, Payment};
+use crate::core::DateLike;
 use numpy::PyArray1;
 use pyo3::prelude::*;
-use pyo3::types::PyDict;
+use pyo3::types::*;
 
 fn extract_iterable<'a, T>(values: &'a PyAny) -> PyResult<Vec<T>>
 where
@@ -36,6 +36,33 @@ fn extract_amount_series_from_numpy(series: &PyAny) -> PyResult<Vec<f64>> {
         .to_vec()?)
 }
 
+fn extract_records(data: &PyAny) -> PyResult<(Vec<DateLike>, Vec<f64>)> {
+    let capacity = if let Ok(capacity) = data.len() { capacity } else { 0 };
+
+    let mut _dates: Vec<DateLike> =
+        if capacity > 0 { Vec::with_capacity(capacity) } else { Vec::new() };
+    let mut _amounts: Vec<f64> =
+        if capacity > 0 { Vec::with_capacity(capacity) } else { Vec::new() };
+
+    for obj in data.iter()? {
+        let obj = obj?;
+        // get_item() uses different ffi calls for different objects
+        // PyTuple.get_item (ffi::PyTuple_GetItem) is faster than PyAny.get_item (ffi::PyObject_GetItem)
+        let tup = if let Ok(py_tuple) = obj.downcast::<PyTuple>() {
+            (py_tuple.get_item(0), py_tuple.get_item(1))
+        } else if let Ok(py_list) = obj.downcast::<PyList>() {
+            (py_list.get_item(0), py_list.get_item(1))
+        } else {
+            (obj.get_item(0)?, obj.get_item(1)?)
+        };
+
+        _dates.push(tup.0.extract::<DateLike>()?);
+        _amounts.push(tup.1.extract::<f64>()?);
+    }
+
+    return Ok((_dates, _amounts));
+}
+
 pub fn extract_amount_series(series: &PyAny) -> PyResult<Vec<f64>> {
     match series.get_type().name()? {
         "Series" => extract_amount_series_from_numpy(series.getattr("values")?),
@@ -52,10 +79,10 @@ pub fn extract_payments(
         return Ok((extract_date_series(dates)?, extract_amount_series(amounts.unwrap())?));
     };
 
-    if dates.is_instance::<PyDict>()? {
+    if let Ok(py_dict) = dates.downcast::<PyDict>() {
         return Ok((
-            extract_iterable::<DateLike>(dates.call_method0("keys")?)?,
-            extract_iterable::<f64>(dates.call_method0("values")?)?,
+            extract_iterable::<DateLike>(py_dict.keys())?,
+            extract_iterable::<f64>(py_dict.values())?,
         ));
     }
 
@@ -76,12 +103,7 @@ pub fn extract_payments(
             ));
         }
         _ => {
-            let data = extract_iterable::<Payment>(dates)?;
-            return Ok((
-                data.iter().map(|p| p.date).collect(),
-                data.iter().map(|p| p.amount).collect(),
-            ));
+            return extract_records(dates);
         }
     };
 }
-
