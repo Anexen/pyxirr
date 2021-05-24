@@ -1,18 +1,12 @@
 use super::models::{validate, InvalidPaymentsError};
-use super::optimize::find_root_newton_raphson_with_default_deriv;
-use std::iter::successors;
-
-// pre calculating powers for performance
-fn powers(base: f64, n: usize) -> Vec<f64> {
-    successors(Some(base), |x| Some(x * base)).take(n).collect()
-}
+use super::optimize::{find_root_newton_raphson_with_default_deriv, powers};
 
 fn npv_result(rate: f64, values: &[f64]) -> f64 {
     if rate == 0.0 {
         return values.iter().sum();
     }
 
-    powers(1. + rate, values.len()).iter().zip(values.iter()).map(|(p, v)| v / p).sum()
+    powers(1. + rate, values.len(), false).iter().zip(values.iter()).map(|(p, v)| v / p).sum()
 }
 
 pub fn npv(rate: f64, values: &[f64]) -> Result<f64, InvalidPaymentsError> {

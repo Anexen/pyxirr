@@ -4,7 +4,7 @@ use pyo3::prelude::*;
 use std::error::Error;
 use std::fmt;
 
-use pyo3::types::{PyAny, PyDate, PyDateAccess, PyList, PyTuple};
+use pyo3::types::{PyAny, PyDate, PyDateAccess};
 use std::fmt::{Display, Formatter};
 
 const SECONDS_IN_DAY: i64 = 24 * 60 * 60;
@@ -53,8 +53,8 @@ impl std::str::FromStr for DateLike {
 
 impl<'s> FromPyObject<'s> for DateLike {
     fn extract(obj: &'s PyAny) -> PyResult<Self> {
-        if obj.is_instance::<PyDate>()? {
-            return Ok(obj.downcast::<PyDate>()?.into());
+        if let Ok(py_date) = obj.downcast::<PyDate>() {
+            return Ok(py_date.into());
         }
 
         match obj.get_type().name()? {
@@ -73,38 +73,6 @@ impl<'s> FromPyObject<'s> for DateLike {
                 other
             ))),
         }
-    }
-}
-
-/// A payment made or received on a particular date.
-/// `amount` must be negative for payment made and positive for payment received.
-#[derive(Clone, PartialEq)]
-pub struct Payment {
-    pub date: DateLike,
-    pub amount: f64,
-}
-
-// because automatic derive FromPyObject is a bit slower + some manual tweaks
-impl<'p> FromPyObject<'p> for Payment {
-    fn extract(obj: &'p PyAny) -> PyResult<Self> {
-        // get_item() uses different ffi calls for different objects
-        // PyTuple.get_item (ffi::PyTuple_GetItem) is faster than PyAny.get_item (ffi::PyObject_GetItem)
-        let tup = obj
-            .downcast::<PyTuple>()
-            .and_then(|tup| Ok((tup.get_item(0), tup.get_item(1))))
-            .or_else(|_| -> PyResult<_> {
-                // fallback to ffi::PyList_GetItem
-                obj.downcast::<PyList>()
-                    .and_then(|list| Ok((list.get_item(0), list.get_item(1))))
-                    .or_else(|_| {
-                        // fallback to ffi::PyObject_GetItem
-                        Ok((obj.get_item(0)?, obj.get_item(1)?))
-                    })
-            })?;
-
-        let date = tup.0.downcast::<PyDate>()?.into();
-        let amount = tup.1.extract::<f64>()?;
-        Ok(Self { date, amount })
     }
 }
 
