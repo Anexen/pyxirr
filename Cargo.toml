@@ -9,7 +9,7 @@ homepage = "https://github.com/Anexen/pyxirr"
 keywords = ["fast", "financial", "xirr", "irr", "mirr", "xnpv", "npv", "pv", "fv"]
 
 [package.metadata.maturin]
-description_content_type = "text/markdown; charset=UTF-8; variant=GFM"
+description-content-type = "text/markdown; charset=UTF-8; variant=GFM"
 requires-python = ">3.6,<3.10"
 classifiers = [
     "Development Status :: 4 - Beta",
