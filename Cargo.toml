@@ -1,14 +1,15 @@
 [package]
 name = "pyxirr"
-version = "0.5.0"
+version = "0.5.1"
 authors = ["Anexen"]
 edition = "2018"
-description = "Rust-powered collection of financial functions."
+description = "Rust-powered collection of financial functions for Python."
 readme = "README.md"
 homepage = "https://github.com/Anexen/pyxirr"
-keywords = ["fast", "financial", "xirr", "xnpv", "irr", "npv"]
+keywords = ["fast", "financial", "xirr", "irr", "mirr", "xnpv", "npv", "pv", "fv"]
 
 [package.metadata.maturin]
+description_content_type = "text/markdown; charset=UTF-8; variant=GFM"
 requires-python = ">3.6,<3.10"
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -16,9 +17,9 @@ classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: 3.6",
-	"Programming Language :: Python :: 3.7",
-	"Programming Language :: Python :: 3.8",
-	"Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
 ]
 
 [lib]

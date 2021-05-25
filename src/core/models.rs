@@ -1,13 +1,6 @@
 use chrono::prelude::*;
-use pyo3::exceptions;
-use pyo3::prelude::*;
 use std::error::Error;
 use std::fmt;
-
-use pyo3::types::{PyAny, PyDate, PyDateAccess};
-use std::fmt::{Display, Formatter};
-
-const SECONDS_IN_DAY: i64 = 24 * 60 * 60;
 
 #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Copy)]
 pub struct DateLike(i32);
@@ -15,17 +8,6 @@ pub struct DateLike(i32);
 impl From<i32> for DateLike {
     fn from(value: i32) -> Self {
         Self(value)
-    }
-}
-
-impl From<&PyDate> for DateLike {
-    fn from(value: &PyDate) -> Self {
-        let date = NaiveDate::from_ymd(
-            value.get_year(),
-            value.get_month() as u32,
-            value.get_day() as u32,
-        );
-        date.into()
     }
 }
 
@@ -51,37 +33,12 @@ impl std::str::FromStr for DateLike {
     }
 }
 
-impl<'s> FromPyObject<'s> for DateLike {
-    fn extract(obj: &'s PyAny) -> PyResult<Self> {
-        if let Ok(py_date) = obj.downcast::<PyDate>() {
-            return Ok(py_date.into());
-        }
-
-        match obj.get_type().name()? {
-            "datetime64" => {
-                Ok(obj.call_method1("astype", ("datetime64[D]",))?.extract::<i32>()?.into())
-            }
-            "Timestamp" => {
-                let timestamp: i64 =
-                    obj.call_method0("to_pydatetime")?.call_method0("timestamp")?.extract()?;
-
-                Ok(((timestamp / SECONDS_IN_DAY) as i32).into())
-            }
-
-            other => Err(exceptions::PyTypeError::new_err(format!(
-                "Type {:?} is not understood. Expected: date",
-                other
-            ))),
-        }
-    }
-}
-
 /// An error returned when the payments do not contain both negative and positive payments.
 #[derive(Debug)]
 pub struct InvalidPaymentsError(String);
 
-impl Display for InvalidPaymentsError {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+impl fmt::Display for InvalidPaymentsError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.fmt(f)
     }
 }

@@ -5,7 +5,7 @@
 
 # PyXIRR
 
-Rust-powered collection of financial functions.
+Rust-powered collection of financial functions for Python.
 
 Features:
 
@@ -27,11 +27,11 @@ Rust implementation has been tested against existing [xirr](https://pypi.org/pro
 (uses [scipy.optimize](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.newton.html) under the hood)
 and the [implementation from the Stack Overflow](https://stackoverflow.com/a/11503492) (pure python).
 
-![bench](static/bench.png)
+![bench](https://raw.githubusercontent.com/Anexen/pyxirr/main/static/bench.png)
 
-PyXIRR is ~10-20x faster than other solutions!
+PyXIRR is ~10-20x faster in XIRR calculation. More than 10x faster than numpy-financial.
 
-Powered by [github-action-benchmark](https://github.com/rhysd/github-action-benchmark).
+Powered by [github-action-benchmark](https://github.com/rhysd/github-action-benchmark) and [plotly.js](https://github.com/plotly/plotly.js).
 
 Live benchmarks are hosted on [Github Pages](https://anexen.github.io/pyxirr/dev/bench).
 
@@ -167,7 +167,7 @@ def pv(
 Modified internal rate of return.
 
 ```python
-def pv(
+def mirr(
     values: AmountArray, # Cash flows. Must contain at least one positive and one negative value or nan is returned.
     finance_rate: Rate, # Interest rate paid on the cash flows
     reinvest_rate: Rate, # Interest rate received on the cash flows upon reinvestment
