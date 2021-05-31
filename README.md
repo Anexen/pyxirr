@@ -27,13 +27,13 @@ Rust implementation has been tested against existing [xirr](https://pypi.org/pro
 (uses [scipy.optimize](https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.newton.html) under the hood)
 and the [implementation from the Stack Overflow](https://stackoverflow.com/a/11503492) (pure python).
 
-![bench](https://raw.githubusercontent.com/Anexen/pyxirr/main/static/bench.png)
+![bench](https://raw.githubusercontent.com/Anexen/pyxirr/main/docs/static/bench.png)
 
 PyXIRR is ~10-20x faster in XIRR calculation. More than 10x faster than numpy-financial.
 
 Powered by [github-action-benchmark](https://github.com/rhysd/github-action-benchmark) and [plotly.js](https://github.com/plotly/plotly.js).
 
-Live benchmarks are hosted on [Github Pages](https://anexen.github.io/pyxirr/dev/bench).
+Live benchmarks are hosted on [Github Pages](https://anexen.github.io/pyxirr/bench).
 
 # Examples
 
@@ -69,110 +69,7 @@ xirr(pd.DataFrame({"a": dates, "b": amounts}))
 
 # API reference
 
-Let's define type annotations:
-
-```python
-# `None` if the calculation fails to converge or result is NAN.
-# could return `inf` or `-inf`
-FloatOrNone = Optional[float]
-
-DateLike = Union[datetime.date, datetime.datetime, numpy.datetime64, pandas.Timestamp]
-Rate = float  # rate as decimal, not percentage, normally between [-1, 1]
-Guess = Optional[Rate]
-Amount = Union[int, float, Decimal]
-Payment = Tuple[DateLike, Amount]
-
-DateLikeArray = Iterable[DateLike]
-AmountArray = Iterable[Amount]
-CashFlowTable = Iterable[Payment]
-CashFlowDict = Dict[DateLike, Amount]
-```
-
-## Exceptions
-
-- `InvalidPaymentsError`. Occurs if either:
-  - the amounts and dates arrays (`AmountArray`, `DateLikeArray`) are of different lengths
-  - the given arrays do not contain at least one negative and at least one positive value
-
-## XIRR
-
-```python
-# raises: InvalidPaymentsError
-def xirr(
-    dates: Union[CashFlowTable, CashFlowDict, DateLikeArray],
-    amounts: Optional[AmountArray] = None,
-    guess: Guess = None,
-) -> FloatOrNone
-```
-
-## XNPV
-
-```python
-# raises: InvalidPaymentsError
-def xnpv(
-    rate: Rate,
-    dates: Union[CashFlowTable, CashFlowDict, DateLikeArray],
-    amounts: Optional[AmountArray] = None,
-) -> FloatOrNone
-```
-
-## IRR
-
-Compute the Internal Rate of Return (IRR)
-
-```python
-# raises: InvalidPaymentsError
-def irr(amounts: AmountArray, guess: Guess = None) -> FloatOrNone
-```
-
-## NPV
-
-Compute the Net Present Value.
-
-```python
-# raises: InvalidPaymentsError
-def npv(rate: Rate, amounts: AmountArray) -> FloatOrNone
-```
-
-## FV
-
-Compute the future value.
-
-```python
-def fv(
-    rate: Rate, # Rate of interest per period
-    nper: int, # Number of compounding periods
-    pmt: Amount, # Payment
-    pv: Amount, # Present value
-    pmt_at_begining: bool = False  # When payments are due
-) -> FloatOrNone
-```
-
-## PV
-
-Compute the present value.
-
-```python
-def pv(
-    rate: Rate, # Rate of interest per period
-    nper: int, # Number of compounding periods
-    pmt: Amount, # Payment
-    fv: Amount = 0, # Future value
-    pmt_at_begining: bool = False  # When payments are due
-) -> FloatOrNone
-```
-
-## MIRR
-
-Modified internal rate of return.
-
-```python
-def mirr(
-    values: AmountArray, # Cash flows. Must contain at least one positive and one negative value or nan is returned.
-    finance_rate: Rate, # Interest rate paid on the cash flows
-    reinvest_rate: Rate, # Interest rate received on the cash flows upon reinvestment
-) -> FloatOrNone
-```
+See the [docs](https://anexen.github.io/pyxirr)
 
 # Roadmap
 
