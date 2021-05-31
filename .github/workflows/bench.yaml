@@ -36,6 +36,7 @@ jobs:
         with:
           name: Rust Benchmark
           tool: 'cargo'
+          skip-fetch-gh-pages: true
           gh-pages-branch: main
           benchmark-data-dir-path: docs/bench
           output-file-path: output.txt
