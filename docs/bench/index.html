@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <title>Benchmarks</title>
+  </head>
+  <body>
+    <header>
+      <button id="download-button">Download data as JSON</button>
+      <div class="spacer"></div>
+      <div class="small">
+        Powered by
+        <a
+          rel="noopener"
+          href="https://github.com/marketplace/actions/continuous-benchmark"
+          >github-action-benchmark</a
+        >
+        <a rel="noopener" href="https://github.com/plotly/plotly.js"
+          >plotly.js</a
+        >
+      </div>
+    </header>
+    <main id="main">
+      <div class="benchmark-graphs">
+        <div id="comparison" class="benchmark-chart"></div>
+      </div>
+      <div class="benchmark-chart">
+        <table id="comparison-table" class="benchmark-table"></table>
+      </div>
+      <div class="benchmark-graphs">
+        <div id="performance" class="benchmark-chart"></div>
+      </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
+    <script
+      src="https://cdn.plot.ly/plotly-latest.min.js"
+      charset="utf-8"
+    ></script>
+    <script src="data.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>
