@@ -1,3 +1,5 @@
+{% include head.html %}
+
 # Functions
 
 ## Type annotations
