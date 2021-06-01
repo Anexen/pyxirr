@@ -1,3 +1,8 @@
+---
+layout: math
+---
+
+
 # Functions
 
 ## Type annotations
@@ -38,6 +43,18 @@ fv(
     pmt_at_begining: bool = False  # When payments are due
 ) -> FloatOrNone
 ```
+
+The future value is computed by solving the equation:
+
+<img
+    style="background:white"
+    alt="fv+pv*(1+rate)^{nper}+pmt*\frac{(1+rate*when)}{rate}*((1+rate)^{nper}-1)=0"
+    src="https://render.githubusercontent.com/render/math?math=fv%2Bpv*(1%2Brate)^{nper}%2Bpmt*\frac{(1%2Brate*when)}{rate}*((1%2Brate)^{nper}-1)=0"
+    />
+
+$$
+when=\begin{cases}0,&\text{pmt_at_begining is True}\\1,&\text{pmt_at_begining is False}\end{cases}
+$$
 
 ## PV
 
