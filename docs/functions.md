@@ -45,7 +45,22 @@ The future value is computed by solving the equation:
 
 $$fv+pv*(1+rate)^{nper}+pmt*\frac{(1+rate*when)}{rate}*((1+rate)^{nper}-1)=0$$
 
-$$when=\begin{cases}0,&\text{pmt_at_begining is True}\\1,&\text{pmt_at_begining is False}\end{cases}$$
+$$when=\begin{cases}0,&\text{pmt_at_begining is False}\\1,&\text{pmt_at_begining is True}\end{cases}$$
+
+in case of `rate` == 0:
+
+$$fv + pv + pmt * nper = 0$$
+
+#### Examples
+
+What is the future value after 10 years of saving $100 now, with an additional monthly savings of $100. Assume the annual interest rate is 5% compounded monthly?
+> By convention, the negative sign represents cash flow out (i.e. money not available today).
+
+```python
+>>> from pyxirr import fv
+>>> fv(0.05/12, 10*12, -100, -100)
+15692.92889433575
+```
 
 ## PV
 
