@@ -98,7 +98,7 @@ fn extract_records(data: &PyAny) -> PyResult<(Vec<DateLike>, Vec<f64>)> {
         _amounts.push(tup.1.extract::<f64>()?);
     }
 
-    return Ok((_dates, _amounts));
+    Ok((_dates, _amounts))
 }
 
 pub fn extract_amount_series(series: &PyAny) -> PyResult<Vec<f64>> {
@@ -128,20 +128,18 @@ pub fn extract_payments(
         "DataFrame" => {
             let frame = dates;
             let columns = frame.getattr("columns")?;
-            return Ok((
+            Ok((
                 extract_date_series(frame.get_item(columns.get_item(0)?)?)?,
                 extract_amount_series(frame.get_item(columns.get_item(1)?)?)?,
-            ));
+            ))
         }
         "ndarray" => {
             let array = dates;
-            return Ok((
+            Ok((
                 extract_date_series(array.get_item(0)?)?,
                 extract_amount_series(array.get_item(1)?)?,
-            ));
+            ))
         }
-        _ => {
-            return extract_records(dates);
-        }
-    };
+        _ => extract_records(dates),
+    }
 }

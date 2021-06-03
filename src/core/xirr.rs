@@ -38,15 +38,15 @@ fn initial_guess(_dates: &[DateLike], _amounts: &[f64]) -> f64 {
 
 fn precalculate_deltas(dates: &[DateLike]) -> Vec<f64> {
     let min_date = dates.iter().min().unwrap();
-    return dates.iter().map(|d| (*d - *min_date) as f64 / 365.0).collect();
+    dates.iter().map(|d| (*d - *min_date) as f64 / 365.0).collect()
 }
 
 fn find_rate(amounts: &[f64], deltas: &[f64], guess: f64) -> f64 {
-    return find_root_newton_raphson(
+    find_root_newton_raphson(
         guess,
         |rate| xirr_result(amounts, deltas, rate),
         |rate| xirr_result_deriv(amounts, deltas, rate),
-    );
+    )
 }
 
 // \sum_{i=1}^n \frac{P_i}{(1 + rate)^{(d_i - d_0)/365}}

@@ -1,5 +1,5 @@
-use super::optimize::powers;
 use super::models::validate;
+use super::optimize::powers;
 
 pub fn mirr(values: &[f64], finance_rate: f64, reinvest_rate: f64) -> f64 {
     // must contain at least one positive and one negative value or nan is returned
