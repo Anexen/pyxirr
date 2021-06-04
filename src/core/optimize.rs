@@ -1,7 +1,7 @@
 use std::iter::successors;
 
 const MAX_ERROR: f64 = 1e-10;
-const MAX_COMPUTE_WITH_GUESS_ITERATIONS: u32 = 50;
+const MAX_ITERATIONS: u32 = 50;
 
 // pre calculating powers for performance
 pub fn powers(base: f64, n: usize, start_from_zero: bool) -> Vec<f64> {
@@ -18,13 +18,20 @@ where
 
     let mut x = start;
 
-    for _ in 0..MAX_COMPUTE_WITH_GUESS_ITERATIONS {
-        let delta = f(x) / d(x);
-        x -= delta;
+    for _ in 0..MAX_ITERATIONS {
+        let res = f(x);
+
+        if res.abs() < MAX_ERROR {
+            return x;
+        }
+
+        let delta = res / d(x);
 
         if delta.abs() < MAX_ERROR {
             return x - delta;
         }
+
+        x -= delta;
     }
 
     f64::NAN

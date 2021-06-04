@@ -9,12 +9,18 @@ pub fn xirr(
     validate(amounts, Some(dates))?;
 
     let deltas = precalculate_deltas(&dates);
-    let mut guess = guess.unwrap_or_else(|| initial_guess(&dates, &amounts));
-    let mut rate = find_rate(&amounts, &deltas, guess);
 
-    guess = -0.99;
+    let guess = guess.unwrap_or(0.1);
+    let rate = find_rate(&amounts, &deltas, guess);
 
-    while guess < 1.0 && (rate.is_nan() || rate.is_infinite()) {
+    if rate.is_finite() {
+        return Ok(rate);
+    }
+
+    let mut rate = f64::NAN;
+    let mut guess = -0.99;
+
+    while guess < 1.0 && !rate.is_finite() {
         rate = find_rate(&amounts, &deltas, guess);
         guess += 0.01;
     }
@@ -31,10 +37,9 @@ pub fn xnpv(rate: f64, dates: &[DateLike], amounts: &[f64]) -> Result<f64, Inval
     Ok(xirr_result(amounts, &deltas, rate))
 }
 
-fn initial_guess(_dates: &[DateLike], _amounts: &[f64]) -> f64 {
-    // TODO smart initial_guess calculation
-    0.1
-}
+// fn smart_guess(amounts: &[f64]) -> f64 {
+//     amounts.iter().sum::<f64>() / -amounts.iter().filter(|&x| x < &0.0).sum::<f64>()
+// }
 
 fn precalculate_deltas(dates: &[DateLike]) -> Vec<f64> {
     let min_date = dates.iter().min().unwrap();
