@@ -103,7 +103,7 @@ Assume the interest rate is 5% (annually) compounded monthly.
 Compute the Net Present Value.
 
 ```python
-npv(rate: Rate, amounts: AmountArray) -> FloatOrNone
+npv(rate: Rate, amounts: AmountArray, start_from_zero=True) -> FloatOrNone
 ```
 
 NPV is calculated using the following formula:
@@ -124,6 +124,9 @@ $$\sum_{i=0}^{N-1} \frac{values_i}{(1 + rate)^i}$$
 >>> from pyxirr import npv
 >>> npv(0.08, [-40_000, 5_000, 8_000, 12_000, 30_000])
 3065.2226681795255
+>>> # Excel compatibility:
+>>> npv(0.08, [-40_000, 5_000, 8_000, 12_000, 30_000], start_from_zero=False)
+2838.1691372032656
 ```
 
 It may be preferable to split the projected cashflow into an initial investment and expected future cashflows. In this case, the value of the initial cashflow is zero and the initial investment is later added to the future cashflows net present value.
