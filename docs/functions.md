@@ -31,7 +31,7 @@ CashFlowDict = Dict[DateLike, Amount]
 
 ## FV
 
-Computes the future value.
+Compute the future value.
 
 ```python
 fv(
@@ -77,7 +77,7 @@ xfv(
 ) -> FloatOrNone
 ```
 
-Computes the Future Value of uneven payments at (ir)regular periods.
+Compute the Future Value of uneven payments at (ir)regular periods.
 
 The idea is to find the `pv` parameter using the `NPV` function (for regular
 periods) or `XNPV` (for irregular case) function,then calculate `FV` as usual:
@@ -95,6 +95,38 @@ assert future_value == pyxirr.xfv(interest_rate, periods, payments)
 ```
 
 See this [video](https://www.youtube.com/watch?v=775ljhriB8U) for details.
+
+## PMT
+
+Compute the payment against loan principal plus interest.
+
+```python
+pmt(
+    rate: Rate, # Rate of interest per period
+    nper: int, # Number of compounding periods
+    pv: Amount, # Present value
+    fv: Amount = 0, # Future value
+    pmt_at_begining: bool = False  # When payments are due
+) -> FloatOrNone
+```
+
+See also: [FV](functions.md#fv), [PV](functions.md#pv), [NPER](functions.md#nper)
+
+## NPER
+
+Compute the payment against loan principal plus interest.
+
+```python
+nper(
+    rate: Rate, # Rate of interest per period
+    pmt: Amount, # Payment
+    pv: Amount, # Present value
+    fv: Amount = 0, # Future value
+    pmt_at_begining: bool = False  # When payments are due
+) -> FloatOrNone
+```
+
+See also: [FV](functions.md#fv), [PV](functions.md#pv), [PMT](functions.md#pmt)
 
 ## PV
 
@@ -251,7 +283,7 @@ InvalidPaymentsError: negative and positive payments are required
 
 ## IRR
 
-Computes the Internal Rate of Return.
+Compute the Internal Rate of Return.
 
 ```python
 # raises: InvalidPaymentsError

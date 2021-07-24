@@ -30,7 +30,7 @@ jobs:
           key: ubuntu-latest-cargo-${{ hashFiles('**/Cargo.lock') }}
       - run: pip install -r bench-requirements.txt
       - name: Run benchmark
-        run: cargo +nightly bench --no-default-features --bench comparison | tee output.txt
+        run: cargo +nightly bench --no-default-features --features tests --bench comparison | tee output.txt
       - name: Store benchmark result
         uses: rhysd/github-action-benchmark@v1
         with:
