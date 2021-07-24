@@ -7,11 +7,8 @@ const SECONDS_IN_DAY: i64 = 24 * 60 * 60;
 
 impl From<&PyDate> for DateLike {
     fn from(value: &PyDate) -> Self {
-        let date = NaiveDate::from_ymd(
-            value.get_year(),
-            value.get_month() as u32,
-            value.get_day() as u32,
-        );
+        let date =
+            NaiveDate::from_ymd(value.get_year(), value.get_month() as u32, value.get_day() as u32);
         date.into()
     }
 }
@@ -58,7 +55,7 @@ fn extract_date_series_from_numpy(series: &PyAny) -> PyResult<Vec<DateLike>> {
         .collect())
 }
 
-fn extract_date_series(series: &PyAny) -> PyResult<Vec<DateLike>> {
+pub fn extract_date_series(series: &PyAny) -> PyResult<Vec<DateLike>> {
     match series.get_type().name()? {
         "Series" => extract_date_series_from_numpy(series.getattr("values")?),
         "ndarray" => extract_date_series_from_numpy(series),

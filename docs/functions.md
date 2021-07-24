@@ -31,7 +31,7 @@ CashFlowDict = Dict[DateLike, Amount]
 
 ## FV
 
-Compute the future value.
+Computes the future value.
 
 ```python
 fv(
@@ -62,6 +62,39 @@ What is the future value after 10 years of saving $100 now, with an additional m
 >>> fv(0.05/12, 10*12, -100, -100)
 15692.92889433575
 ```
+
+## XFV
+
+Extended Future Value
+
+```python
+# raises: InvalidPaymentsError
+xfv(
+    rate: Rate, # Rate of interest per period
+    nper: int, # Number of compounding periods
+    amounts: Union[AmountArray, CashFlowTable, CashFlowDict],
+    dates: Optional[DateLikeArray] = None,
+) -> FloatOrNone
+```
+
+Computes the Future Value of uneven payments at (ir)regular periods.
+
+The idea is to find the `pv` parameter using the `NPV` function (for regular
+periods) or `XNPV` (for irregular case) function,then calculate `FV` as usual:
+
+```python
+import pyxirr
+
+interest_rate = 0.03
+payments = [1050, 1350, 1350, 1450]
+periods = 6
+present_value = pyxirr.npv(interest_rate, payments, start_from_zero=False)
+future_value = pyxirr.fv(interest_rate, periods, 0, -present_value)
+
+assert future_value == pyxirr.xfv(interest_rate, periods, payments)
+```
+
+See this [video](https://www.youtube.com/watch?v=775ljhriB8U) for details.
 
 ## PV
 
@@ -174,6 +207,7 @@ where:
 ```
 
 The function accepts payments in many formats:
+
 - iterable of `tuples` (date, payment)
 - `dict` with dates as keys and payments as values
 - numpy arrays
@@ -217,7 +251,7 @@ InvalidPaymentsError: negative and positive payments are required
 
 ## IRR
 
-Compute the Internal Rate of Return.
+Computes the Internal Rate of Return.
 
 ```python
 # raises: InvalidPaymentsError
@@ -269,6 +303,7 @@ The formula for MIRR is
 $$MIRR = \left(\frac{-NPV(rrate, values * positive) \times (1 + rrate)^N}{NPV(frate, values * negative) \times (1 + frate)}\right) ^{\frac{1}{N-1}} - 1$$
 
 Where
+
 - `positive` is a unit step function `H(x)`
 - `negative` is `1 - H(x)`
 
@@ -277,12 +312,13 @@ Unit step function:
 $$H(x):=\begin{cases}1,&{x \gt 0}\\0,&{x \leqslant 0}\end{cases}$$
 
 So the result of:
- - `x * positive` => `x * H(x)`
-     - 100 * H(100) = 100 * 1 = 100
-     - -100 * H(-100) = -100 * 0 = 100
- - `x * negative` => `x * (1 - H(x))`
-     - 100 * (1 - H(100)) = 100 * (1 - 1) = 0
-     - -100 * (1 - H(-100)) = -100 * (1 - 0) = -100
+
+- `x * positive` => `x * H(x)`
+  - 100 _ H(100) = 100 _ 1 = 100
+  - -100 _ H(-100) = -100 _ 0 = 100
+- `x * negative` => `x * (1 - H(x))`
+  - 100 _ (1 - H(100)) = 100 _ (1 - 1) = 0
+  - -100 _ (1 - H(-100)) = -100 _ (1 - 0) = -100
 
 ## XIRR
 
@@ -348,4 +384,3 @@ InvalidPaymentsError: the amounts and dates arrays are of different lengths
 >>> xirr(dates, [abs(x) for x in values])
 InvalidPaymentsError: negative and positive payments are required
 ```
-

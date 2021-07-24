@@ -73,16 +73,9 @@ See the [docs](https://anexen.github.io/pyxirr)
 
 # Roadmap
 
-- [x] NumPy support
-- [x] XIRR
-- [x] XNPV
-- [x] NPV
-- [x] IRR
-- [x] FV
-- [x] PV
-- [x] MIRR
 - [ ] Improve docs, add more tests
-- [ ] other functions from [numpy-financial](https://numpy.org/numpy-financial/latest/index.html)
+- [ ] Other functions from [numpy-financial](https://numpy.org/numpy-financial/latest/index.html)
+- [ ] Compile library for rust/javascript/python
 
 # Development
 
@@ -110,7 +103,7 @@ $ maturin develop
 ### Testing
 
 ```bash
-$ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/3.8.6/lib cargo test --no-default-features
+$ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/3.8.6/lib cargo test --no-default-features --features tests
 ```
 
 # Building and distribution

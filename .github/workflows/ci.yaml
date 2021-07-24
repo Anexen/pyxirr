@@ -1,9 +1,9 @@
 name: CI
 
 on:
+  pull_request:
   push:
     branches: [main]
-    pull_request:
     tags: ["v*"]
 
 jobs:
@@ -34,11 +34,11 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Test
-        run: cargo test --no-default-features --release
+        run: cargo test --no-default-features --features tests --release
       - name: Test no numpy installed works
         run: |
           pip uninstall numpy -y
-          cargo test --release --no-default-features --features nonumpy
+          cargo test --release --no-default-features --features tests,nonumpy
 
 
   build:

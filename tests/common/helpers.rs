@@ -4,6 +4,10 @@ use pyo3::types::*;
 
 #[macro_export]
 macro_rules! assert_almost_eq {
+    ($a:expr, $b:expr, $eps:expr) => {{
+        let (a, b, eps) = (&$a, &$b, $eps);
+        assert!((*a - *b).abs() < eps, "assertion failed: `({} !~= {})`", *a, *b);
+    }};
     ($a:expr, $b:expr) => {{
         let (a, b) = (&$a, &$b);
         let eps: f64 = 1e-9;
