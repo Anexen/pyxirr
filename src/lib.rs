@@ -84,6 +84,20 @@ pub fn mirr(values: &PyAny, finance_rate: f64, reinvest_rate: f64) -> PyResult<O
     Ok(float_or_none(result))
 }
 
+/// Compute the payment against loan principal plus interest.
+#[pyfunction(fv = "0.0", pmt_at_begining = "false")]
+#[text_signature = "(rate, nper, pv, fv=0, pmt_at_begining=False)"]
+pub fn pmt(rate: f64, nper: f64, pv: f64, fv: Option<f64>, pmt_at_begining: Option<bool>) -> f64 {
+    core::pmt(rate, nper, pv, fv, pmt_at_begining)
+}
+
+/// Compute the number of periodic payments.
+#[pyfunction(fv = "0.0", pmt_at_begining = "false")]
+#[text_signature = "(rate, pmt, pv, fv=0, pmt_at_begining=False)"]
+pub fn nper(rate: f64, pmt: f64, pv: f64, fv: Option<f64>, pmt_at_begining: Option<bool>) -> f64 {
+    core::nper(rate, pmt, pv, fv, pmt_at_begining)
+}
+
 #[pymodule]
 fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(xirr))?;
@@ -92,6 +106,8 @@ fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(npv))?;
     m.add_wrapped(wrap_pyfunction!(fv))?;
     m.add_wrapped(wrap_pyfunction!(pv))?;
+    m.add_wrapped(wrap_pyfunction!(pmt))?;
+    m.add_wrapped(wrap_pyfunction!(nper))?;
     m.add_wrapped(wrap_pyfunction!(mirr))?;
 
     m.add("InvalidPaymentsError", py.get_type::<InvalidPaymentsError>())?;
