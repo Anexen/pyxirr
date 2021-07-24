@@ -10,6 +10,8 @@ Rust-powered collection of financial functions.
     * [Exceptions](functions.md#exceptions)
     * [FV](functions.md#fv)
     * [XFV](functions.md#xfv)
+    * [PMT](functions.md#pmt)
+    * [NPER](functions.md#nper)
     * [PV](functions.md#pv)
     * [NPV](functions.md#npv)
     * [XNPV](functions.md#xnpv)
