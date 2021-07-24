@@ -6,11 +6,11 @@ edition = "2018"
 description = "Rust-powered collection of financial functions for Python."
 readme = "README.md"
 homepage = "https://github.com/Anexen/pyxirr"
-keywords = ["fast", "financial", "xirr", "irr", "mirr", "xnpv", "npv", "pv", "fv"]
+keywords = ["python", "fast", "financial", "xirr", "cashflow"]
 
 [package.metadata.maturin]
 description-content-type = "text/markdown; charset=UTF-8; variant=GFM"
-requires-python = ">3.6,<3.10"
+requires-python = ">=3.6,<3.10"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Topic :: Office/Business :: Financial",
@@ -27,8 +27,8 @@ name = "pyxirr"
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-pyo3 = "0.13"
-numpy = "0.13"
+pyo3 = "0.14"
+numpy = "0.14"
 chrono = "0.4"
 
 [dev-dependencies]
@@ -37,4 +37,5 @@ rstest_reuse = "0.1"
 
 [features]
 default = ["pyo3/extension-module"]
+tests = ["pyo3/auto-initialize"]
 nonumpy = []

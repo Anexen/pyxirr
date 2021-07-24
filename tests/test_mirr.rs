@@ -1,7 +1,7 @@
+use pyo3::{types::PyList, Python};
 use pyxirr;
 use rstest::rstest;
 
-use pyo3::{types::PyList, Python};
 mod common;
 
 #[rstest]

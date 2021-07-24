@@ -9,6 +9,7 @@ Rust-powered collection of financial functions.
     * [Type annotations](functions.md#type-annotations)
     * [Exceptions](functions.md#exceptions)
     * [FV](functions.md#fv)
+    * [XFV](functions.md#xfv)
     * [PV](functions.md#pv)
     * [NPV](functions.md#npv)
     * [XNPV](functions.md#xnpv)
