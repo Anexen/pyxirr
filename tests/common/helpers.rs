@@ -10,7 +10,7 @@ macro_rules! assert_almost_eq {
     }};
     ($a:expr, $b:expr) => {{
         let (a, b) = (&$a, &$b);
-        let eps: f64 = 1e-9;
+        let eps: f64 = 1e-10;
         assert!((*a - *b).abs() < eps, "assertion failed: `({} !~= {})`", *a, *b);
     }};
 }
@@ -34,7 +34,7 @@ macro_rules! assert_future_value {
             + pv * f64::powf(1.0 + rate, nper)
             + pmt * (1.0 + rate * pmt_at_begining) / rate * (f64::powf(1.0 + rate, nper) - 1.0);
 
-        assert_almost_eq!(result, 0.0);
+        assert_almost_eq!(result, 0.0, 1e-6);
     }};
 }
 
