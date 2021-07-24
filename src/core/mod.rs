@@ -6,7 +6,7 @@ mod optimize;
 mod pv;
 mod xirr;
 
-pub use fv::fv;
+pub use fv::{fv, xfv};
 pub use irr::{irr, npv};
 pub use mirr::mirr;
 pub use models::{DateLike, InvalidPaymentsError};
