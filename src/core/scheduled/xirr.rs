@@ -1,5 +1,5 @@
-use super::models::{validate, DateLike, InvalidPaymentsError};
-use super::optimize::find_root_newton_raphson;
+use crate::core::models::{validate, DateLike, InvalidPaymentsError};
+use crate::core::optimize::find_root_newton_raphson;
 
 pub fn xirr(
     dates: &[DateLike],
