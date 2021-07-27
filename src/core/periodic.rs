@@ -1,5 +1,13 @@
+use std::iter::successors;
+
 use super::models::{validate, InvalidPaymentsError};
-use super::optimize::{find_root_newton_raphson_with_default_deriv, powers};
+use super::optimize::find_root_newton_raphson_with_default_deriv;
+
+// pre calculating powers for performance
+pub fn powers(base: f64, n: usize, start_from_zero: bool) -> Vec<f64> {
+    let (start, n) = if start_from_zero { (1.0, n + 1) } else { (base, n) };
+    successors(Some(start), |x| Some(x * base)).take(n).collect()
+}
 
 fn convert_pmt_at_begining(pmt_at_begining: Option<bool>) -> f64 {
     if pmt_at_begining.unwrap_or(false) {
@@ -61,6 +69,12 @@ pub fn nper(rate: f64, pmt: f64, pv: f64, fv: Option<f64>, pmt_at_begining: Opti
     f64::log10((-fv + z) / (pv + z)) / f64::log10(1. + rate)
 }
 
+// http://westclintech.com/SQL-Server-Financial-Functions/SQL-Server-NFV-function
+pub fn nfv(rate: f64, nper: f64, amounts: &[f64]) -> f64 {
+    let pv = self::npv(rate, amounts, Some(false));
+    self::fv(rate, nper, 0.0, -pv, None)
+}
+
 pub fn npv(rate: f64, values: &[f64], start_from_zero: Option<bool>) -> f64 {
     if rate == 0.0 {
         return values.iter().sum();
@@ -77,7 +91,7 @@ pub fn irr(values: &[f64], guess: Option<f64>) -> Result<f64, InvalidPaymentsErr
     validate(values, None)?;
 
     Ok(find_root_newton_raphson_with_default_deriv(guess.unwrap_or(0.1), |rate| {
-        npv(rate, values, Some(true))
+        self::npv(rate, values, Some(true))
     }))
 }
 

@@ -1,5 +1,5 @@
 mod xirr;
-mod xfv;
+mod xnfv;
 
 pub use xirr::{xirr, xnpv};
-pub use xfv::xfv;
+pub use xnfv::{xfv, xnfv};

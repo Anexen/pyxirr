@@ -10,7 +10,7 @@ macro_rules! assert_almost_eq {
     }};
     ($a:expr, $b:expr) => {{
         let (a, b) = (&$a, &$b);
-        let eps: f64 = 1e-10;
+        let eps: f64 = 1e-9;
         assert!((*a - *b).abs() < eps, "assertion failed: `({} !~= {})`", *a, *b);
     }};
 }
