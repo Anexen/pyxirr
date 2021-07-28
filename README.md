@@ -5,7 +5,7 @@
 
 # PyXIRR
 
-Rust-powered collection of financial functions for Python.
+Rust-powered collection of financial functions.
 
 Features:
 
@@ -14,6 +14,8 @@ Features:
 - works with iterators
 - works with unordered input
 - no external dependencies
+
+PyXIRR contains many functions from numpy-financial, such as IRR, NPV, etc.
 
 # Installation
 
@@ -29,7 +31,7 @@ and the [implementation from the Stack Overflow](https://stackoverflow.com/a/115
 
 ![bench](https://raw.githubusercontent.com/Anexen/pyxirr/main/docs/static/bench.png)
 
-PyXIRR is ~10-20x faster in XIRR calculation. More than 10x faster than numpy-financial.
+PyXIRR is ~10-20x faster in XIRR calculation than another implementations.
 
 Powered by [github-action-benchmark](https://github.com/rhysd/github-action-benchmark) and [plotly.js](https://github.com/plotly/plotly.js).
 
