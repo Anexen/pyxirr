@@ -25,6 +25,14 @@ impl std::ops::Sub for DateLike {
     }
 }
 
+impl std::ops::Sub for &DateLike {
+    type Output = i32;
+
+    fn sub(self, other: &DateLike) -> Self::Output {
+        self.0 - other.0
+    }
+}
+
 impl std::str::FromStr for DateLike {
     type Err = chrono::ParseError;
 

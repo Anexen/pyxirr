@@ -63,24 +63,22 @@ What is the future value after 10 years of saving $100 now, with an additional m
 15692.92889433575
 ```
 
-## XFV
+## NFV
 
-Extended Future Value
+Net Future Value
 
 ```python
 # raises: InvalidPaymentsError
-xfv(
+nfv(
     rate: Rate, # Rate of interest per period
     nper: int, # Number of compounding periods
-    amounts: Union[AmountArray, CashFlowTable, CashFlowDict],
-    dates: Optional[DateLikeArray] = None,
+    amounts: AmountArray,
 ) -> FloatOrNone
 ```
 
-Compute the Future Value of uneven payments at (ir)regular periods.
+Compute the Future Value of uneven payments at regular periods.
 
-The idea is to find the `pv` parameter using the `NPV` function (for regular
-periods) or `XNPV` (for irregular case) function,then calculate `FV` as usual:
+The idea is to find the `pv` parameter using the `NPV` function, then calculate `FV` as usual:
 
 ```python
 import pyxirr
@@ -91,10 +89,73 @@ periods = 6
 present_value = pyxirr.npv(interest_rate, payments, start_from_zero=False)
 future_value = pyxirr.fv(interest_rate, periods, 0, -present_value)
 
-assert future_value == pyxirr.xfv(interest_rate, periods, payments)
+assert future_value == pyxirr.nfv(interest_rate, periods, payments)
 ```
 
 See this [video](https://www.youtube.com/watch?v=775ljhriB8U) for details.
+
+## XFV
+
+Future value of a cash flow between two dates.
+
+```python
+xfv(
+    start_date: DateLike,
+    cash_flow_date: DateLike,
+    end_date: DateLike,
+    cash_flow_rate: Rate,  # annual rate
+    end_rate: Rate,  # annual rate
+    cash_flow: Amount,
+) -> FloatOrNone
+```
+
+When:
+- `start_date`: the starting date for the annual interest rates used in the XFV calculation.
+- `cash_flow_date`: the date on which the cash flows occurs.
+- `end_date`: the ending date for purposes of calculating the future value.
+- `cash_flow_rate`: the annual interest rate for the cash flow date. This should be the interest rate from the `start_date` to the `cash_flow_date`.
+- `end_rate`: the annual interest rate for the end date. This should be the interest rate from the `start_date` to the `end_date`.
+- `cash_flow`: the cash flow value.
+
+See also: [XLeratorDB.XFV](http://westclintech.com/SQL-Server-Financial-Functions/SQL-Server-XFV-function)
+
+Example:
+
+```python
+import pyxirr
+from datetime import date
+
+fv = pyxirr.xfv(
+    date(2011, 2, 1),
+    date(2011, 3, 1),
+    date(2012, 2, 1),
+    0.00142,
+    0.00246,
+    100000
+)
+print(fv)  # 100235.09
+```
+
+The result of this calculation means that on 01-Feb-11, we anticipate that
+100,000 received on 01-Mar-11 will be worth approximately 100,235.09 on
+01-Feb-12, based on the rates provided to the function.
+
+## XNFV
+
+Net Future Value of a series of irregular cash flows.
+
+All cash flows in a group are compounded to the latest cash flow in the group.
+
+```python
+# raises InvalidPaymentsError
+xnfv(
+    rate: Rate,  # annual rate
+    dates: Union[DateLikeArray, CashFlowDict, CashFlowTable],
+    amounts: Optional[AmountArray] = None,
+) -> FloatOrNone
+```
+
+See also: [XLeratorDB.XNFV](http://westclintech.com/SQL-Server-Financial-Functions/SQL-Server-XNFV-function)
 
 ## PMT
 

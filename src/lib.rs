@@ -68,30 +68,37 @@ pub fn fv(rate: f64, nper: f64, pmt: f64, pv: f64, pmt_at_begining: Option<bool>
     core::fv(rate, nper, pmt, pv, pmt_at_begining)
 }
 
-/// Extended Future Value.
+/// Net Future Value.
 #[pyfunction]
 #[pyo3(text_signature = "(rate, nper, amounts, dates=None)")]
-pub fn xfv(rate: f64, nper: f64, amounts: &PyAny, dates: Option<&PyAny>) -> PyResult<f64> {
-    // uneven irregular case
-    if let Some(py_dates) = dates {
-        let dates = conversions::extract_date_series(py_dates)?;
-        let amounts = conversions::extract_amount_series(amounts)?;
-        let result = core::xfv(rate, nper, &amounts, Some(&dates))?;
-        return Ok(result);
-    }
+pub fn nfv(rate: f64, nper: f64, amounts: &PyAny) -> PyResult<f64> {
+    let amounts = conversions::extract_amount_series(amounts)?;
+    Ok(core::nfv(rate, nper, &amounts))
+}
 
-    // uneven regular case
-    let converted_amounts = conversions::extract_amount_series(amounts);
-    if let Ok(amounts) = converted_amounts {
-        return Ok(core::xfv(rate, nper, &amounts, None)?);
-    }
+/// Extended Future Value.
+/// Future value of a cash flow between two dates.
+#[pyfunction]
+#[pyo3(
+    text_signature = "(start_date, cash_flow_date, end_date, cash_flow_rate, end_rate, cash_flow)"
+)]
+pub fn xfv(
+    start_date: core::DateLike,
+    cash_flow_date: core::DateLike,
+    end_date: core::DateLike,
+    cash_flow_rate: f64,
+    end_rate: f64,
+    cash_flow: f64,
+) -> PyResult<f64> {
+    Ok(core::xfv(&start_date, &cash_flow_date, &end_date, cash_flow_rate, end_rate, cash_flow))
+}
 
-    // ensure input is not a generator
-    let _len = amounts.len()?;
-
-    // uneven irregular case with records/dict/DataFrame input
-    let (dates, amounts) = conversions::extract_payments(amounts, dates)?;
-    Ok(core::xfv(rate, nper, &amounts, Some(&dates))?)
+/// Net future value of a series of irregular cash flows
+#[pyfunction(amounts = "None")]
+#[pyo3(text_signature = "(rate, dates, amounts=None)")]
+pub fn xnfv(rate: f64, dates: &PyAny, amounts: Option<&PyAny>) -> PyResult<f64> {
+    let (dates, amounts) = conversions::extract_payments(dates, amounts)?;
+    Ok(core::xnfv(rate, &dates, &amounts)?)
 }
 
 /// Present Value
@@ -126,16 +133,18 @@ pub fn nper(rate: f64, pmt: f64, pv: f64, fv: Option<f64>, pmt_at_begining: Opti
 
 #[pymodule]
 fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_wrapped(wrap_pyfunction!(xirr))?;
-    m.add_wrapped(wrap_pyfunction!(xnpv))?;
-    m.add_wrapped(wrap_pyfunction!(irr))?;
-    m.add_wrapped(wrap_pyfunction!(npv))?;
-    m.add_wrapped(wrap_pyfunction!(fv))?;
-    m.add_wrapped(wrap_pyfunction!(xfv))?;
-    m.add_wrapped(wrap_pyfunction!(pv))?;
     m.add_wrapped(wrap_pyfunction!(pmt))?;
     m.add_wrapped(wrap_pyfunction!(nper))?;
+    m.add_wrapped(wrap_pyfunction!(fv))?;
+    m.add_wrapped(wrap_pyfunction!(nfv))?;
+    m.add_wrapped(wrap_pyfunction!(xfv))?;
+    m.add_wrapped(wrap_pyfunction!(xnfv))?;
+    m.add_wrapped(wrap_pyfunction!(pv))?;
+    m.add_wrapped(wrap_pyfunction!(npv))?;
+    m.add_wrapped(wrap_pyfunction!(xnpv))?;
+    m.add_wrapped(wrap_pyfunction!(irr))?;
     m.add_wrapped(wrap_pyfunction!(mirr))?;
+    m.add_wrapped(wrap_pyfunction!(xirr))?;
 
     m.add("InvalidPaymentsError", py.get_type::<InvalidPaymentsError>())?;
 
