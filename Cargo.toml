@@ -1,6 +1,6 @@
 [package]
 name = "pyxirr"
-version = "0.6.1"
+version = "0.6.2"
 authors = ["Anexen"]
 edition = "2018"
 description = "Rust-powered collection of financial functions for Python."
