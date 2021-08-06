@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1627470314900,
+  "lastUpdate": 1628228275626,
   "repoUrl": "https://github.com/Anexen/pyxirr",
   "entries": {
     "Rust Benchmark": [
@@ -1313,6 +1313,84 @@ window.BENCHMARK_DATA = {
             "name": "bench_scipy_500",
             "value": 3295630,
             "range": "± 365983",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "avolk93@gmail.com",
+            "name": "Anexen",
+            "username": "Anexen"
+          },
+          "committer": {
+            "email": "avolk93@gmail.com",
+            "name": "Anexen",
+            "username": "Anexen"
+          },
+          "distinct": true,
+          "id": "774b538543bd4a1b8425b3863f57e04daa3457f6",
+          "message": "bump version to 0.6.2",
+          "timestamp": "2021-08-06T08:34:20+03:00",
+          "tree_id": "e83c9b9425dd57ad0b0a635d84e8324efdc4b525",
+          "url": "https://github.com/Anexen/pyxirr/commit/774b538543bd4a1b8425b3863f57e04daa3457f6"
+        },
+        "date": 1628228275604,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "bench_python_100",
+            "value": 17517858,
+            "range": "± 2334503",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_python_1000",
+            "value": 45649568,
+            "range": "± 3747439",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_python_500",
+            "value": 58891735,
+            "range": "± 4718766",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_rust_100",
+            "value": 47932,
+            "range": "± 7748",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_rust_1000",
+            "value": 433790,
+            "range": "± 71796",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_rust_500",
+            "value": 265429,
+            "range": "± 45078",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_scipy_100",
+            "value": 1000190,
+            "range": "± 174505",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_scipy_1000",
+            "value": 4652384,
+            "range": "± 1212004",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_scipy_500",
+            "value": 3324031,
+            "range": "± 438182",
             "unit": "ns/iter"
           }
         ]
