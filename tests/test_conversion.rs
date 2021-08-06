@@ -144,6 +144,19 @@ fn test_extract_from_pandas_series_with_datetime_index() {
 
     assert_almost_eq!(result, xirr_expected_result(input));
 }
+
+#[rstest]
+#[cfg_attr(feature = "nonumpy", ignore)]
+fn test_failed_extract_from_pandas_series_with_int64_index() {
+    let input = "tests/samples/unordered.csv";
+    Python::with_gil(|py| {
+        let locals = get_locals(py, input, Some(&["pandas"]));
+        let dates = py.eval("pandas.Series(amounts)", Some(locals), None).unwrap();
+        let err = pyxirr::xirr(dates, None, None).unwrap_err();
+        assert!(err.is_instance::<exceptions::PyTypeError>(py));
+    });
+}
+
 #[rstest]
 #[cfg_attr(feature = "nonumpy", ignore)]
 fn test_extract_from_mixed_iterables() {

@@ -49,7 +49,7 @@ amounts = [-1000, 1000, 1000]
 # feed columnar data
 xirr(dates, amounts)
 # feed iterators
-xirr(iter(dates), (x for x in amounts))
+xirr(iter(dates), (x / 2 for x in amounts))
 # feed an iterable of tuples
 xirr(zip(dates, amounts))
 # feed a dictionary
@@ -65,8 +65,22 @@ import pandas as pd
 # feed numpy array
 xirr(np.array([dates, amounts]))
 xirr(np.array(dates), np.array(amounts))
+
 # feed DataFrame (columns names doesn't matter; ordering matters)
 xirr(pd.DataFrame({"a": dates, "b": amounts}))
+
+# feed Series with DatetimeIndex
+xirr(pd.Series(amounts, index=pd.to_datetime(dates)))
+
+# bonus: apply xirr to a DataFrame with DatetimeIndex:
+df = pd.DataFrame(
+    index=pd.date_range("2021", "2022", freq="MS", closed="left"),
+    data={
+        "one": [-100] + [20] * 11,
+        "two": [-80] + [19] * 11,
+    },
+)
+df.apply(xirr)  # Series(index=["one", "two"], data=[5.09623547168478, 8.780801977141174])
 ```
 
 # API reference
@@ -78,6 +92,7 @@ See the [docs](https://anexen.github.io/pyxirr)
 - [ ] Improve docs, add more tests
 - [ ] Other functions from [numpy-financial](https://numpy.org/numpy-financial/latest/index.html)
 - [ ] Compile library for rust/javascript/python
+- [ ] Vectorized versions of numpy-financial functions.
 
 # Development
 
