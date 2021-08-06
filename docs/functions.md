@@ -19,8 +19,10 @@ Payment = Tuple[DateLike, Amount]
 
 DateLikeArray = Iterable[DateLike]
 AmountArray = Iterable[Amount]
-CashFlowTable = Iterable[Payment]
+CashFlowSeries = pandas.Series  # with DatetimeIndex
+CashFlowTable = Union[Iterable[Payment], pandas.DataFrame, numpy.ndarray]
 CashFlowDict = Dict[DateLike, Amount]
+CashFlow = Union[CashFlowSeries, CashFlowTable, CashFlowDict]
 ```
 
 ## Exceptions
@@ -150,7 +152,7 @@ All cash flows in a group are compounded to the latest cash flow in the group.
 # raises InvalidPaymentsError
 xnfv(
     rate: Rate,  # annual rate
-    dates: Union[DateLikeArray, CashFlowDict, CashFlowTable],
+    dates: Union[CashFlow, DateLikeArray],
     amounts: Optional[AmountArray] = None,
 ) -> FloatOrNone
 ```
@@ -273,7 +275,7 @@ Returns the Net Present Value for a schedule of cash flows that is not necessari
 # raises: InvalidPaymentsError
 xnpv(
     rate: Rate,
-    dates: Union[CashFlowTable, CashFlowDict, DateLikeArray],
+    dates: Union[CashFlow, DateLikeArray],
     amounts: Optional[AmountArray] = None,
 ) -> FloatOrNone
 ```
@@ -420,7 +422,7 @@ Returns the internal rate of return for a schedule of cash flows that is not nec
 ```python
 # raises: InvalidPaymentsError
 xirr(
-    dates: Union[CashFlowTable, CashFlowDict, DateLikeArray],
+    dates: Union[CashFlow, DateLikeArray],
     amounts: Optional[AmountArray] = None,
     guess: Guess = 0.1,
 ) -> FloatOrNone

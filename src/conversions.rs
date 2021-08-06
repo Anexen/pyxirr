@@ -130,6 +130,15 @@ pub fn extract_payments(
                 extract_amount_series(frame.get_item(columns.get_item(1)?)?)?,
             ))
         }
+        "Series"
+            if dates
+                .getattr("index")
+                .and_then(|index| index.get_type().name())
+                .unwrap_or("unknown")
+                == "DatetimeIndex" =>
+        {
+            Ok((extract_date_series(dates.getattr("index")?)?, extract_amount_series(dates)?))
+        }
         "ndarray" => {
             let array = dates;
             Ok((
