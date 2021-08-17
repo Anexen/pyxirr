@@ -1,5 +1,4 @@
 use rstest::rstest;
-use rstest_reuse::{self, *};
 
 use pyo3::{types::PyList, Python};
 
@@ -177,7 +176,10 @@ fn test_irr_works(#[case] input: &[i64], #[case] expected: f64) {
     assert_almost_eq!(result, expected);
 }
 
-#[apply(test_samples)]
+#[rstest]
+#[case::unordered("tests/samples/unordered.csv")]
+#[case::random_100("tests/samples/random_100.csv")]
+#[case::random_1000("tests/samples/random_1000.csv")]
 fn test_irr_samples(#[case] input: &str) {
     let result = Python::with_gil(|py| {
         let payments = PaymentsLoader::from_csv(py, input).to_columns();
