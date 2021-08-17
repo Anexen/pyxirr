@@ -1,4 +1,4 @@
-const MAX_ERROR: f64 = 1e-10;
+const MAX_ERROR: f64 = 1e-9;
 const MAX_ITERATIONS: u32 = 50;
 
 pub fn find_root_newton_raphson<Func, Deriv>(start: f64, f: Func, d: Deriv) -> f64

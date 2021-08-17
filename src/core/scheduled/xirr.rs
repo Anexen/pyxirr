@@ -8,24 +8,29 @@ pub fn xirr(
 ) -> Result<f64, InvalidPaymentsError> {
     validate(amounts, Some(dates))?;
 
-    let deltas = precalculate_deltas(&dates);
+    let ref deltas = precalculate_deltas(&dates);
 
     let guess = guess.unwrap_or(0.1);
-    let rate = find_rate(&amounts, &deltas, guess);
 
-    if rate.is_finite() {
+    let rate = find_rate(amounts, deltas, guess);
+
+    if is_good_rate(rate, amounts, deltas) {
         return Ok(rate);
     }
 
-    let mut rate = f64::NAN;
-    let mut guess = -0.99;
+    let rate = find_guess_in_range(-0.999, -0.99, 0.001, amounts, deltas);
 
-    while guess < 1.0 && !rate.is_finite() {
-        rate = find_rate(&amounts, &deltas, guess);
-        guess += 0.01;
+    if is_good_rate(rate, amounts, deltas) {
+        return Ok(rate);
     }
 
-    Ok(rate)
+    let rate = find_guess_in_range(-0.99, 1.0, 0.01, amounts, deltas);
+
+    if is_good_rate(rate, amounts, deltas) {
+        return Ok(rate);
+    }
+
+    Ok(f64::NAN)
 }
 
 /// Calculate the net present value of a series of payments at irregular intervals.
@@ -40,6 +45,23 @@ pub fn xnpv(rate: f64, dates: &[DateLike], amounts: &[f64]) -> Result<f64, Inval
 // fn smart_guess(amounts: &[f64]) -> f64 {
 //     amounts.iter().sum::<f64>() / -amounts.iter().filter(|&x| x < &0.0).sum::<f64>()
 // }
+
+fn is_good_rate(rate: f64, amounts: &[f64], deltas: &[f64]) -> bool {
+    // rate must be finite and XNPV must be close to zero
+    rate.is_finite() && xirr_result(amounts, deltas, rate).abs() < 1e-3
+}
+
+fn find_guess_in_range(min: f64, max: f64, step: f64, amounts: &[f64], deltas: &[f64]) -> f64 {
+    let mut guess = min;
+    while guess < max {
+        let rate = find_rate(amounts, deltas, guess);
+        if is_good_rate(rate, amounts, deltas) {
+            return rate;
+        }
+        guess += step;
+    }
+    f64::NAN
+}
 
 fn precalculate_deltas(dates: &[DateLike]) -> Vec<f64> {
     let min_date = dates.iter().min().unwrap();

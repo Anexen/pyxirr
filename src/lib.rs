@@ -64,16 +64,16 @@ pub fn npv(rate: f64, amounts: &PyAny, start_from_zero: Option<bool>) -> PyResul
 /// Future Value.
 #[pyfunction(pmt_at_begining = "false")]
 #[pyo3(text_signature = "(rate, nper, pmt, pv, pmt_at_begining=False)")]
-pub fn fv(rate: f64, nper: f64, pmt: f64, pv: f64, pmt_at_begining: Option<bool>) -> f64 {
-    core::fv(rate, nper, pmt, pv, pmt_at_begining)
+pub fn fv(rate: f64, nper: f64, pmt: f64, pv: f64, pmt_at_begining: Option<bool>) -> Option<f64> {
+    float_or_none(core::fv(rate, nper, pmt, pv, pmt_at_begining))
 }
 
 /// Net Future Value.
 #[pyfunction]
-#[pyo3(text_signature = "(rate, nper, amounts, dates=None)")]
-pub fn nfv(rate: f64, nper: f64, amounts: &PyAny) -> PyResult<f64> {
+#[pyo3(text_signature = "(rate, nper, amounts)")]
+pub fn nfv(rate: f64, nper: f64, amounts: &PyAny) -> PyResult<Option<f64>> {
     let amounts = conversions::extract_amount_series(amounts)?;
-    Ok(core::nfv(rate, nper, &amounts))
+    Ok(float_or_none(core::nfv(rate, nper, &amounts)))
 }
 
 /// Extended Future Value.
@@ -89,23 +89,36 @@ pub fn xfv(
     cash_flow_rate: f64,
     end_rate: f64,
     cash_flow: f64,
-) -> PyResult<f64> {
-    Ok(core::xfv(&start_date, &cash_flow_date, &end_date, cash_flow_rate, end_rate, cash_flow))
+) -> PyResult<Option<f64>> {
+    Ok(float_or_none(core::xfv(
+        &start_date,
+        &cash_flow_date,
+        &end_date,
+        cash_flow_rate,
+        end_rate,
+        cash_flow,
+    )))
 }
 
 /// Net future value of a series of irregular cash flows
 #[pyfunction(amounts = "None")]
 #[pyo3(text_signature = "(rate, dates, amounts=None)")]
-pub fn xnfv(rate: f64, dates: &PyAny, amounts: Option<&PyAny>) -> PyResult<f64> {
+pub fn xnfv(rate: f64, dates: &PyAny, amounts: Option<&PyAny>) -> PyResult<Option<f64>> {
     let (dates, amounts) = conversions::extract_payments(dates, amounts)?;
-    Ok(core::xnfv(rate, &dates, &amounts)?)
+    Ok(float_or_none(core::xnfv(rate, &dates, &amounts)?))
 }
 
 /// Present Value
 #[pyfunction(fv = "0.0", pmt_at_begining = "false")]
 #[pyo3(text_signature = "(rate, nper, pmt, fv=0, pmt_at_begining=False)")]
-pub fn pv(rate: f64, nper: f64, pmt: f64, fv: Option<f64>, pmt_at_begining: Option<bool>) -> f64 {
-    core::pv(rate, nper, pmt, fv, pmt_at_begining)
+pub fn pv(
+    rate: f64,
+    nper: f64,
+    pmt: f64,
+    fv: Option<f64>,
+    pmt_at_begining: Option<bool>,
+) -> Option<f64> {
+    float_or_none(core::pv(rate, nper, pmt, fv, pmt_at_begining))
 }
 
 /// Modified Internal Rate of Return.
@@ -120,15 +133,27 @@ pub fn mirr(values: &PyAny, finance_rate: f64, reinvest_rate: f64) -> PyResult<O
 /// Compute the payment against loan principal plus interest.
 #[pyfunction(fv = "0.0", pmt_at_begining = "false")]
 #[pyo3(text_signature = "(rate, nper, pv, fv=0, pmt_at_begining=False)")]
-pub fn pmt(rate: f64, nper: f64, pv: f64, fv: Option<f64>, pmt_at_begining: Option<bool>) -> f64 {
-    core::pmt(rate, nper, pv, fv, pmt_at_begining)
+pub fn pmt(
+    rate: f64,
+    nper: f64,
+    pv: f64,
+    fv: Option<f64>,
+    pmt_at_begining: Option<bool>,
+) -> Option<f64> {
+    float_or_none(core::pmt(rate, nper, pv, fv, pmt_at_begining))
 }
 
 /// Compute the number of periodic payments.
 #[pyfunction(fv = "0.0", pmt_at_begining = "false")]
 #[pyo3(text_signature = "(rate, pmt, pv, fv=0, pmt_at_begining=False)")]
-pub fn nper(rate: f64, pmt: f64, pv: f64, fv: Option<f64>, pmt_at_begining: Option<bool>) -> f64 {
-    core::nper(rate, pmt, pv, fv, pmt_at_begining)
+pub fn nper(
+    rate: f64,
+    pmt: f64,
+    pv: f64,
+    fv: Option<f64>,
+    pmt_at_begining: Option<bool>,
+) -> Option<f64> {
+    float_or_none(core::nper(rate, pmt, pv, fv, pmt_at_begining))
 }
 
 #[pymodule]
