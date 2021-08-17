@@ -22,6 +22,8 @@ fn test_xnpv_samples(#[case] input: &str) {
 
 #[rstest]
 #[case::unordered("tests/samples/unordered.csv")]
+#[case::single_redemption("tests/samples/single_redemption.csv")]
+#[case::random("tests/samples/random.csv")]
 #[case::random_100("tests/samples/random_100.csv")]
 #[case::random_1000("tests/samples/random_1000.csv")]
 #[case::case_30_0("tests/samples/30-0.csv")]
@@ -73,6 +75,7 @@ fn test_xnpv_samples(#[case] input: &str) {
 #[case::case_30_46("tests/samples/30-46.csv")]
 #[case::case_30_47("tests/samples/30-47.csv")]
 #[case::case_30_48("tests/samples/30-48.csv")]
+#[case::close_to_minus_99("tests/samples/minus_99.csv")]
 fn test_xirr_samples(#[case] input: &str) {
     let result = Python::with_gil(|py| {
         let payments = PaymentsLoader::from_csv(py, input).to_records();

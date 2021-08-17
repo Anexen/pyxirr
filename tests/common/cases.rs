@@ -3,6 +3,8 @@
 pub fn xirr_expected_result(input: &str) -> f64 {
     match input {
         "tests/samples/unordered.csv" => 0.16353715844,
+        "tests/samples/single_redemption.csv" => 0.13616957937417506,
+        "tests/samples/random.csv" => 0.6924974337277426,
         "tests/samples/random_100.csv" => 29.829404437653,
         "tests/samples/random_1000.csv" => 5.508930558032,
         "tests/samples/30-0.csv" => 0.1660454339589889,
@@ -54,6 +56,7 @@ pub fn xirr_expected_result(input: &str) -> f64 {
         "tests/samples/30-46.csv" => -0.047401670775621726,
         "tests/samples/30-47.csv" => -0.6103425929117927,
         "tests/samples/30-48.csv" => -0.07525261340272364,
+        "tests/samples/minus_99.csv" => -0.9989769231734277,
         _ => panic!(),
     }
 }
