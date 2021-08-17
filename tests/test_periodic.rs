@@ -25,19 +25,19 @@ fn test_fv_macro_working() {
 
 #[rstest]
 fn test_fv_pmt_at_end() {
-    let result = pyxirr::fv(0.05 / 12.0, 10.0 * 12.0, -100.0, -100.0, None);
+    let result = pyxirr::fv(0.05 / 12.0, 10.0 * 12.0, -100.0, -100.0, None).unwrap();
     assert_almost_eq!(result, 15692.9288943357);
 }
 
 #[rstest]
 fn test_fv_pmt_at_begining() {
-    let result = pyxirr::fv(0.05 / 12.0, 10.0 * 12.0, -100.0, -100.0, Some(true));
+    let result = pyxirr::fv(0.05 / 12.0, 10.0 * 12.0, -100.0, -100.0, Some(true)).unwrap();
     assert_almost_eq!(result, 15757.6298441047);
 }
 
 #[rstest]
 fn test_fv_zero_rate() {
-    let result = pyxirr::fv(0.0, 10.0 * 12.0, -100.0, -100.0, None);
+    let result = pyxirr::fv(0.0, 10.0 * 12.0, -100.0, -100.0, None).unwrap();
     assert_almost_eq!(result, 12100.0);
 }
 
@@ -45,25 +45,25 @@ fn test_fv_zero_rate() {
 
 #[rstest]
 fn test_pv_pmt_at_end() {
-    let result = pyxirr::pv(0.05 / 12.0, 10.0 * 12.0, -100.0, Some(15692.93), None);
+    let result = pyxirr::pv(0.05 / 12.0, 10.0 * 12.0, -100.0, Some(15692.93), None).unwrap();
     assert_almost_eq!(result, -100.0006713162);
 }
 
 #[rstest]
 fn test_pv_pmt_at_begining() {
-    let result = pyxirr::pv(0.05 / 12.0, 10.0 * 12.0, -100.0, Some(15692.93), Some(true));
+    let result = pyxirr::pv(0.05 / 12.0, 10.0 * 12.0, -100.0, Some(15692.93), Some(true)).unwrap();
     assert_almost_eq!(result, -60.71677534615);
 }
 
 #[rstest]
 fn test_pv_zero_rate() {
-    let result = pyxirr::pv(0.0, 10.0 * 12.0, -100.0, Some(15692.93), None);
+    let result = pyxirr::pv(0.0, 10.0 * 12.0, -100.0, Some(15692.93), None).unwrap();
     assert_almost_eq!(result, -3692.93);
 }
 
 #[rstest]
 fn test_pv_default_pv() {
-    let result = pyxirr::pv(0.05 / 12.0, 10.0 * 12.0, -100.0, None, None);
+    let result = pyxirr::pv(0.05 / 12.0, 10.0 * 12.0, -100.0, None, None).unwrap();
     assert_almost_eq!(result, 9428.1350328234);
 }
 
@@ -91,8 +91,8 @@ fn test_npv_start_from_zero() {
 fn test_npv_zero_rate() {
     Python::with_gil(|py| {
         let values = &[-40_000., 5_000., 8_000., 12_000., 30_000.];
-        let result = pyxirr::npv(0., PyList::new(py, values), Some(false));
-        assert_almost_eq!(result.unwrap().unwrap(), 15_000.0);
+        let result = pyxirr::npv(0., PyList::new(py, values), Some(false)).unwrap().unwrap();
+        assert_almost_eq!(result, 15_000.0);
     });
 }
 
@@ -100,25 +100,25 @@ fn test_npv_zero_rate() {
 
 #[rstest]
 fn test_pmt_pmt_at_end() {
-    let pmt = pyxirr::pmt(INTEREST_RATE, PERIODS, PV, None, None);
+    let pmt = pyxirr::pmt(INTEREST_RATE, PERIODS, PV, None, None).unwrap();
     assert_future_value!(INTEREST_RATE, PERIODS, pmt, PV, None, None);
 }
 
 #[rstest]
 fn test_pmt_pmt_at_begining() {
-    let pmt = pyxirr::pmt(INTEREST_RATE, PERIODS, PV, None, Some(true));
+    let pmt = pyxirr::pmt(INTEREST_RATE, PERIODS, PV, None, Some(true)).unwrap();
     assert_future_value!(INTEREST_RATE, PERIODS, pmt, PV, None, Some(true));
 }
 
 #[rstest]
 fn test_pmt_non_zero_fv() {
-    let pmt = pyxirr::pmt(INTEREST_RATE, PERIODS, PV, Some(FV), None);
+    let pmt = pyxirr::pmt(INTEREST_RATE, PERIODS, PV, Some(FV), None).unwrap();
     assert_future_value!(INTEREST_RATE, PERIODS, pmt, PV, Some(FV), None);
 }
 
 #[rstest]
 fn test_pmt_zero_rate() {
-    let pmt = pyxirr::pmt(0.0, PERIODS, PV, Some(FV), None);
+    let pmt = pyxirr::pmt(0.0, PERIODS, PV, Some(FV), None).unwrap();
     assert_future_value!(0.0, PERIODS, pmt, PV, Some(FV), None);
 }
 
@@ -126,25 +126,25 @@ fn test_pmt_zero_rate() {
 
 #[rstest]
 fn test_nper_pmt_at_end() {
-    let nper = pyxirr::nper(INTEREST_RATE, PAYMENT, PV, None, None);
+    let nper = pyxirr::nper(INTEREST_RATE, PAYMENT, PV, None, None).unwrap();
     assert_future_value!(INTEREST_RATE, nper, PAYMENT, PV, None, None);
 }
 
 #[rstest]
 fn test_nper_pmt_at_begining() {
-    let nper = pyxirr::nper(INTEREST_RATE, PAYMENT, PV, None, Some(true));
+    let nper = pyxirr::nper(INTEREST_RATE, PAYMENT, PV, None, Some(true)).unwrap();
     assert_future_value!(INTEREST_RATE, nper, PAYMENT, PV, None, Some(true));
 }
 
 #[rstest]
 fn test_nper_non_zero_fv() {
-    let nper = pyxirr::nper(INTEREST_RATE, PAYMENT, PV, Some(FV), None);
+    let nper = pyxirr::nper(INTEREST_RATE, PAYMENT, PV, Some(FV), None).unwrap();
     assert_future_value!(INTEREST_RATE, nper, PAYMENT, PV, Some(FV), None);
 }
 
 #[rstest]
 fn test_nper_zero_rate() {
-    let nper = pyxirr::nper(0.0, PAYMENT, PV, Some(FV), None);
+    let nper = pyxirr::nper(0.0, PAYMENT, PV, Some(FV), None).unwrap();
     assert_future_value!(0.0, nper, PAYMENT, PV, Some(FV), None);
 }
 
@@ -155,8 +155,8 @@ fn test_nfv() {
     // example from https://www.youtube.com/watch?v=775ljhriB8U
     Python::with_gil(|py| {
         let amounts = PyList::new(py, &[1050.0, 1350.0, 1350.0, 1450.0]);
-        let result = pyxirr::nfv(0.03, 6.0, amounts);
-        assert_almost_eq!(result.unwrap(), 5750.16, 0.01);
+        let result = pyxirr::nfv(0.03, 6.0, amounts).unwrap().unwrap();
+        assert_almost_eq!(result, 5750.16, 0.01);
     });
 }
 

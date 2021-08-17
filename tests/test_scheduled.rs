@@ -107,8 +107,10 @@ fn test_xfv() {
             0.00142,
             0.00246,
             100000.,
-        );
-        assert_almost_eq!(result.unwrap(), 100235.088391894);
+        )
+        .unwrap()
+        .unwrap();
+        assert_almost_eq!(result, 100235.088391894);
     });
 }
 
@@ -116,7 +118,7 @@ fn test_xfv() {
 fn test_xnfv() {
     Python::with_gil(|py| {
         let payments = PaymentsLoader::from_csv(py, "tests/samples/xnfv.csv").to_records();
-        let result = pyxirr::xnfv(0.0250, payments, None).unwrap();
+        let result = pyxirr::xnfv(0.0250, payments, None).unwrap().unwrap();
         assert_almost_eq!(result, 57238.1249299303);
     });
 }
@@ -127,7 +129,7 @@ fn test_sum_xfv_eq_xnfv() {
         let rate = 0.0250;
         let (dates, amounts) = PaymentsLoader::from_csv(py, "tests/samples/xnfv.csv").to_columns();
 
-        let xnfv_result = pyxirr::xnfv(rate, dates, Some(amounts)).unwrap();
+        let xnfv_result = pyxirr::xnfv(rate, dates, Some(amounts)).unwrap().unwrap();
 
         let builtins = py.import("builtins").unwrap();
         let locals = vec![
@@ -152,6 +154,7 @@ fn test_sum_xfv_eq_xnfv() {
                     rate,
                     a.unwrap().extract().unwrap(),
                 )
+                .unwrap()
                 .unwrap()
             })
             .sum();
