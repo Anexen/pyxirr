@@ -143,6 +143,34 @@ pub fn pmt(
     float_or_none(core::pmt(rate, nper, pv, fv, pmt_at_begining))
 }
 
+/// Compute the interest portion of a payment.
+#[pyfunction(fv = "0.0", pmt_at_begining = "false")]
+#[pyo3(text_signature = "(rate, per, nper, pv, fv=0, pmt_at_begining=False)")]
+pub fn ipmt(
+    rate: f64,
+    per: f64,
+    nper: f64,
+    pv: f64,
+    fv: Option<f64>,
+    pmt_at_begining: Option<bool>,
+) -> Option<f64> {
+    float_or_none(core::ipmt(rate, per, nper, pv, fv, pmt_at_begining))
+}
+
+/// Compute the payment against loan principal.
+#[pyfunction(fv = "0.0", pmt_at_begining = "false")]
+#[pyo3(text_signature = "(rate, per, nper, pv, fv=0, pmt_at_begining=False)")]
+pub fn ppmt(
+    rate: f64,
+    per: f64,
+    nper: f64,
+    pv: f64,
+    fv: Option<f64>,
+    pmt_at_begining: Option<bool>,
+) -> Option<f64> {
+    float_or_none(core::ppmt(rate, per, nper, pv, fv, pmt_at_begining))
+}
+
 /// Compute the number of periodic payments.
 #[pyfunction(fv = "0.0", pmt_at_begining = "false")]
 #[pyo3(text_signature = "(rate, pmt, pv, fv=0, pmt_at_begining=False)")]
@@ -156,10 +184,27 @@ pub fn nper(
     float_or_none(core::nper(rate, pmt, pv, fv, pmt_at_begining))
 }
 
+/// Compute the number of periodic payments.
+#[pyfunction(fv = "0.0", pmt_at_begining = "false", guess = "0.1")]
+#[pyo3(text_signature = "(nper, pmt, pv, fv=0, pmt_at_begining=False, guess=0.1)")]
+pub fn rate(
+    nper: f64,
+    pmt: f64,
+    pv: f64,
+    fv: Option<f64>,
+    pmt_at_begining: Option<bool>,
+    guess: Option<f64>,
+) -> Option<f64> {
+    float_or_none(core::rate(nper, pmt, pv, fv, pmt_at_begining, guess))
+}
+
 #[pymodule]
 fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(pmt))?;
+    m.add_wrapped(wrap_pyfunction!(ipmt))?;
+    m.add_wrapped(wrap_pyfunction!(ppmt))?;
     m.add_wrapped(wrap_pyfunction!(nper))?;
+    m.add_wrapped(wrap_pyfunction!(rate))?;
     m.add_wrapped(wrap_pyfunction!(fv))?;
     m.add_wrapped(wrap_pyfunction!(nfv))?;
     m.add_wrapped(wrap_pyfunction!(xfv))?;

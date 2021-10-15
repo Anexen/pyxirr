@@ -56,6 +56,48 @@ pub fn pmt(rate: f64, nper: f64, pv: f64, fv: Option<f64>, pmt_at_begining: Opti
     -(fv + pv * exp) / factor
 }
 
+pub fn ipmt(
+    rate: f64,
+    per: f64,
+    nper: f64,
+    pv: f64,
+    fv: Option<f64>,
+    pmt_at_begining: Option<bool>,
+) -> f64 {
+    // payments before first period don't make any sense.
+    if per < 1.0 {
+        return f64::NAN;
+    }
+
+    // no interest if payment occurs at the beginning
+    // of a period and this is the first period
+    if per == 1.0 && pmt_at_begining.unwrap_or(false) {
+        return 0.0;
+    }
+
+    let total_pmt = self::pmt(rate, nper, pv, fv, pmt_at_begining);
+    let result = rate * self::fv(rate, per - 1.0, total_pmt, pv, pmt_at_begining);
+
+    if pmt_at_begining.unwrap_or(false) {
+        // if paying at the beginning we need to discount by one period.
+        result / (1.0 + rate)
+    } else {
+        result
+    }
+}
+
+pub fn ppmt(
+    rate: f64,
+    per: f64,
+    nper: f64,
+    pv: f64,
+    fv: Option<f64>,
+    pmt_at_begining: Option<bool>,
+) -> f64 {
+    self::pmt(rate, nper, pv, fv, pmt_at_begining)
+        - self::ipmt(rate, per, nper, pv, fv, pmt_at_begining)
+}
+
 pub fn nper(rate: f64, pmt: f64, pv: f64, fv: Option<f64>, pmt_at_begining: Option<bool>) -> f64 {
     let fv = fv.unwrap_or(0.0);
 
@@ -67,6 +109,20 @@ pub fn nper(rate: f64, pmt: f64, pv: f64, fv: Option<f64>, pmt_at_begining: Opti
 
     let z = pmt * (1. + rate * pmt_at_begining) / rate;
     f64::log10((-fv + z) / (pv + z)) / f64::log10(1. + rate)
+}
+
+pub fn rate(
+    nper: f64,
+    pmt: f64,
+    pv: f64,
+    fv: Option<f64>,
+    pmt_at_begining: Option<bool>,
+    guess: Option<f64>,
+) -> f64 {
+    let fv = fv.unwrap_or(0.0);
+    find_root_newton_raphson_with_default_deriv(guess.unwrap_or(0.1), |rate| {
+        fv - self::fv(rate, nper, pmt, pv, pmt_at_begining)
+    })
 }
 
 // http://westclintech.com/SQL-Server-Financial-Functions/SQL-Server-NFV-function
