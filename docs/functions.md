@@ -13,6 +13,7 @@ FloatOrNone = Optional[float]
 
 DateLike = Union[datetime.date, datetime.datetime, numpy.datetime64, pandas.Timestamp]
 Rate = float  # rate as decimal, not percentage, normally between [-1, 1]
+Periods = Union[int, float]
 Guess = Optional[Rate]
 Amount = Union[int, float, Decimal]
 Payment = Tuple[DateLike, Amount]
@@ -38,7 +39,7 @@ Compute the future value.
 ```python
 fv(
     rate: Rate, # Rate of interest per period
-    nper: int, # Number of compounding periods
+    nper: Period, # Number of compounding periods
     pmt: Amount, # Payment
     pv: Amount, # Present value
     pmt_at_begining: bool = False  # When payments are due
@@ -73,7 +74,7 @@ Net Future Value
 # raises: InvalidPaymentsError
 nfv(
     rate: Rate, # Rate of interest per period
-    nper: int, # Number of compounding periods
+    nper: Period, # Number of compounding periods
     amounts: AmountArray,
 ) -> FloatOrNone
 ```
@@ -112,6 +113,7 @@ xfv(
 ```
 
 When:
+
 - `start_date`: the starting date for the annual interest rates used in the XFV calculation.
 - `cash_flow_date`: the date on which the cash flows occurs.
 - `end_date`: the ending date for purposes of calculating the future value.
@@ -166,14 +168,52 @@ Compute the payment against loan principal plus interest.
 ```python
 pmt(
     rate: Rate, # Rate of interest per period
-    nper: int, # Number of compounding periods
+    nper: Period, # Number of compounding periods
     pv: Amount, # Present value
     fv: Amount = 0, # Future value
     pmt_at_begining: bool = False  # When payments are due
 ) -> FloatOrNone
 ```
 
+```
+pmt = ipmt + ppmt
+```
+
 See also: [FV](functions.md#fv), [PV](functions.md#pv), [NPER](functions.md#nper)
+
+## IPMT
+
+Compute the interest portion of a payment.
+
+```python
+ipmt(
+    rate: Rate, # Rate of interest per period
+    per: Period, # The payment period to calculate the interest amount.
+    nper: Period, # Number of compounding periods
+    pv: Amount, # Present value
+    fv: Amount = 0, # Future value
+    pmt_at_begining: bool = False  # When payments are due
+) -> FloatOrNone
+```
+
+See also: [PMT](functions.md#pmt)
+
+## PPMT
+
+Compute the payment against loan principal.
+
+```python
+ppmt(
+    rate: Rate, # Rate of interest per period
+    per: Period, # The payment period to calculate the interest amount.
+    nper: Period, # Number of compounding periods
+    pv: Amount, # Present value
+    fv: Amount = 0, # Future value
+    pmt_at_begining: bool = False  # When payments are due
+) -> FloatOrNone
+```
+
+See also: [PMT](functions.md#pmt)
 
 ## NPER
 
@@ -191,6 +231,23 @@ nper(
 
 See also: [FV](functions.md#fv), [PV](functions.md#pv), [PMT](functions.md#pmt)
 
+## RATE
+
+Compute the payment against loan principal plus interest.
+
+```python
+rate(
+    nper: Period, # Number of compounding periods
+    pmt: Amount, # Payment
+    pv: Amount, # Present value
+    fv: Amount = 0, # Future value
+    pmt_at_begining: bool = False  # When payments are due
+    guess: Guess = 0.1
+) -> FloatOrNone
+```
+
+See also: [FV](functions.md#fv), [PV](functions.md#pv), [PMT](functions.md#pmt)
+
 ## PV
 
 Compute the present value.
@@ -198,7 +255,7 @@ Compute the present value.
 ```python
 pv(
     rate: Rate, # Rate of interest per period
-    nper: int, # Number of compounding periods
+    nper: Period, # Number of compounding periods
     pmt: Amount, # Payment
     fv: Amount = 0, # Future value
     pmt_at_begining: bool = False  # When payments are due
