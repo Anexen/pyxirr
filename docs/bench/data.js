@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1634329284687,
+  "lastUpdate": 1635921554840,
   "repoUrl": "https://github.com/Anexen/pyxirr",
   "entries": {
     "Rust Benchmark": [
@@ -1859,6 +1859,84 @@ window.BENCHMARK_DATA = {
             "name": "bench_scipy_500",
             "value": 2506536,
             "range": "± 56728",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "nikita.almakov@gmail.com",
+            "name": "Nikita Almakov",
+            "username": "westandskif"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "57429769ceb1cd3432fc9861ed7528dc96a96c94",
+          "message": "added wheel build for linux arm (#19)\n\nCo-authored-by: Nikita Almakov <nik@Nikitas-MacBook-Pro.local>",
+          "timestamp": "2021-11-03T09:36:51+03:00",
+          "tree_id": "76cfed0b8616530debffa784699f981fa8515845",
+          "url": "https://github.com/Anexen/pyxirr/commit/57429769ceb1cd3432fc9861ed7528dc96a96c94"
+        },
+        "date": 1635921554824,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "bench_python_100",
+            "value": 14632570,
+            "range": "± 106802",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_python_1000",
+            "value": 36879470,
+            "range": "± 217967",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_python_500",
+            "value": 48032492,
+            "range": "± 355862",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_rust_100",
+            "value": 41654,
+            "range": "± 626",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_rust_1000",
+            "value": 373958,
+            "range": "± 16902",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_rust_500",
+            "value": 224790,
+            "range": "± 11541",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_scipy_100",
+            "value": 709137,
+            "range": "± 5219",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_scipy_1000",
+            "value": 3511822,
+            "range": "± 20906",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_scipy_500",
+            "value": 2457653,
+            "range": "± 11559",
             "unit": "ns/iter"
           }
         ]
