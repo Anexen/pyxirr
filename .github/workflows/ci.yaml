@@ -83,6 +83,14 @@ jobs:
           target: aarch64-unknown-linux-gnu
           args: -i python${{ matrix.python-version }} --release --strip
 
+      - name: Build Wheels - Android
+        if: matrix.os == 'ubuntu-latest'
+        uses: messense/maturin-action@v1
+        with:
+          manylinux: auto
+          target: aarch64-linux-android
+          args: -i python${{ matrix.python-version }} --release --strip
+
       - name: Build Wheels - MacOS
         if: matrix.os == 'macos-latest'
         uses: messense/maturin-action@v1
