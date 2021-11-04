@@ -17,7 +17,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10']
+        python-version: ['3.9']
         os: ['ubuntu-latest']
     steps:
       - uses: actions/checkout@v2
@@ -100,6 +100,7 @@ jobs:
           path: target/wheels
 
   linux-cross:
+    needs: test
     runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event.inputs.build }}
     strategy:
@@ -128,7 +129,7 @@ jobs:
           path: target/wheels
 
   publish:
-    needs: build
+    needs: [build, linux-cross]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
