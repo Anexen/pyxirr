@@ -1,7 +1,9 @@
 use std::iter::successors;
 
 use super::models::{validate, InvalidPaymentsError};
-use super::optimize::find_root_newton_raphson_with_default_deriv;
+use super::optimize::{
+    find_root_newton_raphson_with_brute_force, find_root_newton_raphson_with_default_deriv,
+};
 
 // pre calculating powers for performance
 pub fn powers(base: f64, n: usize, start_from_zero: bool) -> Vec<f64> {
@@ -143,12 +145,19 @@ pub fn npv(rate: f64, values: &[f64], start_from_zero: Option<bool>) -> f64 {
         .sum()
 }
 
+fn npv_deriv(rate: f64, values: &[f64]) -> f64 {
+    values.iter().enumerate().map(|(i, v)| -(i as f64) * v / (rate + 1.0).powf(i as f64 + 1.)).sum()
+}
+
 pub fn irr(values: &[f64], guess: Option<f64>) -> Result<f64, InvalidPaymentsError> {
     validate(values, None)?;
 
-    Ok(find_root_newton_raphson_with_default_deriv(guess.unwrap_or(0.1), |rate| {
-        self::npv(rate, values, Some(true))
-    }))
+    Ok(find_root_newton_raphson_with_brute_force(
+        guess.unwrap_or(0.1),
+        &[(-0.99, 1.0, 0.01)],
+        |rate| self::npv(rate, values, Some(true)),
+        |rate| self::npv_deriv(rate, values),
+    ))
 }
 
 pub fn mirr(values: &[f64], finance_rate: f64, reinvest_rate: f64) -> f64 {

@@ -413,12 +413,12 @@ fn test_nfv() {
 
 // ------------ IRR ----------------
 
-// test cases from numpy_finance.irr
 #[rstest]
-#[case(&[-100, 39, 59, 55, 20], 0.28094842116)]
-#[case(&[-100, 0, 0, 74], -0.09549583034)]
-#[case(&[-100, 100, 0, -7], -0.08329966618)]
-fn test_irr_works(#[case] input: &[i64], #[case] expected: f64) {
+#[case(&[-100.0, 39.0, 59.0, 55.0, 20.0], 0.28094842116)]
+#[case(&[-100.0, 0.0, 0.0, 74.0], -0.09549583034)]
+#[case(&[-100.0, 100.0, 0.0, -7.0], -0.08329966618)]
+#[case(&[87.17, 87.17, 87.17, 87.17, 87.17, -86.43], -0.49367042606)]
+fn test_irr_works(#[case] input: &[f64], #[case] expected: f64) {
     Python::with_gil(|py| {
         let values = PyList::new(py, input);
         let result = pyxirr::irr(values, None).unwrap().unwrap();
@@ -434,6 +434,7 @@ fn test_irr_works(#[case] input: &[i64], #[case] expected: f64) {
 
 #[rstest]
 #[case::unordered("tests/samples/unordered.csv")]
+#[case::equal_payments("tests/samples/equal_payments.csv")]
 #[case::random_100("tests/samples/random_100.csv")]
 #[case::random_1000("tests/samples/random_1000.csv")]
 fn test_irr_samples(#[case] input: &str) {

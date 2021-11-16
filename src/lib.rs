@@ -22,7 +22,7 @@ fn float_or_none(result: f64) -> Option<f64> {
 
 /// Internal Rate of Return for a non-periodic cash flows.
 #[pyfunction(amounts = "None", guess = "0.1")]
-#[pyo3(text_signature = "(dates, amounts=None, guess=0.1)")]
+#[pyo3(text_signature = "(dates, amounts, guess=0.1)")]
 pub fn xirr(dates: &PyAny, amounts: Option<&PyAny>, guess: Option<f64>) -> PyResult<Option<f64>> {
     let (dates, amounts) = conversions::extract_payments(dates, amounts)?;
     let result = core::xirr(&dates, &amounts, guess)?;
@@ -31,7 +31,7 @@ pub fn xirr(dates: &PyAny, amounts: Option<&PyAny>, guess: Option<f64>) -> PyRes
 
 /// Net Present Value for a non-periodic cash flows.
 #[pyfunction(amounts = "None")]
-#[pyo3(text_signature = "(rate, dates, amounts=None)")]
+#[pyo3(text_signature = "(rate, dates, amounts)")]
 pub fn xnpv(rate: f64, dates: &PyAny, amounts: Option<&PyAny>) -> PyResult<Option<f64>> {
     let (dates, amounts) = conversions::extract_payments(dates, amounts)?;
     let result = core::xnpv(rate, &dates, &amounts)?;
@@ -102,7 +102,7 @@ pub fn xfv(
 
 /// Net future value of a series of irregular cash flows
 #[pyfunction(amounts = "None")]
-#[pyo3(text_signature = "(rate, dates, amounts=None)")]
+#[pyo3(text_signature = "(rate, dates, amounts)")]
 pub fn xnfv(rate: f64, dates: &PyAny, amounts: Option<&PyAny>) -> PyResult<Option<f64>> {
     let (dates, amounts) = conversions::extract_payments(dates, amounts)?;
     Ok(float_or_none(core::xnfv(rate, &dates, &amounts)?))

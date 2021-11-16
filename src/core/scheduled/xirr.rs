@@ -1,5 +1,5 @@
 use crate::core::models::{validate, DateLike, InvalidPaymentsError};
-use crate::core::optimize::find_root_newton_raphson;
+use crate::core::optimize::find_root_newton_raphson_with_brute_force;
 
 pub fn xirr(
     dates: &[DateLike],
@@ -10,27 +10,12 @@ pub fn xirr(
 
     let ref deltas = precalculate_deltas(&dates);
 
-    let guess = guess.unwrap_or(0.1);
-
-    let rate = find_rate(amounts, deltas, guess);
-
-    if is_good_rate(rate, amounts, deltas) {
-        return Ok(rate);
-    }
-
-    let rate = find_guess_in_range(-0.999, -0.99, 0.001, amounts, deltas);
-
-    if is_good_rate(rate, amounts, deltas) {
-        return Ok(rate);
-    }
-
-    let rate = find_guess_in_range(-0.99, 1.0, 0.01, amounts, deltas);
-
-    if is_good_rate(rate, amounts, deltas) {
-        return Ok(rate);
-    }
-
-    Ok(f64::NAN)
+    Ok(find_root_newton_raphson_with_brute_force(
+        guess.unwrap_or(0.1),
+        &[(-0.999, -0.99, 0.001), (-0.99, 1.0, 0.01)],
+        |rate| xirr_result(amounts, deltas, rate),
+        |rate| xirr_result_deriv(amounts, deltas, rate),
+    ))
 }
 
 /// Calculate the net present value of a series of payments at irregular intervals.
@@ -46,34 +31,9 @@ pub fn xnpv(rate: f64, dates: &[DateLike], amounts: &[f64]) -> Result<f64, Inval
 //     amounts.iter().sum::<f64>() / -amounts.iter().filter(|&x| x < &0.0).sum::<f64>()
 // }
 
-fn is_good_rate(rate: f64, amounts: &[f64], deltas: &[f64]) -> bool {
-    // rate must be finite and XNPV must be close to zero
-    rate.is_finite() && xirr_result(amounts, deltas, rate).abs() < 1e-3
-}
-
-fn find_guess_in_range(min: f64, max: f64, step: f64, amounts: &[f64], deltas: &[f64]) -> f64 {
-    let mut guess = min;
-    while guess < max {
-        let rate = find_rate(amounts, deltas, guess);
-        if is_good_rate(rate, amounts, deltas) {
-            return rate;
-        }
-        guess += step;
-    }
-    f64::NAN
-}
-
 fn precalculate_deltas(dates: &[DateLike]) -> Vec<f64> {
     let min_date = dates.iter().min().unwrap();
     dates.iter().map(|d| (*d - *min_date) as f64 / 365.0).collect()
-}
-
-fn find_rate(amounts: &[f64], deltas: &[f64], guess: f64) -> f64 {
-    find_root_newton_raphson(
-        guess,
-        |rate| xirr_result(amounts, deltas, rate),
-        |rate| xirr_result_deriv(amounts, deltas, rate),
-    )
 }
 
 // \sum_{i=1}^n \frac{P_i}{(1 + rate)^{(d_i - d_0)/365}}

@@ -42,3 +42,35 @@ where
         (f(x + MAX_ERROR) - f(x - MAX_ERROR)) / (2.0 * MAX_ERROR)
     })
 }
+
+pub fn find_root_newton_raphson_with_brute_force<Func, Deriv>(
+    start: f64,
+    ranges: &[(f64, f64, f64)],
+    f: Func,
+    d: Deriv,
+) -> f64
+where
+    Func: Fn(f64) -> f64,
+    Deriv: Fn(f64) -> f64,
+{
+    let is_good_rate = |rate: f64| rate.is_finite() && f(rate).abs() < 1e-3;
+
+    let rate = find_root_newton_raphson(start, &f, &d);
+
+    if is_good_rate(rate) {
+        return rate;
+    }
+
+    for (min, max, step) in ranges.into_iter() {
+        let mut guess = *min;
+        while guess < *max {
+            let rate = find_root_newton_raphson(guess, &f, &d);
+            if is_good_rate(rate) {
+                return rate;
+            }
+            guess += step;
+        }
+    }
+
+    f64::NAN
+}

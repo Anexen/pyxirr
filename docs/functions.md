@@ -9,11 +9,9 @@
 ```python
 # `None` if the calculation fails to converge or result is NaN.
 # could return `inf` or `-inf`
-FloatOrNone = Optional[float]
-
 DateLike = Union[datetime.date, datetime.datetime, numpy.datetime64, pandas.Timestamp]
 Rate = float  # rate as decimal, not percentage, normally between [-1, 1]
-Periods = Union[int, float]
+Period = Union[int, float]
 Guess = Optional[Rate]
 Amount = Union[int, float, Decimal]
 Payment = Tuple[DateLike, Amount]
@@ -37,13 +35,14 @@ CashFlow = Union[CashFlowSeries, CashFlowTable, CashFlowDict]
 Compute the future value.
 
 ```python
-fv(
+def fv(
     rate: Rate, # Rate of interest per period
     nper: Period, # Number of compounding periods
     pmt: Amount, # Payment
     pv: Amount, # Present value
     pmt_at_begining: bool = False  # When payments are due
-) -> FloatOrNone
+) -> Optional[float]:
+    ...
 ```
 
 The future value is computed by solving the equation:
@@ -72,11 +71,12 @@ Net Future Value
 
 ```python
 # raises: InvalidPaymentsError
-nfv(
+def nfv(
     rate: Rate, # Rate of interest per period
     nper: Period, # Number of compounding periods
     amounts: AmountArray,
-) -> FloatOrNone
+) -> Optional[float]:
+    ...
 ```
 
 Compute the Future Value of uneven payments at regular periods.
@@ -102,14 +102,15 @@ See this [video](https://www.youtube.com/watch?v=775ljhriB8U) for details.
 Future value of a cash flow between two dates.
 
 ```python
-xfv(
+def xfv(
     start_date: DateLike,
     cash_flow_date: DateLike,
     end_date: DateLike,
     cash_flow_rate: Rate,  # annual rate
     end_rate: Rate,  # annual rate
     cash_flow: Amount,
-) -> FloatOrNone
+) -> Optional[float]:
+    ...
 ```
 
 When:
@@ -152,11 +153,12 @@ All cash flows in a group are compounded to the latest cash flow in the group.
 
 ```python
 # raises InvalidPaymentsError
-xnfv(
+def xnfv(
     rate: Rate,  # annual rate
     dates: Union[CashFlow, DateLikeArray],
     amounts: Optional[AmountArray] = None,
-) -> FloatOrNone
+) -> Optional[float]:
+    ...
 ```
 
 See also: [XLeratorDB.XNFV](http://westclintech.com/SQL-Server-Financial-Functions/SQL-Server-XNFV-function)
