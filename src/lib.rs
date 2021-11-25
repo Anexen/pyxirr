@@ -20,13 +20,34 @@ fn float_or_none(result: f64) -> Option<f64> {
     }
 }
 
+fn fallible_float_or_none<T>(result: Result<f64, T>, silent: bool) -> PyResult<Option<f64>>
+where
+    pyo3::PyErr: From<T>,
+{
+    match result {
+        Err(e) => {
+            if silent {
+                Ok(None)
+            } else {
+                Err(e.into())
+            }
+        }
+        Ok(v) => Ok(float_or_none(v))
+    }
+}
+
 /// Internal Rate of Return for a non-periodic cash flows.
-#[pyfunction(amounts = "None", guess = "0.1")]
-#[pyo3(text_signature = "(dates, amounts, guess=0.1)")]
-pub fn xirr(dates: &PyAny, amounts: Option<&PyAny>, guess: Option<f64>) -> PyResult<Option<f64>> {
+#[pyfunction(amounts = "None", "*", guess = "0.1", silent = "false")]
+#[pyo3(text_signature = "(dates, amounts, *, guess=0.1, silent=False)")]
+pub fn xirr(
+    dates: &PyAny,
+    amounts: Option<&PyAny>,
+    guess: Option<f64>,
+    silent: Option<bool>,
+) -> PyResult<Option<f64>> {
     let (dates, amounts) = conversions::extract_payments(dates, amounts)?;
-    let result = core::xirr(&dates, &amounts, guess)?;
-    Ok(float_or_none(result))
+    let result = core::xirr(&dates, &amounts, guess);
+    fallible_float_or_none(result, silent.unwrap_or(false))
 }
 
 /// Net Present Value for a non-periodic cash flows.
@@ -34,8 +55,8 @@ pub fn xirr(dates: &PyAny, amounts: Option<&PyAny>, guess: Option<f64>) -> PyRes
 #[pyo3(text_signature = "(rate, dates, amounts)")]
 pub fn xnpv(rate: f64, dates: &PyAny, amounts: Option<&PyAny>) -> PyResult<Option<f64>> {
     let (dates, amounts) = conversions::extract_payments(dates, amounts)?;
-    let result = core::xnpv(rate, &dates, &amounts)?;
-    Ok(float_or_none(result))
+    let result = core::xnpv(rate, &dates, &amounts);
+    fallible_float_or_none(result, false)
 }
 
 /// Internal Rate of Return
@@ -43,8 +64,8 @@ pub fn xnpv(rate: f64, dates: &PyAny, amounts: Option<&PyAny>) -> PyResult<Optio
 #[pyo3(text_signature = "(amounts, guess=0.1)")]
 pub fn irr(amounts: &PyAny, guess: Option<f64>) -> PyResult<Option<f64>> {
     let amounts = conversions::extract_amount_series(amounts)?;
-    let result = core::irr(&amounts, guess)?;
-    Ok(float_or_none(result))
+    let result = core::irr(&amounts, guess);
+    fallible_float_or_none(result, false)
 }
 
 /// Net Present Value.

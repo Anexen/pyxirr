@@ -79,7 +79,7 @@ fn test_xnpv_samples(#[case] input: &str) {
 fn test_xirr_samples(#[case] input: &str) {
     let result = Python::with_gil(|py| {
         let payments = PaymentsLoader::from_csv(py, input).to_records();
-        let rate = pyxirr::xirr(payments, None, None).unwrap();
+        let rate = pyxirr::xirr(payments, None, None, None).unwrap();
 
         if let Some(rate) = rate {
             assert_almost_eq!(pyxirr::xnpv(rate, payments, None).unwrap().unwrap(), 0.0, 1e-3);
