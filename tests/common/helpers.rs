@@ -91,8 +91,8 @@ impl<'p> PaymentsLoader<'p> {
 
     pub fn to_columns(&self) -> (&'p PyAny, &'p PyAny) {
         (
-            PyList::new(self.py, self.data.iter().map(|x| x.get_item(0))).as_ref(),
-            PyList::new(self.py, self.data.iter().map(|x| x.get_item(1))).as_ref(),
+            PyList::new(self.py, self.data.iter().map(|x| x.get_item(0).unwrap())).as_ref(),
+            PyList::new(self.py, self.data.iter().map(|x| x.get_item(1).unwrap())).as_ref(),
         )
     }
 }

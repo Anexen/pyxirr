@@ -84,9 +84,9 @@ fn extract_records(data: &PyAny) -> PyResult<(Vec<DateLike>, Vec<f64>)> {
         // get_item() uses different ffi calls for different objects
         // PyTuple.get_item (ffi::PyTuple_GetItem) is faster than PyAny.get_item (ffi::PyObject_GetItem)
         let tup = if let Ok(py_tuple) = obj.downcast::<PyTuple>() {
-            (py_tuple.get_item(0), py_tuple.get_item(1))
+            (py_tuple.get_item(0)?, py_tuple.get_item(1)?)
         } else if let Ok(py_list) = obj.downcast::<PyList>() {
-            (py_list.get_item(0), py_list.get_item(1))
+            (py_list.get_item(0)?, py_list.get_item(1)?)
         } else {
             (obj.get_item(0)?, obj.get_item(1)?)
         };
