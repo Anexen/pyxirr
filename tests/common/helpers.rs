@@ -2,6 +2,28 @@
 use pyo3::prelude::*;
 use pyo3::types::*;
 
+use rstest::fixture;
+
+#[macro_export]
+macro_rules! py_locals {
+    ($py:expr, $($val:ident)+) => {{
+        use pyo3::types::IntoPyDict;
+        use pyo3::ToPyObject;
+        [$((stringify!($val), $val.to_object($py)),)+].into_py_dict($py)
+    }};
+}
+
+#[macro_export]
+macro_rules! py_eval {
+    ($py:expr, $($val:ident)+, $code:expr) => {{
+        let locals = py_locals!($py, $($val)+);
+        py_eval!($py, *locals, $code)
+    }};
+    ($py:expr, *$locals:expr, $code:expr) => {{
+        $py.eval($code, Some($locals), None).unwrap().extract().unwrap()
+    }};
+}
+
 #[macro_export]
 macro_rules! assert_almost_eq {
     ($a:expr, $b:expr, $eps:expr) => {{
@@ -36,6 +58,15 @@ macro_rules! assert_future_value {
 
         assert_almost_eq!(result, 0.0, 1e-6);
     }};
+}
+
+#[fixture]
+pub fn px() -> Py<PyModule> {
+    Python::with_gil(|py| {
+        let module = PyModule::new(py, "pyxirr").unwrap();
+        pyxirr::pyxirr(py, &module).unwrap();
+        module.into()
+    })
 }
 
 pub fn pd_read_csv<'p>(py: Python<'p>, input_file: &str) -> &'p PyAny {

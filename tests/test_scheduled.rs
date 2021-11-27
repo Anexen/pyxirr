@@ -1,21 +1,19 @@
 use rstest::rstest;
 
-use pyo3::types::{IntoPyDict, PyDate};
-use pyo3::Python;
-
-use pyxirr;
+use pyo3::types::{IntoPyDict, PyDate, PyModule};
+use pyo3::{Py, Python};
 
 mod common;
-use common::{xirr_expected_result, xnpv_expected_result, PaymentsLoader};
+use common::{px, xirr_expected_result, xnpv_expected_result, PaymentsLoader};
 
 #[rstest]
 #[case::unordered("tests/samples/unordered.csv")]
 #[case::random_100("tests/samples/random_100.csv")]
-fn test_xnpv_samples(#[case] input: &str) {
+fn test_xnpv_samples(px: Py<PyModule>, #[case] input: &str) {
     let rate = 0.1;
-    let result = Python::with_gil(|py| {
+    let result: f64 = Python::with_gil(|py| {
         let payments = PaymentsLoader::from_csv(py, input).to_records();
-        pyxirr::xnpv(rate, payments, None).unwrap().unwrap()
+        py_eval!(py, px rate payments, "px.xnpv(rate, payments)")
     });
     assert_almost_eq!(result, xnpv_expected_result(rate, input));
 }
@@ -76,17 +74,21 @@ fn test_xnpv_samples(#[case] input: &str) {
 #[case::case_30_47("tests/samples/30-47.csv")]
 #[case::case_30_48("tests/samples/30-48.csv")]
 #[case::close_to_minus_99("tests/samples/minus_99.csv")]
-fn test_xirr_samples(#[case] input: &str) {
+fn test_xirr_samples(px: Py<PyModule>, #[case] input: &str) {
     let result = Python::with_gil(|py| {
         let payments = PaymentsLoader::from_csv(py, input).to_records();
-        let rate = pyxirr::xirr(payments, None, None, None).unwrap();
+        let locals = py_locals!(py, px payments);
+        let rate: Option<f64> = py_eval!(py, *locals, "px.xirr(payments)");
 
         if let Some(rate) = rate {
-            assert_almost_eq!(pyxirr::xnpv(rate, payments, None).unwrap().unwrap(), 0.0, 1e-3);
+            locals.set_item("rate", rate).unwrap();
+            let xnpv: f64 = py_eval!(py, *locals, "px.xnpv(rate, payments)");
+            assert_almost_eq!(xnpv, 0.0, 1e-3);
         }
 
         rate.unwrap_or(f64::NAN)
     });
+
     let expected = xirr_expected_result(input);
 
     if result.is_nan() {
@@ -94,6 +96,19 @@ fn test_xirr_samples(#[case] input: &str) {
     } else {
         assert_almost_eq!(result, expected);
     }
+}
+
+#[rstest]
+fn test_xirr_silent(px: Py<PyModule>) {
+    Python::with_gil(|py| {
+        let locals = py_locals!(py, px);
+
+        let err = py.eval("px.xirr([], [])", Some(locals), None).unwrap_err();
+        assert!(err.is_instance::<pyxirr::InvalidPaymentsError>(py));
+
+        let result: Option<f64> = py_eval!(py, *locals, "px.xirr([], [], silent=True)");
+        assert!(result.is_none());
+    })
 }
 
 #[rstest]

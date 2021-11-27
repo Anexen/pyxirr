@@ -32,7 +32,7 @@ where
                 Err(e.into())
             }
         }
-        Ok(v) => Ok(float_or_none(v))
+        Ok(v) => Ok(float_or_none(v)),
     }
 }
 
@@ -40,14 +40,17 @@ where
 #[pyfunction(amounts = "None", "*", guess = "0.1", silent = "false")]
 #[pyo3(text_signature = "(dates, amounts, *, guess=0.1, silent=False)")]
 pub fn xirr(
+    py: Python,
     dates: &PyAny,
     amounts: Option<&PyAny>,
     guess: Option<f64>,
     silent: Option<bool>,
 ) -> PyResult<Option<f64>> {
     let (dates, amounts) = conversions::extract_payments(dates, amounts)?;
-    let result = core::xirr(&dates, &amounts, guess);
-    fallible_float_or_none(result, silent.unwrap_or(false))
+    py.allow_threads(|| {
+        let result = core::xirr(&dates, &amounts, guess);
+        fallible_float_or_none(result, silent.unwrap_or(false))
+    })
 }
 
 /// Net Present Value for a non-periodic cash flows.
@@ -220,7 +223,7 @@ pub fn rate(
 }
 
 #[pymodule]
-fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
+pub fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_wrapped(wrap_pyfunction!(pmt))?;
     m.add_wrapped(wrap_pyfunction!(ipmt))?;
     m.add_wrapped(wrap_pyfunction!(ppmt))?;
