@@ -40,8 +40,14 @@ macro_rules! bench_rust {
             Python::with_gil(|py| {
                 let data = PaymentsLoader::from_csv(py, $file).to_records();
                 b.iter(|| {
-                    pyxirr::xirr(black_box(data), black_box(None), black_box(None), black_box(None))
-                        .unwrap()
+                    pyxirr::xirr(
+                        py,
+                        black_box(data),
+                        black_box(None),
+                        black_box(None),
+                        black_box(None),
+                    )
+                    .unwrap()
                 });
             });
         }
