@@ -224,21 +224,21 @@ pub fn rate(
 
 #[pymodule]
 pub fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_wrapped(wrap_pyfunction!(pmt))?;
-    m.add_wrapped(wrap_pyfunction!(ipmt))?;
-    m.add_wrapped(wrap_pyfunction!(ppmt))?;
-    m.add_wrapped(wrap_pyfunction!(nper))?;
-    m.add_wrapped(wrap_pyfunction!(rate))?;
-    m.add_wrapped(wrap_pyfunction!(fv))?;
-    m.add_wrapped(wrap_pyfunction!(nfv))?;
-    m.add_wrapped(wrap_pyfunction!(xfv))?;
-    m.add_wrapped(wrap_pyfunction!(xnfv))?;
-    m.add_wrapped(wrap_pyfunction!(pv))?;
-    m.add_wrapped(wrap_pyfunction!(npv))?;
-    m.add_wrapped(wrap_pyfunction!(xnpv))?;
-    m.add_wrapped(wrap_pyfunction!(irr))?;
-    m.add_wrapped(wrap_pyfunction!(mirr))?;
-    m.add_wrapped(wrap_pyfunction!(xirr))?;
+    m.add_function(wrap_pyfunction!(pmt, m)?)?;
+    m.add_function(wrap_pyfunction!(ipmt, m)?)?;
+    m.add_function(wrap_pyfunction!(ppmt, m)?)?;
+    m.add_function(wrap_pyfunction!(nper, m)?)?;
+    m.add_function(wrap_pyfunction!(rate, m)?)?;
+    m.add_function(wrap_pyfunction!(fv, m)?)?;
+    m.add_function(wrap_pyfunction!(nfv, m)?)?;
+    m.add_function(wrap_pyfunction!(xfv, m)?)?;
+    m.add_function(wrap_pyfunction!(xnfv, m)?)?;
+    m.add_function(wrap_pyfunction!(pv, m)?)?;
+    m.add_function(wrap_pyfunction!(npv, m)?)?;
+    m.add_function(wrap_pyfunction!(xnpv, m)?)?;
+    m.add_function(wrap_pyfunction!(irr, m)?)?;
+    m.add_function(wrap_pyfunction!(mirr, m)?)?;
+    m.add_function(wrap_pyfunction!(xirr, m)?)?;
 
     m.add("InvalidPaymentsError", py.get_type::<InvalidPaymentsError>())?;
 

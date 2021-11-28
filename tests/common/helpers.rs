@@ -1,26 +1,55 @@
 #![allow(dead_code)]
+use pyo3::once_cell::GILOnceCell;
 use pyo3::prelude::*;
 use pyo3::types::*;
 
-use rstest::fixture;
-
 #[macro_export]
-macro_rules! py_locals {
-    ($py:expr, $($val:ident)+) => {{
-        use pyo3::types::IntoPyDict;
-        use pyo3::ToPyObject;
-        [$((stringify!($val), $val.to_object($py)),)+].into_py_dict($py)
-    }};
+macro_rules! py_dict {
+    ($py:expr, $($key:expr => $value:expr), *) => {
+        {
+            let _dict = ::pyo3::types::PyDict::new($py);
+            $(
+                _dict.set_item($key, $value).unwrap();
+            )*
+            _dict
+        }
+    };
 }
 
 #[macro_export]
-macro_rules! py_eval {
-    ($py:expr, $($val:ident)+, $code:expr) => {{
-        let locals = py_locals!($py, $($val)+);
-        py_eval!($py, *locals, $code)
+macro_rules! py_dict_merge {
+    ($py:expr, $($dict:expr), *) => {
+        {
+            let _dict = ::pyo3::types::PyDict::new($py);
+            $(
+                _dict.getattr("update").unwrap().call1(($dict,)).unwrap();
+            )*
+            _dict
+
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! pyxirr_call {
+    ($py:expr, $name:expr, $args:expr) => {{
+        let kwargs = ::pyo3::types::PyDict::new($py);
+        pyxirr_call!($py, $name, $args, kwargs)
     }};
-    ($py:expr, *$locals:expr, $code:expr) => {{
-        $py.eval($code, Some($locals), None).unwrap().extract().unwrap()
+    ($py:expr, $name:expr, $args:expr, $kwargs:expr) => {
+        pyxirr_call_impl!($py, $name, $args, $kwargs).unwrap().extract().unwrap()
+    };
+}
+
+#[macro_export]
+macro_rules! pyxirr_call_impl {
+    ($py:expr, $name:expr, $args:expr) => {{
+        let kwargs = ::pyo3::types::PyDict::new($py);
+        pyxirr_call_impl!($py, $name, $args, kwargs)
+    }};
+    ($py:expr, $name:expr, $args:expr, $kwargs:expr) => {{
+        use common::get_pyxirr_func;
+        get_pyxirr_func($py, $name).call($args, Some($kwargs))
     }};
 }
 
@@ -60,21 +89,27 @@ macro_rules! assert_future_value {
     }};
 }
 
-#[fixture]
-pub fn px() -> Py<PyModule> {
-    Python::with_gil(|py| {
-        let module = PyModule::new(py, "pyxirr").unwrap();
-        pyxirr::pyxirr(py, &module).unwrap();
-        module.into()
-    })
+static PYXIRR: GILOnceCell<Py<PyModule>> = GILOnceCell::new();
+
+pub fn get_pyxirr_module(py: Python) -> &PyModule {
+    PYXIRR
+        .get_or_init(py, || {
+            let module = PyModule::new(py, "pyxirr").unwrap();
+            pyxirr::pyxirr(py, &module).unwrap();
+            module.into()
+        })
+        .as_ref(py)
+}
+
+pub fn get_pyxirr_func<'p>(py: Python<'p>, name: &str) -> &'p PyCFunction {
+    get_pyxirr_module(py).getattr(name).unwrap().downcast().unwrap()
 }
 
 pub fn pd_read_csv<'p>(py: Python<'p>, input_file: &str) -> &'p PyAny {
-    let locals = vec![
-        ("sample", PyString::new(py, input_file).as_ref()),
-        ("pd", PyModule::import(py, "pandas").unwrap()),
-    ]
-    .into_py_dict(py);
+    let locals = py_dict!(py,
+        "sample" => PyString::new(py, input_file),
+        "pd" => PyModule::import(py, "pandas").unwrap()
+    );
 
     py.eval("pd.read_csv(sample, header=None, parse_dates=[0])", Some(locals), None).unwrap()
 }

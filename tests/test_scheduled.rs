@@ -1,19 +1,19 @@
 use rstest::rstest;
 
-use pyo3::types::{IntoPyDict, PyDate, PyModule};
-use pyo3::{Py, Python};
+use pyo3::types::{IntoPyDict, PyDate, PyList};
+use pyo3::Python;
 
 mod common;
-use common::{px, xirr_expected_result, xnpv_expected_result, PaymentsLoader};
+use common::{xirr_expected_result, xnpv_expected_result, PaymentsLoader};
 
 #[rstest]
 #[case::unordered("tests/samples/unordered.csv")]
 #[case::random_100("tests/samples/random_100.csv")]
-fn test_xnpv_samples(px: Py<PyModule>, #[case] input: &str) {
+fn test_xnpv_samples(#[case] input: &str) {
     let rate = 0.1;
     let result: f64 = Python::with_gil(|py| {
         let payments = PaymentsLoader::from_csv(py, input).to_records();
-        py_eval!(py, px rate payments, "px.xnpv(rate, payments)")
+        pyxirr_call!(py, "xnpv", (rate, payments))
     });
     assert_almost_eq!(result, xnpv_expected_result(rate, input));
 }
@@ -74,15 +74,13 @@ fn test_xnpv_samples(px: Py<PyModule>, #[case] input: &str) {
 #[case::case_30_47("tests/samples/30-47.csv")]
 #[case::case_30_48("tests/samples/30-48.csv")]
 #[case::close_to_minus_99("tests/samples/minus_99.csv")]
-fn test_xirr_samples(px: Py<PyModule>, #[case] input: &str) {
+fn test_xirr_samples(#[case] input: &str) {
     let result = Python::with_gil(|py| {
         let payments = PaymentsLoader::from_csv(py, input).to_records();
-        let locals = py_locals!(py, px payments);
-        let rate: Option<f64> = py_eval!(py, *locals, "px.xirr(payments)");
+        let rate: Option<f64> = pyxirr_call!(py, "xirr", (payments,));
 
         if let Some(rate) = rate {
-            locals.set_item("rate", rate).unwrap();
-            let xnpv: f64 = py_eval!(py, *locals, "px.xnpv(rate, payments)");
+            let xnpv: f64 = pyxirr_call!(py, "xnpv", (rate, payments));
             assert_almost_eq!(xnpv, 0.0, 1e-3);
         }
 
@@ -99,14 +97,13 @@ fn test_xirr_samples(px: Py<PyModule>, #[case] input: &str) {
 }
 
 #[rstest]
-fn test_xirr_silent(px: Py<PyModule>) {
+fn test_xirr_silent() {
     Python::with_gil(|py| {
-        let locals = py_locals!(py, px);
-
-        let err = py.eval("px.xirr([], [])", Some(locals), None).unwrap_err();
+        let args = (PyList::empty(py), PyList::empty(py));
+        let err = pyxirr_call_impl!(py, "xirr", args).unwrap_err();
         assert!(err.is_instance::<pyxirr::InvalidPaymentsError>(py));
 
-        let result: Option<f64> = py_eval!(py, *locals, "px.xirr([], [], silent=True)");
+        let result: Option<f64> = pyxirr_call!(py, "xirr", args, py_dict!(py, "silent" => true));
         assert!(result.is_none());
     })
 }
