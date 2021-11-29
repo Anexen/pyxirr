@@ -92,8 +92,8 @@ See the [docs](https://anexen.github.io/pyxirr)
 - [x] Implement all functions from [numpy-financial](https://numpy.org/numpy-financial/latest/index.html)
 - [ ] Improve docs, add more tests
 - [ ] Type hints [](https://github.com/PyO3/maturin/blob/main/test-crates/pyo3-pure/pyo3_pure.pyi)
-- [ ] Compile library for rust/javascript/python
 - [ ] Vectorized versions of numpy-financial functions.
+- [ ] Compile library for rust/javascript/python
 
 # Development
 
@@ -122,6 +122,13 @@ $ maturin develop
 
 ```bash
 $ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/3.8.6/lib cargo test --no-default-features --features tests
+```
+
+### Benchmarks
+
+```bash
+$ pip install -r bench-requirements.txt
+$ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/3.8.6/lib cargo +nightly bench --no-default-features --features tests
 ```
 
 # Building and distribution

@@ -150,6 +150,7 @@ fn npv_deriv(rate: f64, values: &[f64]) -> f64 {
 }
 
 pub fn irr(values: &[f64], guess: Option<f64>) -> Result<f64, InvalidPaymentsError> {
+    // must contain at least one positive and one negative value
     validate(values, None)?;
 
     Ok(find_root_newton_raphson_with_brute_force(
@@ -160,12 +161,13 @@ pub fn irr(values: &[f64], guess: Option<f64>) -> Result<f64, InvalidPaymentsErr
     ))
 }
 
-pub fn mirr(values: &[f64], finance_rate: f64, reinvest_rate: f64) -> f64 {
-    // must contain at least one positive and one negative value or nan is returned
-    // make it consistent with numpy_financial
-    if validate(values, None).is_err() {
-        return f64::NAN;
-    }
+pub fn mirr(
+    values: &[f64],
+    finance_rate: f64,
+    reinvest_rate: f64,
+) -> Result<f64, InvalidPaymentsError> {
+    // must contain at least one positive and one negative value
+    validate(values, None)?;
 
     let positive: f64 = powers(1. + reinvest_rate, values.len(), true)
         .iter()
@@ -181,5 +183,5 @@ pub fn mirr(values: &[f64], finance_rate: f64, reinvest_rate: f64) -> f64 {
         .map(|(&r, &v)| v / r)
         .sum();
 
-    (positive / -negative).powf(1.0 / (values.len() - 1) as f64) - 1.0
+    Ok((positive / -negative).powf(1.0 / (values.len() - 1) as f64) - 1.0)
 }

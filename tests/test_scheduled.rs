@@ -1,6 +1,6 @@
 use rstest::rstest;
 
-use pyo3::types::{IntoPyDict, PyDate, PyList};
+use pyo3::types::{PyDate, PyList};
 use pyo3::Python;
 
 mod common;
@@ -112,16 +112,15 @@ fn test_xirr_silent() {
 fn test_xfv() {
     // http://westclintech.com/SQL-Server-Financial-Functions/SQL-Server-XFV-function
     Python::with_gil(|py| {
-        let result = pyxirr::xfv(
-            PyDate::new(py, 2011, 2, 1).unwrap().into(),
-            PyDate::new(py, 2011, 3, 1).unwrap().into(),
-            PyDate::new(py, 2012, 2, 1).unwrap().into(),
+        let args = (
+            PyDate::new(py, 2011, 2, 1).unwrap(),
+            PyDate::new(py, 2011, 3, 1).unwrap(),
+            PyDate::new(py, 2012, 2, 1).unwrap(),
             0.00142,
             0.00246,
             100000.,
-        )
-        .unwrap()
-        .unwrap();
+        );
+        let result: f64 = pyxirr_call!(py, "xfv", args);
         assert_almost_eq!(result, 100235.088391894);
     });
 }
@@ -130,7 +129,7 @@ fn test_xfv() {
 fn test_xnfv() {
     Python::with_gil(|py| {
         let payments = PaymentsLoader::from_csv(py, "tests/samples/xnfv.csv").to_records();
-        let result = pyxirr::xnfv(0.0250, payments, None).unwrap().unwrap();
+        let result: f64 = pyxirr_call!(py, "xnfv", (0.0250, payments));
         assert_almost_eq!(result, 57238.1249299303);
     });
 }
@@ -141,33 +140,20 @@ fn test_sum_xfv_eq_xnfv() {
         let rate = 0.0250;
         let (dates, amounts) = PaymentsLoader::from_csv(py, "tests/samples/xnfv.csv").to_columns();
 
-        let xnfv_result = pyxirr::xnfv(rate, dates, Some(amounts)).unwrap().unwrap();
+        let xnfv_result: f64 = pyxirr_call!(py, "xnfv", (rate, dates, amounts));
 
         let builtins = py.import("builtins").unwrap();
-        let locals = vec![
-            ("dates", dates),
-            ("min", builtins.getattr("min").unwrap()),
-            ("max", builtins.getattr("max").unwrap()),
-        ]
-        .into_py_dict(py);
+        let locals = py_dict!(py, "dates" => dates);
+        let min_date = py.eval("min(dates)", Some(locals), Some(builtins.dict())).unwrap();
+        let max_date = py.eval("max(dates)", Some(locals), Some(builtins.dict())).unwrap();
 
-        let min_date = py.eval("min(dates)", Some(locals), None).unwrap();
-        let max_date = py.eval("max(dates)", Some(locals), None).unwrap();
         let sum_xfv_result: f64 = dates
             .iter()
             .unwrap()
-            .zip(amounts.iter().unwrap())
-            .map(|(d, a)| {
-                pyxirr::xfv(
-                    min_date.extract().unwrap(),
-                    d.unwrap().extract().unwrap(),
-                    max_date.extract().unwrap(),
-                    rate,
-                    rate,
-                    a.unwrap().extract().unwrap(),
-                )
-                .unwrap()
-                .unwrap()
+            .map(Result::unwrap)
+            .zip(amounts.iter().unwrap().map(Result::unwrap))
+            .map(|(date, amount)| -> f64 {
+                pyxirr_call!(py, "xfv", (min_date, date, max_date, rate, rate, amount))
             })
             .sum();
 

@@ -26,102 +26,103 @@ fn test_fv_macro_working() {
 
 #[rstest]
 fn test_fv_pmt_at_end() {
-    let result = pyxirr::fv(0.05 / 12.0, 10.0 * 12.0, -100.0, -100.0, None).unwrap();
-    assert_almost_eq!(result, 15692.9288943357);
+    Python::with_gil(|py| {
+        let args = (0.05 / 12.0, 10.0 * 12.0, -100.0, -100.0);
+        let result: f64 = pyxirr_call!(py, "fv", args);
+        assert_almost_eq!(result, 15692.9288943357);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_fv = py.import("numpy_financial").unwrap().getattr("fv").unwrap();
-            let npf_result = npf_fv.call1((0.05 / 12.0, 10.0 * 12.0, -100.0, -100.0));
+            let npf_result = npf_fv.call1(args);
             assert_almost_eq!(result, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 #[rstest]
 fn test_fv_pmt_at_begining() {
-    let result = pyxirr::fv(0.05 / 12.0, 10.0 * 12.0, -100.0, -100.0, Some(true)).unwrap();
-    assert_almost_eq!(result, 15757.6298441047);
+    Python::with_gil(|py| {
+        let result: f64 = pyxirr_call!(py, "fv", (0.05 / 12.0, 10 * 12, -100, -100, true));
+        assert_almost_eq!(result, 15757.6298441047);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_fv = py.import("numpy_financial").unwrap().getattr("fv").unwrap();
             let npf_result = npf_fv.call1((0.05 / 12.0, 10.0 * 12.0, -100.0, -100.0, "start"));
             assert_almost_eq!(result, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 #[rstest]
 fn test_fv_zero_rate() {
-    let result = pyxirr::fv(0.0, 10.0 * 12.0, -100.0, -100.0, None).unwrap();
-    assert_almost_eq!(result, 12100.0);
+    Python::with_gil(|py| {
+        let result: f64 = pyxirr_call!(py, "fv", (0, 10 * 12, -100, -100));
+        assert_almost_eq!(result, 12100.0);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_fv = py.import("numpy_financial").unwrap().getattr("fv").unwrap();
             let npf_result = npf_fv.call1((0.0, 10.0 * 12.0, -100.0, -100.0));
             assert_almost_eq!(result, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 // ------------ PV ----------------
 
 #[rstest]
 fn test_pv_pmt_at_end() {
-    let result = pyxirr::pv(0.05 / 12.0, 10.0 * 12.0, -100.0, Some(15692.93), None).unwrap();
-    assert_almost_eq!(result, -100.0006713162);
+    Python::with_gil(|py| {
+        let result: f64 = pyxirr_call!(py, "pv", (0.05 / 12.0, 10 * 12, -100, 15692.93));
+        assert_almost_eq!(result, -100.0006713162);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_pv = py.import("numpy_financial").unwrap().getattr("pv").unwrap();
             let npf_result = npf_pv.call1((0.05 / 12.0, 10.0 * 12.0, -100.0, 15692.93));
             assert_almost_eq!(result, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 #[rstest]
 fn test_pv_pmt_at_begining() {
-    let result = pyxirr::pv(0.05 / 12.0, 10.0 * 12.0, -100.0, Some(15692.93), Some(true)).unwrap();
-    assert_almost_eq!(result, -60.71677534615);
+    Python::with_gil(|py| {
+        let result: f64 = pyxirr_call!(py, "pv", (0.05 / 12.0, 10 * 12, -100, 15692.93, true));
+        assert_almost_eq!(result, -60.71677534615);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_pv = py.import("numpy_financial").unwrap().getattr("pv").unwrap();
             let npf_result = npf_pv.call1((0.05 / 12.0, 10.0 * 12.0, -100.0, 15692.93, "start"));
             assert_almost_eq!(result, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 #[rstest]
 fn test_pv_zero_rate() {
-    let result = pyxirr::pv(0.0, 10.0 * 12.0, -100.0, Some(15692.93), None).unwrap();
-    assert_almost_eq!(result, -3692.93);
+    Python::with_gil(|py| {
+        let result: f64 = pyxirr_call!(py, "pv", (0, 10 * 12, -100, 15692.93));
+        assert_almost_eq!(result, -3692.93);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_pv = py.import("numpy_financial").unwrap().getattr("pv").unwrap();
             let npf_result = npf_pv.call1((0.0, 10.0 * 12.0, -100.0, 15692.93));
             assert_almost_eq!(result, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 #[rstest]
 fn test_pv_default_pv() {
-    let result = pyxirr::pv(0.05 / 12.0, 10.0 * 12.0, -100.0, None, None).unwrap();
-    assert_almost_eq!(result, 9428.1350328234);
+    Python::with_gil(|py| {
+        let result: f64 = pyxirr_call!(py, "pv", (0.05 / 12.0, 10 * 12, -100));
+        assert_almost_eq!(result, 9428.1350328234);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_pv = py.import("numpy_financial").unwrap().getattr("pv").unwrap();
             let npf_result = npf_pv.call1((0.05 / 12.0, 10.0 * 12.0, -100.0));
             assert_almost_eq!(result, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 // ------------ NPV ----------------
@@ -130,7 +131,7 @@ fn test_pv_default_pv() {
 fn test_npv_works() {
     Python::with_gil(|py| {
         let values = PyList::new(py, &[-40_000., 5_000., 8_000., 12_000., 30_000.]);
-        let result = pyxirr::npv(0.08, values, None).unwrap().unwrap();
+        let result: f64 = pyxirr_call!(py, "npv", (0.08, values));
         assert_almost_eq!(result, 3065.222668179);
 
         if cfg!(not(feature = "nonumpy")) {
@@ -145,7 +146,7 @@ fn test_npv_works() {
 fn test_npv_start_from_zero() {
     Python::with_gil(|py| {
         let values = PyList::new(py, &[-40_000., 5_000., 8_000., 12_000., 30_000.]);
-        let result = pyxirr::npv(0.08, values, Some(false)).unwrap().unwrap();
+        let result: f64 = pyxirr_call!(py, "npv", (0.08, values, false));
         assert_almost_eq!(result, 2838.169137203);
     });
 }
@@ -154,7 +155,7 @@ fn test_npv_start_from_zero() {
 fn test_npv_zero_rate() {
     Python::with_gil(|py| {
         let values = PyList::new(py, &[-40_000., 5_000., 8_000., 12_000., 30_000.]);
-        let result = pyxirr::npv(0., values, Some(false)).unwrap().unwrap();
+        let result: f64 = pyxirr_call!(py, "npv", (0, values, false));
         assert_almost_eq!(result, 15_000.0);
 
         if cfg!(not(feature = "nonumpy")) {
@@ -169,234 +170,243 @@ fn test_npv_zero_rate() {
 
 #[rstest]
 fn test_pmt_pmt_at_end() {
-    let pmt = pyxirr::pmt(INTEREST_RATE, PERIODS, PV, None, None).unwrap();
-    assert_future_value!(INTEREST_RATE, PERIODS, pmt, PV, None, None);
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+    Python::with_gil(|py| {
+        let pmt: f64 = pyxirr_call!(py, "pmt", (INTEREST_RATE, PERIODS, PV));
+        assert_future_value!(INTEREST_RATE, PERIODS, pmt, PV, None, None);
+        if cfg!(not(feature = "nonumpy")) {
             let npf_pmt = py.import("numpy_financial").unwrap().getattr("pmt").unwrap();
             let npf_result = npf_pmt.call1((INTEREST_RATE, PERIODS, PV));
             assert_almost_eq!(pmt, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 #[rstest]
 fn test_pmt_pmt_at_begining() {
-    let pmt = pyxirr::pmt(INTEREST_RATE, PERIODS, PV, None, Some(true)).unwrap();
-    assert_future_value!(INTEREST_RATE, PERIODS, pmt, PV, None, Some(true));
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+    Python::with_gil(|py| {
+        let pmt: f64 = pyxirr_call!(py, "pmt", (INTEREST_RATE, PERIODS, PV, 0, true));
+        assert_future_value!(INTEREST_RATE, PERIODS, pmt, PV, None, Some(true));
+        if cfg!(not(feature = "nonumpy")) {
             let npf_pmt = py.import("numpy_financial").unwrap().getattr("pmt").unwrap();
             let npf_result = npf_pmt.call1((INTEREST_RATE, PERIODS, PV, 0, "start"));
             assert_almost_eq!(pmt, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 #[rstest]
 fn test_pmt_non_zero_fv() {
-    let pmt = pyxirr::pmt(INTEREST_RATE, PERIODS, PV, Some(FV), None).unwrap();
-    assert_future_value!(INTEREST_RATE, PERIODS, pmt, PV, Some(FV), None);
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+    Python::with_gil(|py| {
+        let pmt: f64 = pyxirr_call!(py, "pmt", (INTEREST_RATE, PERIODS, PV, FV));
+        assert_future_value!(INTEREST_RATE, PERIODS, pmt, PV, Some(FV), None);
+        if cfg!(not(feature = "nonumpy")) {
             let npf_pmt = py.import("numpy_financial").unwrap().getattr("pmt").unwrap();
             let npf_result = npf_pmt.call1((INTEREST_RATE, PERIODS, PV, FV));
             assert_almost_eq!(pmt, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 #[rstest]
 fn test_pmt_zero_rate() {
-    let pmt = pyxirr::pmt(0.0, PERIODS, PV, Some(FV), None).unwrap();
-    assert_future_value!(0.0, PERIODS, pmt, PV, Some(FV), None);
+    Python::with_gil(|py| {
+        let pmt: f64 = pyxirr_call!(py, "pmt", (0, PERIODS, PV, FV));
+        assert_future_value!(0.0, PERIODS, pmt, PV, Some(FV), None);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_pmt = py.import("numpy_financial").unwrap().getattr("pmt").unwrap();
             let npf_result = npf_pmt.call1((0, PERIODS, PV, FV));
             assert_almost_eq!(pmt, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 // ------------ IPMT ----------------
 
 #[rstest]
 fn test_ipmt_works() {
-    let result = pyxirr::ipmt(INTEREST_RATE, 2.0, PERIODS, PAYMENT, None, None).unwrap();
-    assert_almost_eq!(result, 2301.238562586);
+    Python::with_gil(|py| {
+        let result: f64 = pyxirr_call!(py, "ipmt", (INTEREST_RATE, 2.0, PERIODS, PAYMENT));
+        assert_almost_eq!(result, 2301.238562586);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_ipmt = py.import("numpy_financial").unwrap().getattr("ipmt").unwrap();
             let npf_result = npf_ipmt.call1((INTEREST_RATE, 2, PERIODS, PAYMENT));
             assert_almost_eq!(result, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 #[rstest]
 fn test_ipmt_pmt_at_begining() {
-    let result = pyxirr::ipmt(INTEREST_RATE, 2.0, PERIODS, PAYMENT, None, Some(true)).unwrap();
-    assert_almost_eq!(result, 2191.6557738917);
+    Python::with_gil(|py| {
+        let result: f64 = pyxirr_call!(py, "ipmt", (INTEREST_RATE, 2.0, PERIODS, PAYMENT, 0, true));
+        assert_almost_eq!(result, 2191.6557738917);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_ipmt = py.import("numpy_financial").unwrap().getattr("ipmt").unwrap();
             let npf_result = npf_ipmt.call1((INTEREST_RATE, 2, PERIODS, PAYMENT, 0, "start"));
             assert_almost_eq!(result, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 #[rstest]
 fn test_ipmt_non_zero_fv() {
-    let result = pyxirr::ipmt(INTEREST_RATE, 2.0, PERIODS, PAYMENT, Some(FV), Some(true)).unwrap();
-    assert_almost_eq!(result, 2608.108309425);
+    Python::with_gil(|py| {
+        let result: f64 =
+            pyxirr_call!(py, "ipmt", (INTEREST_RATE, 2.0, PERIODS, PAYMENT, FV, true));
+        assert_almost_eq!(result, 2608.108309425);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_ipmt = py.import("numpy_financial").unwrap().getattr("ipmt").unwrap();
             let npf_result = npf_ipmt.call1((INTEREST_RATE, 2, PERIODS, PAYMENT, FV, "start"));
             assert_almost_eq!(result, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 #[rstest]
 fn test_ipmt_first_period() {
-    let result = pyxirr::ipmt(INTEREST_RATE, 1.0, PERIODS, PAYMENT, None, None).unwrap();
-    assert_almost_eq!(result, -PAYMENT * INTEREST_RATE);
+    Python::with_gil(|py| {
+        let result: f64 = pyxirr_call!(py, "ipmt", (INTEREST_RATE, 1.0, PERIODS, PAYMENT));
+        assert_almost_eq!(result, -PAYMENT * INTEREST_RATE);
+    })
 }
 
 #[rstest]
 fn test_ipmt_zero_period() {
-    assert!(pyxirr::ipmt(INTEREST_RATE, 0.0, PERIODS, PAYMENT, None, None).is_none());
+    Python::with_gil(|py| {
+        let result: Option<f64> = pyxirr_call!(py, "ipmt", (INTEREST_RATE, 0.0, PERIODS, PAYMENT));
+        assert!(result.is_none());
+    })
 }
 
 #[rstest]
 fn test_ipmt_per_greater_than_nper() {
-    let result = pyxirr::ipmt(INTEREST_RATE, PERIODS + 2.0, PERIODS, PAYMENT, None, None).unwrap();
-    assert_almost_eq!(result, -323.7614374136);
+    Python::with_gil(|py| {
+        let result: f64 =
+            pyxirr_call!(py, "ipmt", (INTEREST_RATE, PERIODS + 2.0, PERIODS, PAYMENT));
+        assert_almost_eq!(result, -323.7614374136);
+    })
 }
 
 // ------------ PPMT ----------------
 
 #[rstest]
 fn test_ppmt_works() {
-    let result = pyxirr::ppmt(INTEREST_RATE, 2.0, PERIODS, PAYMENT, None, None).unwrap();
-    assert_almost_eq!(result, 4173.9901856864);
+    Python::with_gil(|py| {
+        let result: f64 = pyxirr_call!(py, "ppmt", (INTEREST_RATE, 2.0, PERIODS, PAYMENT));
+        assert_almost_eq!(result, 4173.9901856864);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_ppmt = py.import("numpy_financial").unwrap().getattr("ppmt").unwrap();
             let npf_result = npf_ppmt.call1((INTEREST_RATE, 2, PERIODS, PAYMENT));
             assert_almost_eq!(result, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 // ------------ NPER ----------------
 
 #[rstest]
 fn test_nper_pmt_at_end() {
-    let nper = pyxirr::nper(INTEREST_RATE, PAYMENT, PV, None, None).unwrap();
-    assert_future_value!(INTEREST_RATE, nper, PAYMENT, PV, None, None);
+    Python::with_gil(|py| {
+        let nper: f64 = pyxirr_call!(py, "nper", (INTEREST_RATE, PAYMENT, PV));
+        assert_future_value!(INTEREST_RATE, nper, PAYMENT, PV, None, None);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_nper = py.import("numpy_financial").unwrap().getattr("nper").unwrap();
             let npf_result = npf_nper.call1((INTEREST_RATE, PAYMENT, PV));
             assert_almost_eq!(nper, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 #[rstest]
 fn test_nper_pmt_at_begining() {
-    let nper = pyxirr::nper(INTEREST_RATE, PAYMENT, PV, None, Some(true)).unwrap();
-    assert_future_value!(INTEREST_RATE, nper, PAYMENT, PV, None, Some(true));
+    Python::with_gil(|py| {
+        let nper: f64 = pyxirr_call!(py, "nper", (INTEREST_RATE, PAYMENT, PV, 0, true));
+        assert_future_value!(INTEREST_RATE, nper, PAYMENT, PV, None, Some(true));
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_nper = py.import("numpy_financial").unwrap().getattr("nper").unwrap();
             let npf_result = npf_nper.call1((INTEREST_RATE, PAYMENT, PV, 0, "start"));
             assert_almost_eq!(nper, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 #[rstest]
 fn test_nper_non_zero_fv() {
-    let nper = pyxirr::nper(INTEREST_RATE, PAYMENT, PV, Some(FV), None).unwrap();
-    assert_future_value!(INTEREST_RATE, nper, PAYMENT, PV, Some(FV), None);
+    Python::with_gil(|py| {
+        let nper: f64 = pyxirr_call!(py, "nper", (INTEREST_RATE, PAYMENT, PV, FV));
+        assert_future_value!(INTEREST_RATE, nper, PAYMENT, PV, Some(FV), None);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_nper = py.import("numpy_financial").unwrap().getattr("nper").unwrap();
             let npf_result = npf_nper.call1((INTEREST_RATE, PAYMENT, PV, FV));
             assert_almost_eq!(nper, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 #[rstest]
 fn test_nper_zero_rate() {
-    let nper = pyxirr::nper(0.0, PAYMENT, PV, Some(FV), None).unwrap();
-    assert_future_value!(0.0, nper, PAYMENT, PV, Some(FV), None);
+    Python::with_gil(|py| {
+        let nper: f64 = pyxirr_call!(py, "nper", (0.0, PAYMENT, PV, FV));
+        assert_future_value!(0.0, nper, PAYMENT, PV, Some(FV), None);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_nper = py.import("numpy_financial").unwrap().getattr("nper").unwrap();
             let npf_result = npf_nper.call1((0, PERIODS, PAYMENT, FV));
             assert_almost_eq!(nper, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 // ------------ RATE ----------------
 
 #[rstest]
 fn test_rate_works() {
-    let rate = pyxirr::rate(PERIODS, PAYMENT, PV, None, None, None).unwrap();
-    assert_future_value!(rate, PERIODS, PAYMENT, PV, None, None);
+    Python::with_gil(|py| {
+        let rate: f64 = pyxirr_call!(py, "rate", (PERIODS, PAYMENT, PV));
+        assert_future_value!(rate, PERIODS, PAYMENT, PV, None, None);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_rate = py.import("numpy_financial").unwrap().getattr("rate").unwrap();
             let npf_result = npf_rate.call1((PERIODS, PAYMENT, PV, 0));
             assert_almost_eq!(rate, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 #[rstest]
 fn test_rate_non_zero_fv() {
-    let rate = pyxirr::rate(PERIODS, PAYMENT, PV, Some(FV), None, None).unwrap();
-    assert_future_value!(rate, PERIODS, PAYMENT, PV, Some(FV), None);
+    Python::with_gil(|py| {
+        let rate: f64 = pyxirr_call!(py, "rate", (PERIODS, PAYMENT, PV, FV));
+        assert_future_value!(rate, PERIODS, PAYMENT, PV, Some(FV), None);
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_rate = py.import("numpy_financial").unwrap().getattr("rate").unwrap();
             let npf_result = npf_rate.call1((PERIODS, PAYMENT, PV, FV));
             assert_almost_eq!(rate, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 #[rstest]
 fn test_rate_pmt_at_begining() {
-    let rate = pyxirr::rate(PERIODS, PAYMENT, PV, Some(FV), Some(true), None).unwrap();
-    assert_future_value!(rate, PERIODS, PAYMENT, PV, Some(FV), Some(true));
+    Python::with_gil(|py| {
+        let rate: f64 = pyxirr_call!(py, "rate", (PERIODS, PAYMENT, PV, FV, true));
+        assert_future_value!(rate, PERIODS, PAYMENT, PV, Some(FV), Some(true));
 
-    if cfg!(not(feature = "nonumpy")) {
-        Python::with_gil(|py| {
+        if cfg!(not(feature = "nonumpy")) {
             let npf_rate = py.import("numpy_financial").unwrap().getattr("rate").unwrap();
             let npf_result = npf_rate.call1((PERIODS, PAYMENT, PV, FV, "start"));
             assert_almost_eq!(rate, npf_result.unwrap().extract::<f64>().unwrap());
-        })
-    }
+        }
+    })
 }
 
 // ------------ NFV ----------------
@@ -406,7 +416,7 @@ fn test_nfv() {
     // example from https://www.youtube.com/watch?v=775ljhriB8U
     Python::with_gil(|py| {
         let amounts = PyList::new(py, &[1050.0, 1350.0, 1350.0, 1450.0]);
-        let result = pyxirr::nfv(0.03, 6.0, amounts).unwrap().unwrap();
+        let result: f64 = pyxirr_call!(py, "nfv", (0.03, 6.0, amounts));
         assert_almost_eq!(result, 5750.16, 0.01);
     });
 }
@@ -421,7 +431,7 @@ fn test_nfv() {
 fn test_irr_works(#[case] input: &[f64], #[case] expected: f64) {
     Python::with_gil(|py| {
         let values = PyList::new(py, input);
-        let result = pyxirr::irr(values, None).unwrap().unwrap();
+        let result: f64 = pyxirr_call!(py, "irr", (values,));
         assert_almost_eq!(result, expected);
 
         if cfg!(not(feature = "nonumpy")) {
@@ -440,17 +450,18 @@ fn test_irr_works(#[case] input: &[f64], #[case] expected: f64) {
 fn test_irr_samples(#[case] input: &str) {
     Python::with_gil(|py| {
         let payments = PaymentsLoader::from_csv(py, input).to_columns();
-        let result = pyxirr::irr(payments.1, None).unwrap().unwrap();
+        let rate: f64 = pyxirr_call!(py, "irr", (payments.1,));
 
-        assert_almost_eq!(result, irr_expected_result(input));
+        assert_almost_eq!(rate, irr_expected_result(input));
         // test net present value of all cash flows equal to zero
-        assert_almost_eq!(pyxirr::npv(result, payments.1, None).unwrap().unwrap(), 0.0);
+        let npv: f64 = pyxirr_call!(py, "npv", (rate, payments.1));
+        assert_almost_eq!(npv, 0.0);
 
         // npf returns wrong results (npv is not equal to zero):
         // if cfg!(not(feature = "nonumpy")) {
         //     let npf_irr = py.import("numpy_financial").unwrap().getattr("irr").unwrap();
         //     let npf_result = npf_irr.call1((payments.1,));
-        //     assert_almost_eq!(result, npf_result.unwrap().extract::<f64>().unwrap());
+        //     assert_almost_eq!(rate, npf_result.unwrap().extract::<f64>().unwrap());
         // }
     });
 }
@@ -461,7 +472,7 @@ fn test_irr_samples(#[case] input: &str) {
 fn test_mirr_works() {
     Python::with_gil(|py| {
         let values = PyList::new(py, &[-1000, 100, 250, 500, 500]);
-        let result = pyxirr::mirr(values, 0.1, 0.1).unwrap().unwrap();
+        let result: f64 = pyxirr_call!(py, "mirr", (values, 0.1, 0.1));
         assert_almost_eq!(result, 0.10401626745);
 
         if cfg!(not(feature = "nonumpy")) {
@@ -475,10 +486,20 @@ fn test_mirr_works() {
 #[rstest]
 fn test_mirr_same_sign() {
     Python::with_gil(|py| {
-        let values = PyList::new(py, &[100_000.0, 50_000.0, 25_000.0]);
-        assert!(pyxirr::mirr(values, 0.1, 0.1).unwrap().is_none());
+        let kwargs = py_dict!(py, "silent" => true);
+
+        let values = PyList::new(py, &[100_000, 50_000, 25_000]);
+        let err = pyxirr_call_impl!(py, "mirr", (values, 0.1, 0.1)).unwrap_err();
+        assert!(err.is_instance::<pyxirr::InvalidPaymentsError>(py));
+
+        let result: Option<f64> = pyxirr_call!(py, "mirr", (values, 0.1, 0.1), kwargs);
+        assert!(result.is_none());
 
         let values = PyList::new(py, &[-100_000.0, -50_000.0, -25_000.0]);
-        assert!(pyxirr::mirr(values, 0.1, 0.1).unwrap().is_none());
+        let err = pyxirr_call_impl!(py, "mirr", (values, 0.1, 0.1)).unwrap_err();
+        assert!(err.is_instance::<pyxirr::InvalidPaymentsError>(py));
+
+        let result: Option<f64> = pyxirr_call!(py, "mirr", (values, 0.1, 0.1), kwargs);
+        assert!(result.is_none());
     });
 }

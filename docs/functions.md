@@ -10,8 +10,8 @@
 # `None` if the calculation fails to converge or result is NaN.
 # could return `inf` or `-inf`
 DateLike = Union[datetime.date, datetime.datetime, numpy.datetime64, pandas.Timestamp]
-Rate = float  # rate as decimal, not percentage, normally between [-1, 1]
-Period = Union[int, float]
+Rate = Union[float, Decimal]  # rate as decimal, not percentage, normally between [-1, 1]
+Period = Union[int, float, Decimal]
 Guess = Optional[Rate]
 Amount = Union[int, float, Decimal]
 Payment = Tuple[DateLike, Amount]
@@ -70,11 +70,13 @@ What is the future value after 10 years of saving $100 now, with an additional m
 Net Future Value
 
 ```python
-# raises: InvalidPaymentsError
+# raises: InvalidPaymentsError (suppressed by passing silent=True flag)
 def nfv(
     rate: Rate, # Rate of interest per period
     nper: Period, # Number of compounding periods
     amounts: AmountArray,
+    *,
+    silent: bool = False
 ) -> Optional[float]:
     ...
 ```
@@ -152,11 +154,13 @@ Net Future Value of a series of irregular cash flows.
 All cash flows in a group are compounded to the latest cash flow in the group.
 
 ```python
-# raises InvalidPaymentsError
+# raises: InvalidPaymentsError (suppressed by passing silent=True flag)
 def xnfv(
     rate: Rate,  # annual rate
     dates: Union[CashFlow, DateLikeArray],
     amounts: Optional[AmountArray] = None,
+    *,
+    silent: bool = False
 ) -> Optional[float]:
     ...
 ```
@@ -168,13 +172,14 @@ See also: [XLeratorDB.XNFV](http://westclintech.com/SQL-Server-Financial-Functio
 Compute the payment against loan principal plus interest.
 
 ```python
-pmt(
+def pmt(
     rate: Rate, # Rate of interest per period
     nper: Period, # Number of compounding periods
     pv: Amount, # Present value
     fv: Amount = 0, # Future value
     pmt_at_begining: bool = False  # When payments are due
-) -> FloatOrNone
+) -> Optional[float]:
+    ...
 ```
 
 ```
@@ -188,14 +193,15 @@ See also: [FV](functions.md#fv), [PV](functions.md#pv), [NPER](functions.md#nper
 Compute the interest portion of a payment.
 
 ```python
-ipmt(
+def ipmt(
     rate: Rate, # Rate of interest per period
     per: Period, # The payment period to calculate the interest amount.
     nper: Period, # Number of compounding periods
     pv: Amount, # Present value
     fv: Amount = 0, # Future value
     pmt_at_begining: bool = False  # When payments are due
-) -> FloatOrNone
+) -> Optional[float]:
+    ...
 ```
 
 See also: [PMT](functions.md#pmt)
@@ -205,14 +211,15 @@ See also: [PMT](functions.md#pmt)
 Compute the payment against loan principal.
 
 ```python
-ppmt(
+def ppmt(
     rate: Rate, # Rate of interest per period
     per: Period, # The payment period to calculate the interest amount.
     nper: Period, # Number of compounding periods
     pv: Amount, # Present value
     fv: Amount = 0, # Future value
     pmt_at_begining: bool = False  # When payments are due
-) -> FloatOrNone
+) -> Optional[float]:
+    ...
 ```
 
 See also: [PMT](functions.md#pmt)
@@ -222,13 +229,14 @@ See also: [PMT](functions.md#pmt)
 Compute the payment against loan principal plus interest.
 
 ```python
-nper(
+def nper(
     rate: Rate, # Rate of interest per period
     pmt: Amount, # Payment
     pv: Amount, # Present value
     fv: Amount = 0, # Future value
     pmt_at_begining: bool = False  # When payments are due
-) -> FloatOrNone
+) -> Optional[float]:
+    ...
 ```
 
 See also: [FV](functions.md#fv), [PV](functions.md#pv), [PMT](functions.md#pmt)
@@ -238,14 +246,16 @@ See also: [FV](functions.md#fv), [PV](functions.md#pv), [PMT](functions.md#pmt)
 Compute the payment against loan principal plus interest.
 
 ```python
-rate(
+def rate(
     nper: Period, # Number of compounding periods
     pmt: Amount, # Payment
     pv: Amount, # Present value
     fv: Amount = 0, # Future value
     pmt_at_begining: bool = False  # When payments are due
+    *,
     guess: Guess = 0.1
-) -> FloatOrNone
+) -> Optional[float]:
+    ...
 ```
 
 See also: [FV](functions.md#fv), [PV](functions.md#pv), [PMT](functions.md#pmt)
@@ -255,13 +265,14 @@ See also: [FV](functions.md#fv), [PV](functions.md#pv), [PMT](functions.md#pmt)
 Compute the present value.
 
 ```python
-pv(
+def pv(
     rate: Rate, # Rate of interest per period
     nper: Period, # Number of compounding periods
     pmt: Amount, # Payment
     fv: Amount = 0, # Future value
     pmt_at_begining: bool = False  # When payments are due
-) -> FloatOrNone
+) -> Optional[float]:
+    ...
 ```
 
 The present value is computed by solving the same equation as for future value:
@@ -290,7 +301,12 @@ Assume the interest rate is 5% (annually) compounded monthly.
 Compute the Net Present Value.
 
 ```python
-npv(rate: Rate, amounts: AmountArray, start_from_zero=True) -> FloatOrNone
+def npv(
+    rate: Rate,
+    amounts: AmountArray,
+    start_from_zero=True
+) -> Optional[float]:
+    ...
 ```
 
 NPV is calculated using the following formula:
@@ -298,7 +314,11 @@ NPV is calculated using the following formula:
 $$\sum_{i=0}^{N-1} \frac{values_i}{(1 + rate)^i}$$
 
 > Values must begin with the initial investment, thus values[0] will typically be negative.
-> NPV considers a series of cashflows starting in the present (i = 0). NPV can also be defined with a series of future cashflows, paid at the end, rather than the start, of each period. If future cashflows are used, the first cashflow values[0] must be zeroed and added to the net present value of the future cashflows.
+> NPV considers a series of cashflows starting in the present (i = 0). NPV can
+> also be defined with a series of future cashflows, paid at the end, rather
+> than the start, of each period. If future cashflows are used, the first
+> cashflow values[0] must be zeroed and added to the net present value of the
+> future cashflows.
 
 > There is a difference between numpy NPV and excel NPV.
 > The [numpy docs](https://numpy.org/numpy-financial/latest/npv.html#numpy_financial.npv) show the summation from i=0 to N-1.
@@ -316,7 +336,10 @@ $$\sum_{i=0}^{N-1} \frac{values_i}{(1 + rate)^i}$$
 2838.1691372032656
 ```
 
-It may be preferable to split the projected cashflow into an initial investment and expected future cashflows. In this case, the value of the initial cashflow is zero and the initial investment is later added to the future cashflows net present value.
+It may be preferable to split the projected cashflow into an initial investment
+and expected future cashflows. In this case, the value of the initial cashflow
+is zero and the initial investment is later added to the future cashflows net
+present value.
 
 ```python
 >>> from pyxirr import npv
@@ -331,12 +354,15 @@ Returns the Net Present Value for a schedule of cash flows that is not necessari
 > To calculate the Net Present Value for a periodic cash flows, use the NPV function.
 
 ```python
-# raises: InvalidPaymentsError
-xnpv(
+# raises: InvalidPaymentsError (suppressed by passing silent=True flag)
+def xnpv(
     rate: Rate,
     dates: Union[CashFlow, DateLikeArray],
     amounts: Optional[AmountArray] = None,
-) -> FloatOrNone
+    *,
+    silent: bool = False
+) -> Optional[float]:
+    ...
 ```
 
 XNPV is calculated as follows:
@@ -408,8 +434,14 @@ InvalidPaymentsError: negative and positive payments are required
 Compute the Internal Rate of Return.
 
 ```python
-# raises: InvalidPaymentsError
-irr(amounts: AmountArray, guess: Guess = 0.1) -> FloatOrNone
+# raises: InvalidPaymentsError (suppressed by passing silent=True flag)
+def irr(
+    amounts: AmountArray,
+    *,
+    guess: Guess = 0.1
+    silent: bool = False
+) -> Optional[float]:
+    ...
 ```
 
 This is the "average" periodically compounded rate of return that gives a [NPV](#npv) of 0.
@@ -443,11 +475,15 @@ InvalidPaymentsError: negative and positive payments are required
 Modified Internal Rate of Return.
 
 ```python
-mirr(
+# raises: InvalidPaymentsError (suppressed by passing silent=True flag)
+def mirr(
     values: AmountArray, # Cash flows. Must contain at least one positive and one negative value or nan is returned.
     finance_rate: Rate, # Interest rate paid on the cash flows
     reinvest_rate: Rate, # Interest rate received on the cash flows upon reinvestment
-) -> FloatOrNone
+    *,
+    silent: bool = False,
+) -> Optional[float]:
+    ...
 ```
 
 MIRR considers both the cost of the investment and the interest received on reinvestment of cash.
@@ -479,12 +515,15 @@ So the result of:
 Returns the internal rate of return for a schedule of cash flows that is not necessarily periodic.
 
 ```python
-# raises: InvalidPaymentsError
-xirr(
+# raises: InvalidPaymentsError (suppressed by passing silent=True flag)
+def xirr(
     dates: Union[CashFlow, DateLikeArray],
     amounts: Optional[AmountArray] = None,
+    *,
     guess: Guess = 0.1,
-) -> FloatOrNone
+    silent: bool = False,
+) -> Optional[float]:
+    ...
 ```
 
 XIRR is closely related to [XNPV](#xnpv), the Net Present Value function. XIRR is the interest rate corresponding to XNPV = 0.
