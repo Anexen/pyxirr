@@ -92,8 +92,8 @@ fn irr(
 /// There is a difference between numpy NPV and excel NPV.
 /// By default, npv function starts from zero (numpy compatible),
 /// but you can call it with `start_from_zero=False` parameter to make it Excel compatible.
-#[pyfunction(start_from_zero = "true")]
-#[pyo3(text_signature = "(rate, amounts, start_from_zero = True)")]
+#[pyfunction("*", start_from_zero = "true")]
+#[pyo3(text_signature = "(rate, amounts, *, start_from_zero = True)")]
 fn npv(
     py: Python,
     rate: f64,
@@ -108,8 +108,8 @@ fn npv(
 }
 
 /// Future Value.
-#[pyfunction(pmt_at_begining = "false")]
-#[pyo3(text_signature = "(rate, nper, pmt, pv, pmt_at_begining=False)")]
+#[pyfunction("*", pmt_at_begining = "false")]
+#[pyo3(text_signature = "(rate, nper, pmt, pv, *, pmt_at_begining=False)")]
 fn fv(
     py: Python,
     rate: f64,
@@ -165,8 +165,8 @@ fn xnfv(py: Python, rate: f64, dates: &PyAny, amounts: Option<&PyAny>) -> PyResu
 }
 
 /// Present Value
-#[pyfunction(fv = "0.0", pmt_at_begining = "false")]
-#[pyo3(text_signature = "(rate, nper, pmt, fv=0, pmt_at_begining=False)")]
+#[pyfunction(fv = "0.0", "*", pmt_at_begining = "false")]
+#[pyo3(text_signature = "(rate, nper, pmt, fv=0, *, pmt_at_begining=False)")]
 fn pv(
     py: Python,
     rate: f64,
@@ -196,8 +196,8 @@ fn mirr(
 }
 
 /// Compute the payment against loan principal plus interest.
-#[pyfunction(fv = "0.0", pmt_at_begining = "false")]
-#[pyo3(text_signature = "(rate, nper, pv, fv=0, pmt_at_begining=False)")]
+#[pyfunction(fv = "0.0", "*", pmt_at_begining = "false")]
+#[pyo3(text_signature = "(rate, nper, pv, fv=0, *, pmt_at_begining=False)")]
 fn pmt(
     py: Python,
     rate: f64,
@@ -210,8 +210,8 @@ fn pmt(
 }
 
 /// Compute the interest portion of a payment.
-#[pyfunction(fv = "0.0", pmt_at_begining = "false")]
-#[pyo3(text_signature = "(rate, per, nper, pv, fv=0, pmt_at_begining=False)")]
+#[pyfunction(fv = "0.0", "*", pmt_at_begining = "false")]
+#[pyo3(text_signature = "(rate, per, nper, pv, fv=0, *, pmt_at_begining=False)")]
 fn ipmt(
     rate: f64,
     per: f64,
@@ -224,8 +224,8 @@ fn ipmt(
 }
 
 /// Compute the payment against loan principal.
-#[pyfunction(fv = "0.0", pmt_at_begining = "false")]
-#[pyo3(text_signature = "(rate, per, nper, pv, fv=0, pmt_at_begining=False)")]
+#[pyfunction(fv = "0.0", "*", pmt_at_begining = "false")]
+#[pyo3(text_signature = "(rate, per, nper, pv, fv=0, *, pmt_at_begining=False)")]
 fn ppmt(
     py: Python,
     rate: f64,
@@ -239,8 +239,8 @@ fn ppmt(
 }
 
 /// Compute the number of periodic payments.
-#[pyfunction(fv = "0.0", pmt_at_begining = "false")]
-#[pyo3(text_signature = "(rate, pmt, pv, fv=0, pmt_at_begining=False)")]
+#[pyfunction(fv = "0.0", "*", pmt_at_begining = "false")]
+#[pyo3(text_signature = "(rate, pmt, pv, fv=0, *, pmt_at_begining=False)")]
 fn nper(
     py: Python,
     rate: f64,
@@ -253,8 +253,8 @@ fn nper(
 }
 
 /// Compute the number of periodic payments.
-#[pyfunction(fv = "0.0", pmt_at_begining = "false", guess = "0.1")]
-#[pyo3(text_signature = "(nper, pmt, pv, fv=0, pmt_at_begining=False, guess=0.1)")]
+#[pyfunction(fv = "0.0", "*", pmt_at_begining = "false", guess = "0.1")]
+#[pyo3(text_signature = "(nper, pmt, pv, fv=0, *, pmt_at_begining=False, guess=0.1)")]
 fn rate(
     py: Python,
     nper: f64,

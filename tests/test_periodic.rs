@@ -42,7 +42,12 @@ fn test_fv_pmt_at_end() {
 #[rstest]
 fn test_fv_pmt_at_begining() {
     Python::with_gil(|py| {
-        let result: f64 = pyxirr_call!(py, "fv", (0.05 / 12.0, 10 * 12, -100, -100, true));
+        let result: f64 = pyxirr_call!(
+            py,
+            "fv",
+            (0.05 / 12.0, 10 * 12, -100, -100),
+            py_dict!(py, "pmt_at_begining" => true)
+        );
         assert_almost_eq!(result, 15757.6298441047);
 
         if cfg!(not(feature = "nonumpy")) {
@@ -86,7 +91,12 @@ fn test_pv_pmt_at_end() {
 #[rstest]
 fn test_pv_pmt_at_begining() {
     Python::with_gil(|py| {
-        let result: f64 = pyxirr_call!(py, "pv", (0.05 / 12.0, 10 * 12, -100, 15692.93, true));
+        let result: f64 = pyxirr_call!(
+            py,
+            "pv",
+            (0.05 / 12.0, 10 * 12, -100, 15692.93),
+            py_dict!(py, "pmt_at_begining" => true)
+        );
         assert_almost_eq!(result, -60.71677534615);
 
         if cfg!(not(feature = "nonumpy")) {
@@ -146,7 +156,8 @@ fn test_npv_works() {
 fn test_npv_start_from_zero() {
     Python::with_gil(|py| {
         let values = PyList::new(py, &[-40_000., 5_000., 8_000., 12_000., 30_000.]);
-        let result: f64 = pyxirr_call!(py, "npv", (0.08, values, false));
+        let result: f64 =
+            pyxirr_call!(py, "npv", (0.08, values), py_dict!(py, "start_from_zero" => false));
         assert_almost_eq!(result, 2838.169137203);
     });
 }
@@ -155,7 +166,8 @@ fn test_npv_start_from_zero() {
 fn test_npv_zero_rate() {
     Python::with_gil(|py| {
         let values = PyList::new(py, &[-40_000., 5_000., 8_000., 12_000., 30_000.]);
-        let result: f64 = pyxirr_call!(py, "npv", (0, values, false));
+        let result: f64 =
+            pyxirr_call!(py, "npv", (0, values), py_dict!(py, "start_from_zero" => false));
         assert_almost_eq!(result, 15_000.0);
 
         if cfg!(not(feature = "nonumpy")) {
@@ -184,7 +196,12 @@ fn test_pmt_pmt_at_end() {
 #[rstest]
 fn test_pmt_pmt_at_begining() {
     Python::with_gil(|py| {
-        let pmt: f64 = pyxirr_call!(py, "pmt", (INTEREST_RATE, PERIODS, PV, 0, true));
+        let pmt: f64 = pyxirr_call!(
+            py,
+            "pmt",
+            (INTEREST_RATE, PERIODS, PV),
+            py_dict!(py, "pmt_at_begining" => true)
+        );
         assert_future_value!(INTEREST_RATE, PERIODS, pmt, PV, None, Some(true));
         if cfg!(not(feature = "nonumpy")) {
             let npf_pmt = py.import("numpy_financial").unwrap().getattr("pmt").unwrap();
@@ -240,7 +257,12 @@ fn test_ipmt_works() {
 #[rstest]
 fn test_ipmt_pmt_at_begining() {
     Python::with_gil(|py| {
-        let result: f64 = pyxirr_call!(py, "ipmt", (INTEREST_RATE, 2.0, PERIODS, PAYMENT, 0, true));
+        let result: f64 = pyxirr_call!(
+            py,
+            "ipmt",
+            (INTEREST_RATE, 2.0, PERIODS, PAYMENT),
+            py_dict!(py, "pmt_at_begining" => true)
+        );
         assert_almost_eq!(result, 2191.6557738917);
 
         if cfg!(not(feature = "nonumpy")) {
@@ -254,8 +276,12 @@ fn test_ipmt_pmt_at_begining() {
 #[rstest]
 fn test_ipmt_non_zero_fv() {
     Python::with_gil(|py| {
-        let result: f64 =
-            pyxirr_call!(py, "ipmt", (INTEREST_RATE, 2.0, PERIODS, PAYMENT, FV, true));
+        let result: f64 = pyxirr_call!(
+            py,
+            "ipmt",
+            (INTEREST_RATE, 2.0, PERIODS, PAYMENT, FV),
+            py_dict!(py, "pmt_at_begining" => true)
+        );
         assert_almost_eq!(result, 2608.108309425);
 
         if cfg!(not(feature = "nonumpy")) {
@@ -326,7 +352,12 @@ fn test_nper_pmt_at_end() {
 #[rstest]
 fn test_nper_pmt_at_begining() {
     Python::with_gil(|py| {
-        let nper: f64 = pyxirr_call!(py, "nper", (INTEREST_RATE, PAYMENT, PV, 0, true));
+        let nper: f64 = pyxirr_call!(
+            py,
+            "nper",
+            (INTEREST_RATE, PAYMENT, PV),
+            py_dict!(py, "pmt_at_begining" => true)
+        );
         assert_future_value!(INTEREST_RATE, nper, PAYMENT, PV, None, Some(true));
 
         if cfg!(not(feature = "nonumpy")) {
@@ -398,7 +429,12 @@ fn test_rate_non_zero_fv() {
 #[rstest]
 fn test_rate_pmt_at_begining() {
     Python::with_gil(|py| {
-        let rate: f64 = pyxirr_call!(py, "rate", (PERIODS, PAYMENT, PV, FV, true));
+        let rate: f64 = pyxirr_call!(
+            py,
+            "rate",
+            (PERIODS, PAYMENT, PV, FV),
+            py_dict!(py, "pmt_at_begining" => true)
+        );
         assert_future_value!(rate, PERIODS, PAYMENT, PV, Some(FV), Some(true));
 
         if cfg!(not(feature = "nonumpy")) {

@@ -7,8 +7,8 @@
 ## Type annotations
 
 ```python
-# `None` if the calculation fails to converge or result is NaN.
-# could return `inf` or `-inf`
+# `None` if the calculation fails to converge.
+# Could return `inf` or `-inf`.
 DateLike = Union[datetime.date, datetime.datetime, numpy.datetime64, pandas.Timestamp]
 Rate = Union[float, Decimal]  # rate as decimal, not percentage, normally between [-1, 1]
 Period = Union[int, float, Decimal]
@@ -40,10 +40,13 @@ def fv(
     nper: Period, # Number of compounding periods
     pmt: Amount, # Payment
     pv: Amount, # Present value
+    *,
     pmt_at_begining: bool = False  # When payments are due
 ) -> Optional[float]:
     ...
 ```
+
+> Changed in 0.7.0: make pmt_at_begining keyword-only argument
 
 The future value is computed by solving the equation:
 
@@ -177,6 +180,7 @@ def pmt(
     nper: Period, # Number of compounding periods
     pv: Amount, # Present value
     fv: Amount = 0, # Future value
+    *,
     pmt_at_begining: bool = False  # When payments are due
 ) -> Optional[float]:
     ...
@@ -185,6 +189,8 @@ def pmt(
 ```
 pmt = ipmt + ppmt
 ```
+
+> Changed in 0.7.0: make pmt_at_begining keyword-only argument
 
 See also: [FV](functions.md#fv), [PV](functions.md#pv), [NPER](functions.md#nper)
 
@@ -199,10 +205,13 @@ def ipmt(
     nper: Period, # Number of compounding periods
     pv: Amount, # Present value
     fv: Amount = 0, # Future value
+    *,
     pmt_at_begining: bool = False  # When payments are due
 ) -> Optional[float]:
     ...
 ```
+
+> Changed in 0.7.0: make pmt_at_begining keyword-only argument
 
 See also: [PMT](functions.md#pmt)
 
@@ -217,10 +226,13 @@ def ppmt(
     nper: Period, # Number of compounding periods
     pv: Amount, # Present value
     fv: Amount = 0, # Future value
+    *,
     pmt_at_begining: bool = False  # When payments are due
 ) -> Optional[float]:
     ...
 ```
+
+> Changed in 0.7.0: make pmt_at_begining keyword-only argument
 
 See also: [PMT](functions.md#pmt)
 
@@ -234,10 +246,13 @@ def nper(
     pmt: Amount, # Payment
     pv: Amount, # Present value
     fv: Amount = 0, # Future value
+    *,
     pmt_at_begining: bool = False  # When payments are due
 ) -> Optional[float]:
     ...
 ```
+
+> Changed in 0.7.0: make pmt_at_begining keyword-only argument
 
 See also: [FV](functions.md#fv), [PV](functions.md#pv), [PMT](functions.md#pmt)
 
@@ -251,12 +266,14 @@ def rate(
     pmt: Amount, # Payment
     pv: Amount, # Present value
     fv: Amount = 0, # Future value
-    pmt_at_begining: bool = False  # When payments are due
     *,
+    pmt_at_begining: bool = False  # When payments are due
     guess: Guess = 0.1
 ) -> Optional[float]:
     ...
 ```
+
+> Changed in 0.7.0: make pmt_at_begining and guess keyword-only arguments
 
 See also: [FV](functions.md#fv), [PV](functions.md#pv), [PMT](functions.md#pmt)
 
@@ -270,10 +287,13 @@ def pv(
     nper: Period, # Number of compounding periods
     pmt: Amount, # Payment
     fv: Amount = 0, # Future value
+    *,
     pmt_at_begining: bool = False  # When payments are due
 ) -> Optional[float]:
     ...
 ```
+
+> Changed in 0.7.0: make pmt_at_begining keyword-only argument
 
 The present value is computed by solving the same equation as for future value:
 
@@ -304,10 +324,13 @@ Compute the Net Present Value.
 def npv(
     rate: Rate,
     amounts: AmountArray,
+    *,
     start_from_zero=True
 ) -> Optional[float]:
     ...
 ```
+
+> Changed in 0.7.0: make start_from_zero keyword-only argument
 
 NPV is calculated using the following formula:
 
@@ -444,6 +467,8 @@ def irr(
     ...
 ```
 
+> Changed in 0.7.0: make guess keyword-only argument
+
 This is the "average" periodically compounded rate of return that gives a [NPV](#npv) of 0.
 
 IRR is the solution of the equation:
@@ -525,6 +550,8 @@ def xirr(
 ) -> Optional[float]:
     ...
 ```
+
+> Changed in 0.7.0: make guess keyword-only argument
 
 XIRR is closely related to [XNPV](#xnpv), the Net Present Value function. XIRR is the interest rate corresponding to XNPV = 0.
 Library uses an iterative technique for calculating XIRR. If it can't find a result, the `None` value is returned.
