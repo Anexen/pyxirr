@@ -90,8 +90,8 @@ See the [docs](https://anexen.github.io/pyxirr)
 # Roadmap
 
 - [x] Implement all functions from [numpy-financial](https://numpy.org/numpy-financial/latest/index.html)
-- [ ] Improve docs, add more tests
-- [ ] Type hints [](https://github.com/PyO3/maturin/blob/main/test-crates/pyo3-pure/pyo3_pure.pyi)
+- [x] Improve docs, add more tests
+- [x] Type hints
 - [ ] Vectorized versions of numpy-financial functions.
 - [ ] Compile library for rust/javascript/python
 
