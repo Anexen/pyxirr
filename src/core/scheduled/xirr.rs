@@ -1,5 +1,5 @@
 use crate::core::models::{validate, DateLike, InvalidPaymentsError};
-use crate::core::optimize::find_root_newton_raphson_with_brute_force;
+use crate::core::optimize::find_root;
 
 pub fn xirr(
     dates: &[DateLike],
@@ -10,9 +10,9 @@ pub fn xirr(
 
     let ref deltas = precalculate_deltas(&dates);
 
-    Ok(find_root_newton_raphson_with_brute_force(
+    Ok(find_root(
         guess.unwrap_or(0.1),
-        &[(-0.999, -0.99, 0.001), (-0.99, 1.0, 0.01)],
+        &[(-0.99, 1.0, 0.01)],
         |rate| xirr_result(amounts, deltas, rate),
         |rate| xirr_result_deriv(amounts, deltas, rate),
     ))

@@ -39,7 +39,7 @@ pub fn xirr_expected_result(input: &str) -> f64 {
         "tests/samples/30-29.csv" => f64::NAN,
         "tests/samples/30-30.csv" => 0.08115488395163964,
         "tests/samples/30-31.csv" => f64::NAN,
-        "tests/samples/30-32.csv" => -0.7080586361225928,
+        "tests/samples/30-32.csv" => -0.1305850720162,
         "tests/samples/30-33.csv" => f64::NAN,
         "tests/samples/30-34.csv" => f64::NAN,
         "tests/samples/30-35.csv" => -0.23061428300107065,
@@ -56,7 +56,8 @@ pub fn xirr_expected_result(input: &str) -> f64 {
         "tests/samples/30-46.csv" => -0.047401670775621726,
         "tests/samples/30-47.csv" => -0.6103425929117927,
         "tests/samples/30-48.csv" => -0.07525261340272364,
-        "tests/samples/minus_99.csv" => -0.9989769231734277,
+        "tests/samples/minus_0_99.csv" => -0.9989769231734277,
+        "tests/samples/minus_0_99999.csv" => -0.9999884228170087,
         _ => panic!(),
     }
 }

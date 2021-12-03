@@ -558,7 +558,7 @@ Library uses an iterative technique for calculating XIRR. If it can't find a res
 
 XIRR function tries to solve the following equation:
 
-$$\sum_{i=1}^n \frac{P_i}{(1 + rate)^{(d_i - d_0)/365}}=0$$
+$$\sum_{i=0}^n \frac{P_i}{(1 + rate)^{(d_i - d_0)/365}}=0$$
 
 where:
 
