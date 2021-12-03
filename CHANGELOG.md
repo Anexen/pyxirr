@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.7.1] - 2021-12-03
+
+- handle XIRR close to -1 (use brentq algorithm as fallback)
+
 ## [0.7.0] - 2021-12-02
 
 - Add an ability to suppress InvalidPaymentsError by passing `silent=True` flag ([#22](https://github.com/Anexen/pyxirr/issues/22))
