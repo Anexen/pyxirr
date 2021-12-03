@@ -7,15 +7,14 @@
 
 Rust-powered collection of financial functions.
 
+PyXIRR stands for "Python XIRR" (for historical reasons), but contains many other financial functions such as IRR, FV, NPV, etc.
+
 Features:
 
 - correct
 - blazingly fast
-- works with iterators
-- works with unordered input
+- works with different input data types (iterators, numpy arrays, pandas DataFrames)
 - no external dependencies
-
-PyXIRR contains many functions from numpy-financial, such as IRR, NPV, etc.
 
 # Installation
 
@@ -31,7 +30,7 @@ and the [implementation from the Stack Overflow](https://stackoverflow.com/a/115
 
 ![bench](https://raw.githubusercontent.com/Anexen/pyxirr/main/docs/static/bench.png)
 
-PyXIRR is ~10-20x faster in XIRR calculation than another implementations.
+PyXIRR is ~10-20x faster in XIRR calculation than the other implementations.
 
 Powered by [github-action-benchmark](https://github.com/rhysd/github-action-benchmark) and [plotly.js](https://github.com/plotly/plotly.js).
 
@@ -81,6 +80,23 @@ df = pd.DataFrame(
     },
 )
 df.apply(xirr)  # Series(index=["one", "two"], data=[5.09623547168478, 8.780801977141174])
+```
+
+Other financial functions:
+
+```python
+import pyxirr
+
+# Future Value
+pyxirr.fv(0.05 / 12, 10 * 12, -100, -100)
+
+# Net Present Value
+pyxirr.npv(0, [-40_000, 5_000, 8_000, 12_000, 30_000])
+
+# IRR
+pyxirr.irr([-100, 39, 59, 55, 20])
+
+# ... and more! Check out the docs.
 ```
 
 # API reference
