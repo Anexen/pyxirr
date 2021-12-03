@@ -1,15 +1,21 @@
 name: Benchmark
 on:
   push:
-    branches:
-      - main
+    tags: ['v*']
     paths-ignore:
       - 'docs/**'
+  workflow_dispatch:
+    inputs:
+      build:
+        description: 'Build'
+        required: true
+        default: true
 
 jobs:
   benchmark:
     name: Run Rust benchmark
     runs-on: ubuntu-latest
+    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event.inputs.build }}
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
