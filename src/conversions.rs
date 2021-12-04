@@ -19,6 +19,13 @@ impl<'s> FromPyObject<'s> for DateLike {
             return Ok(py_date.into());
         }
 
+        if let Ok(py_string) = obj.downcast::<PyString>() {
+            return py_string
+                .to_str()?
+                .parse::<DateLike>()
+                .map_err(|e| exceptions::PyValueError::new_err(e.to_string()));
+        }
+
         match obj.get_type().name()? {
             "datetime64" => {
                 Ok(obj.call_method1("astype", ("datetime64[D]",))?.extract::<i32>()?.into())

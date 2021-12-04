@@ -37,7 +37,17 @@ impl std::str::FromStr for DateLike {
     type Err = chrono::ParseError;
 
     fn from_str(s: &str) -> chrono::ParseResult<Self> {
-        Ok(s.parse::<NaiveDate>()?.into())
+        // get only date part: yyyy-mm-dd
+        // this allows to parse datetime strings
+        let s = if s.len() > 10 { &s[0..10] } else { s };
+
+        // try %Y-%m-%d
+        if let Ok(d) = NaiveDate::parse_from_str(s, "%Y-%m-%d") {
+            return Ok(d.into());
+        }
+
+        // try %m/%d/%Y
+        Ok(NaiveDate::parse_from_str(s, "%m/%d/%Y")?.into())
     }
 }
 

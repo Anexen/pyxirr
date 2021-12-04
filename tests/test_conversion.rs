@@ -21,7 +21,7 @@ fn payments(#[default(INPUT)] input: &str) -> Payments {
 fn get_locals<'p>(py: Python<'p>, extra_imports: Option<&[&str]>) -> &'p PyDict {
     let builtins = py.import("builtins").unwrap();
     let data = payments(INPUT);
-    let locals = py_dict!(py, "dates" => data.0, "amounts" => data.1);
+    let locals = py_dict!(py, "dates" => data.0, "amounts" => data.1, "__builtins__" => builtins);
     let locals = py_dict_merge!(py, locals, builtins.dict());
 
     for &name in extra_imports.unwrap_or_default() {
@@ -70,6 +70,39 @@ fn test_extract_from_dict() {
         pyxirr_call!(py, "xirr", (data,))
     });
     assert_almost_eq!(result, xirr_expected_result(input));
+}
+
+#[rstest]
+fn test_extract_dates_from_strings() {
+    Python::with_gil(|py| {
+        let locals = get_locals(py, Some(&["datetime"]));
+        let amounts = locals.get_item("amounts").unwrap();
+
+        // parse from %Y-%m-%d
+        let dates_iter =
+            py.eval("(x.strftime('%Y-%m-%d') for x in dates)", Some(locals), None).unwrap();
+        let result: f64 = pyxirr_call!(py, "xirr", (dates_iter, amounts));
+        assert_almost_eq!(result, xirr_expected_result(INPUT));
+
+        // parse from %m/%d/%Y
+        let dates_iter =
+            py.eval("(x.strftime('%m/%d/%Y') for x in dates)", Some(locals), None).unwrap();
+        let result: f64 = pyxirr_call!(py, "xirr", (dates_iter, amounts));
+        assert_almost_eq!(result, xirr_expected_result(INPUT));
+
+        // parse from datetime to %Y-%m-%d
+        let dates_iter = py
+            .eval("(x.strftime('%Y-%m-%dT12:30:08.483694') for x in dates)", Some(locals), None)
+            .unwrap();
+        let result: f64 = pyxirr_call!(py, "xirr", (dates_iter, amounts));
+        assert_almost_eq!(result, xirr_expected_result(INPUT));
+
+        // unknown format
+        let dates_iter =
+            py.eval("(x.strftime('%d %b %y') for x in dates)", Some(locals), None).unwrap();
+        let err = pyxirr_call_impl!(py, "xirr", (dates_iter, amounts)).unwrap_err();
+        assert!(err.is_instance::<exceptions::PyValueError>(py));
+    });
 }
 
 #[rstest]
