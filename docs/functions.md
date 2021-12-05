@@ -9,7 +9,7 @@
 ```python
 # `None` if the calculation fails to converge.
 # Could return `inf` or `-inf`.
-DateLike = Union[datetime.date, datetime.datetime, numpy.datetime64, pandas.Timestamp]
+DateLike = Union[str, datetime.date, datetime.datetime, numpy.datetime64, pandas.Timestamp]
 Rate = Union[float, Decimal]  # rate as decimal, not percentage, normally between [-1, 1]
 Period = Union[int, float, Decimal]
 Guess = Optional[Rate]

@@ -110,7 +110,7 @@ _Period = Union[int, float, Decimal]
 _Guess = Optional[_Rate]
 _Amount = Union[int, float, Decimal]
 
-_DateLike = Union[date, datetime, _datetime64, _Timestamp]
+_DateLike = Union[str, date, datetime, _datetime64, _Timestamp]
 _Payment = Tuple[_DateLike, _Amount]
 _CashFlowTable = Union[Iterable[_Payment], _DataFrame, _ndarray]
 _CashFlowDict = Dict[_DateLike, _Amount]

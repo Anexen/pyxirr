@@ -43,7 +43,7 @@ from datetime import date
 from pyxirr import xirr
 
 dates = [date(2020, 1, 1), date(2021, 1, 1), date(2022, 1, 1)]
-amounts = [-1000, 1000, 1000]
+amounts = [-1000, 750, 500]
 
 # feed columnar data
 xirr(dates, amounts)
@@ -53,6 +53,8 @@ xirr(iter(dates), (x / 2 for x in amounts))
 xirr(zip(dates, amounts))
 # feed a dictionary
 xirr(dict(zip(dates, amounts)))
+# dates as strings
+xirr(['2020-01-01', '2021-01-01'], [-1000, 1200])
 ```
 
 Numpy and Pandas support
