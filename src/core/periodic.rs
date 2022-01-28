@@ -1,9 +1,7 @@
 use std::iter::successors;
 
 use super::models::{validate, InvalidPaymentsError};
-use super::optimize::{
-    find_root, newton_raphson_with_default_deriv,
-};
+use super::optimize::{brentq, find_root, newton_raphson_with_default_deriv};
 
 // pre calculating powers for performance
 pub fn powers(base: f64, n: usize, start_from_zero: bool) -> Vec<f64> {
@@ -153,12 +151,17 @@ pub fn irr(values: &[f64], guess: Option<f64>) -> Result<f64, InvalidPaymentsErr
     // must contain at least one positive and one negative value
     validate(values, None)?;
 
-    Ok(find_root(
-        guess.unwrap_or(0.1),
-        &[(-0.99, 1.0, 0.01)],
-        |rate| self::npv(rate, values, Some(true)),
-        |rate| self::npv_deriv(rate, values),
-    ))
+    let f = |rate| self::npv(rate, values, Some(true));
+    let df = |rate| self::npv_deriv(rate, values);
+
+    // IRR > 0 is preferred
+    let rate = brentq(f, 0.0, 1e9, 1000);
+
+    if rate.is_finite() && f(rate).abs() < 1e-3 {
+        return Ok(rate);
+    }
+
+    Ok(find_root(guess.unwrap_or(0.1), &[(-0.99, 1.0, 0.01)], f, df))
 }
 
 pub fn mirr(

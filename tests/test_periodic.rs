@@ -463,7 +463,6 @@ fn test_nfv() {
 #[case(&[-100.0, 39.0, 59.0, 55.0, 20.0], 0.28094842116)]
 #[case(&[-100.0, 0.0, 0.0, 74.0], -0.09549583034)]
 #[case(&[-100.0, 100.0, 0.0, -7.0], -0.08329966618)]
-#[case(&[87.17, 87.17, 87.17, 87.17, 87.17, -86.43], -0.49367042606)]
 fn test_irr_works(#[case] input: &[f64], #[case] expected: f64) {
     Python::with_gil(|py| {
         let values = PyList::new(py, input);
@@ -479,8 +478,27 @@ fn test_irr_works(#[case] input: &[f64], #[case] expected: f64) {
 }
 
 #[rstest]
+#[case(&[87.17; 5], &[-86.43], -0.49367042606)]
+#[case(&[-87.17; 180], &[5809.3], -0.01352676905)]
+#[case(&[-172545.848122807], &[787.735232517999; 480], 0.0038401048)]
+fn test_irr_equal_payments(#[case] first: &[f64], #[case] other: &[f64], #[case] expected: f64) {
+    let input: Vec<_> = first.into_iter().chain(other).collect();
+
+    Python::with_gil(|py| {
+        let values = PyList::new(py, input);
+        let result: f64 = pyxirr_call!(py, "irr", (values,));
+        assert_almost_eq!(result, expected);
+
+        if cfg!(not(feature = "nonumpy")) {
+            let npf_irr = py.import("numpy_financial").unwrap().getattr("irr").unwrap();
+            let npf_result = npf_irr.call1((values,));
+            assert_almost_eq!(result, npf_result.unwrap().extract::<f64>().unwrap());
+        }
+    })
+}
+
+#[rstest]
 #[case::unordered("tests/samples/unordered.csv")]
-#[case::equal_payments("tests/samples/equal_payments.csv")]
 #[case::random_100("tests/samples/random_100.csv")]
 #[case::random_1000("tests/samples/random_1000.csv")]
 fn test_irr_samples(#[case] input: &str) {

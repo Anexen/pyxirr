@@ -2,7 +2,7 @@
 name = "pyxirr"
 version = "0.7.1"
 authors = ["Anexen"]
-edition = "2018"
+edition = "2021"
 description = "Rust-powered collection of financial functions for Python."
 readme = "README.md"
 homepage = "https://github.com/Anexen/pyxirr"
