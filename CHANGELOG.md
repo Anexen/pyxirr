@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.7.2] - 2022-01-28
+
+- Tweaked IRR to prefer rate > 0 ([#24](https://github.com/Anexen/pyxirr/issues/24))
+- All functions now accept date strings in the format yyyy-mm-dd or mm/dd/yyyy
+
 ## [0.7.1] - 2021-12-03
 
 - handle XIRR close to -1 (use brentq algorithm as fallback)
