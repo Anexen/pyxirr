@@ -30,10 +30,10 @@ crate-type = ["rlib", "cdylib"]
 [dependencies]
 pyo3 = "0.15"
 numpy = "0.15"
-chrono = "0.4"
+time = { version = "0.3", features = ["parsing", "macros"] }
 
 [dev-dependencies]
-rstest = "0.11"
+rstest = "0.14"
 
 [features]
 default = ["pyo3/extension-module"]

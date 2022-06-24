@@ -1,14 +1,18 @@
 use crate::core::DateLike;
-use chrono::prelude::*;
 use numpy::PyArray1;
 use pyo3::{exceptions, prelude::*, types::*};
+use time::Date;
 
 const SECONDS_IN_DAY: i64 = 24 * 60 * 60;
 
 impl From<&PyDate> for DateLike {
     fn from(value: &PyDate) -> Self {
-        let date =
-            NaiveDate::from_ymd(value.get_year(), value.get_month() as u32, value.get_day() as u32);
+        let date = Date::from_calendar_date(
+            value.get_year(),
+            value.get_month().try_into().unwrap(),
+            value.get_day(),
+        )
+        .unwrap();
         date.into()
     }
 }

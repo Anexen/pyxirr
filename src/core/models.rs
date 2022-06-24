@@ -1,6 +1,6 @@
-use chrono::prelude::*;
 use std::error::Error;
 use std::fmt;
+use time::{macros::format_description, Date};
 
 #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Copy)]
 pub struct DateLike(i32);
@@ -11,9 +11,22 @@ impl From<i32> for DateLike {
     }
 }
 
-impl From<NaiveDate> for DateLike {
-    fn from(value: NaiveDate) -> Self {
-        Self(value.num_days_from_ce())
+impl From<Date> for DateLike {
+    fn from(value: Date) -> Self {
+        // See chrono.num_days_from_ce implementation.
+        // we know this wouldn't overflow since year is limited to 1/2^13 of i32's full range.
+        let mut year = value.year() - 1;
+        let mut ndays = 0;
+        if year < 0 {
+            let excess = 1 + (-year) / 400;
+            year += excess * 400;
+            ndays -= excess * 146_097;
+        }
+        let div_100 = year / 100;
+        ndays += ((year * 1461) >> 2) - div_100 + (div_100 >> 2);
+        ndays += value.ordinal() as i32;
+
+        Self(ndays)
     }
 }
 
@@ -34,20 +47,20 @@ impl std::ops::Sub for &DateLike {
 }
 
 impl std::str::FromStr for DateLike {
-    type Err = chrono::ParseError;
+    type Err = time::error::Parse;
 
-    fn from_str(s: &str) -> chrono::ParseResult<Self> {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         // get only date part: yyyy-mm-dd
         // this allows to parse datetime strings
         let s = if s.len() > 10 { &s[0..10] } else { s };
 
         // try %Y-%m-%d
-        if let Ok(d) = NaiveDate::parse_from_str(s, "%Y-%m-%d") {
+        if let Ok(d) = Date::parse(s, &format_description!("[year]-[month]-[day]")) {
             return Ok(d.into());
         }
 
         // try %m/%d/%Y
-        Ok(NaiveDate::parse_from_str(s, "%m/%d/%Y")?.into())
+        Ok(Date::parse(s, &format_description!("[month]/[day]/[year]"))?.into())
     }
 }
 
