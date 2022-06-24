@@ -102,7 +102,7 @@ fn test_xirr_silent() {
     Python::with_gil(|py| {
         let args = (PyList::empty(py), PyList::empty(py));
         let err = pyxirr_call_impl!(py, "xirr", args).unwrap_err();
-        assert!(err.is_instance::<pyxirr::InvalidPaymentsError>(py));
+        assert!(err.is_instance(py, py.get_type::<pyxirr::InvalidPaymentsError>()));
 
         let result: Option<f64> = pyxirr_call!(py, "xirr", args, py_dict!(py, "silent" => true));
         assert!(result.is_none());
