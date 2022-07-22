@@ -61,6 +61,7 @@ jobs:
         id: py
         with:
           python-version: ${{ matrix.python-version }}
+          update-environment: false
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
