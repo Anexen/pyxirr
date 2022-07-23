@@ -68,12 +68,6 @@ jobs:
         with:
           python-version: ${{ matrix.python.constraints || matrix.python.version }}
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
-
       - uses: messense/maturin-action@v1
         with:
           command: list-python
