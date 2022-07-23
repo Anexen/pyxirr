@@ -74,11 +74,9 @@ jobs:
           profile: minimal
           override: true
 
-      - name: Find 1
-        run: compgen -c | grep python || true
-
-      - name: Find 2
-        run: ls $(echo $PATH | sed 's/:/ /g')
+      - uses: messense/maturin-action@v1
+        with:
+          command: list-python
 
       # - uses: actions/cache@v3
       #   with:
