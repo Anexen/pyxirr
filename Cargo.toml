@@ -10,7 +10,7 @@ keywords = ["python", "fast", "financial", "xirr", "cashflow"]
 
 [package.metadata.maturin]
 description-content-type = "text/markdown; charset=UTF-8; variant=GFM"
-requires-python = ">=3.7,<3.11"
+requires-python = ">=3.7,<3.12"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Topic :: Office/Business :: Financial",
@@ -20,6 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
 ]
 
 [lib]
