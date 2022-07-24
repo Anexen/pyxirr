@@ -544,14 +544,14 @@ fn test_mirr_same_sign() {
 
         let values = PyList::new(py, &[100_000, 50_000, 25_000]);
         let err = pyxirr_call_impl!(py, "mirr", (values, 0.1, 0.1)).unwrap_err();
-        assert!(err.is_instance::<pyxirr::InvalidPaymentsError>(py));
+        assert!(err.is_instance(py, py.get_type::<pyxirr::InvalidPaymentsError>()));
 
         let result: Option<f64> = pyxirr_call!(py, "mirr", (values, 0.1, 0.1), kwargs);
         assert!(result.is_none());
 
         let values = PyList::new(py, &[-100_000.0, -50_000.0, -25_000.0]);
         let err = pyxirr_call_impl!(py, "mirr", (values, 0.1, 0.1)).unwrap_err();
-        assert!(err.is_instance::<pyxirr::InvalidPaymentsError>(py));
+        assert!(err.is_instance(py, py.get_type::<pyxirr::InvalidPaymentsError>()));
 
         let result: Option<f64> = pyxirr_call!(py, "mirr", (values, 0.1, 0.1), kwargs);
         assert!(result.is_none());

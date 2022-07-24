@@ -10,17 +10,17 @@ keywords = ["python", "fast", "financial", "xirr", "cashflow"]
 
 [package.metadata.maturin]
 description-content-type = "text/markdown; charset=UTF-8; variant=GFM"
-requires-python = ">=3.6,<3.11"
+requires-python = ">=3.7,<3.12"
 classifiers = [
     "Development Status :: 4 - Beta",
     "Topic :: Office/Business :: Financial",
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: 3.6",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
 ]
 
 [lib]
@@ -28,12 +28,12 @@ name = "pyxirr"
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-pyo3 = "0.15"
-numpy = "0.15"
-chrono = "0.4"
+pyo3 = "0.16"
+numpy = "0.16"
+time = { version = "0.3", features = ["parsing", "macros"] }
 
 [dev-dependencies]
-rstest = "0.11"
+rstest = "0.15"
 
 [features]
 default = ["pyo3/extension-module"]

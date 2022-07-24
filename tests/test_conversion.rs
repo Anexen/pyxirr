@@ -101,7 +101,7 @@ fn test_extract_dates_from_strings() {
         let dates_iter =
             py.eval("(x.strftime('%d %b %y') for x in dates)", Some(locals), None).unwrap();
         let err = pyxirr_call_impl!(py, "xirr", (dates_iter, amounts)).unwrap_err();
-        assert!(err.is_instance::<exceptions::PyValueError>(py));
+        assert!(err.is_instance(py, py.get_type::<exceptions::PyValueError>()));
     });
 }
 
@@ -178,7 +178,7 @@ fn test_failed_extract_from_pandas_series_with_int64_index() {
         let locals = get_locals(py, Some(&["pandas"]));
         let dates = py.eval("pandas.Series(amounts)", Some(locals), None).unwrap();
         let err = pyxirr_call_impl!(py, "xirr", (dates,)).unwrap_err();
-        assert!(err.is_instance::<exceptions::PyTypeError>(py));
+        assert!(err.is_instance(py, py.get_type::<exceptions::PyTypeError>()));
     });
 }
 
@@ -215,7 +215,7 @@ fn test_extract_from_non_float() {
 
     let amounts = py.eval("map(str, amounts)", Some(locals), None).unwrap();
     let err = pyxirr_call_impl!(py, "xirr", (dates, amounts)).unwrap_err();
-    assert!(err.is_instance::<exceptions::PyTypeError>(py));
+    assert!(err.is_instance(py, py.get_type::<exceptions::PyTypeError>()));
 }
 
 #[rstest]
@@ -228,11 +228,11 @@ fn test_payments_different_sign() {
 
     let amounts = py.eval("(abs(x) for x in amounts)", Some(locals), None).unwrap();
     let err = pyxirr_call_impl!(py, "xirr", (dates, amounts)).unwrap_err();
-    assert!(err.is_instance::<pyxirr::InvalidPaymentsError>(py));
+    assert!(err.is_instance(py, py.get_type::<pyxirr::InvalidPaymentsError>()));
 
     let amounts = py.eval("(-abs(x) for x in amounts)", Some(locals), None).unwrap();
     let err = pyxirr_call_impl!(py, "xirr", (dates, amounts)).unwrap_err();
-    assert!(err.is_instance::<pyxirr::InvalidPaymentsError>(py));
+    assert!(err.is_instance(py, py.get_type::<pyxirr::InvalidPaymentsError>()));
 }
 
 #[rstest]
@@ -244,5 +244,5 @@ fn test_arrays_of_dirrerent_lengths() {
     let dates = locals.get_item("dates").unwrap();
     let amounts = py.eval("amounts[:-2]", Some(locals), None).unwrap();
     let err = pyxirr_call_impl!(py, "xirr", (dates, amounts)).unwrap_err();
-    assert!(err.is_instance::<pyxirr::InvalidPaymentsError>(py));
+    assert!(err.is_instance(py, py.get_type::<pyxirr::InvalidPaymentsError>()));
 }

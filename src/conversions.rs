@@ -1,14 +1,18 @@
 use crate::core::DateLike;
-use chrono::prelude::*;
 use numpy::PyArray1;
 use pyo3::{exceptions, prelude::*, types::*};
+use time::Date;
 
 const SECONDS_IN_DAY: i64 = 24 * 60 * 60;
 
 impl From<&PyDate> for DateLike {
     fn from(value: &PyDate) -> Self {
-        let date =
-            NaiveDate::from_ymd(value.get_year(), value.get_month() as u32, value.get_day() as u32);
+        let date = Date::from_calendar_date(
+            value.get_year(),
+            value.get_month().try_into().unwrap(),
+            value.get_day(),
+        )
+        .unwrap();
         date.into()
     }
 }
@@ -55,9 +59,11 @@ where
 fn extract_date_series_from_numpy(series: &PyAny) -> PyResult<Vec<DateLike>> {
     Ok(series
         .call_method1("astype", ("datetime64[D]",))?
-        .downcast::<PyArray1<i32>>()?
+        .call_method1("astype", ("int32",))?
+        .extract::<&PyArray1<i32>>()?
         .readonly()
-        .iter()?
+        .as_slice()?
+        .iter()
         .map(|&x| x.into())
         .collect())
 }
@@ -73,7 +79,7 @@ pub fn extract_date_series(series: &PyAny) -> PyResult<Vec<DateLike>> {
 fn extract_amount_series_from_numpy(series: &PyAny) -> PyResult<Vec<f64>> {
     Ok(series
         .call_method1("astype", ("float64",))?
-        .downcast::<PyArray1<f64>>()?
+        .extract::<&PyArray1<f64>>()?
         .readonly()
         .to_vec()?)
 }
