@@ -123,7 +123,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           manylinux: auto
-          args: -i python3.9 --release --no-sdist --strip
+          args: -i python${{ matrix.python.version }} --release --no-sdist --strip
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
