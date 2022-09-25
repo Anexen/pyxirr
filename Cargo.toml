@@ -7,6 +7,7 @@ description = "Rust-powered collection of financial functions for Python."
 readme = "README.md"
 homepage = "https://github.com/Anexen/pyxirr"
 keywords = ["python", "fast", "financial", "xirr", "cashflow"]
+license = "Unlicense"
 
 [package.metadata.maturin]
 description-content-type = "text/markdown; charset=UTF-8; variant=GFM"
@@ -21,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: The Unlicense (Unlicense)",
 ]
 
 [lib]
