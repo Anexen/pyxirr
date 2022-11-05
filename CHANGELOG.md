@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.7.3] - 2022-11-05
+
+- Upgrade Rust libraries
+- Update package metadata
+
 ## [0.7.2] - 2022-01-28
 
 - Tweaked IRR to prefer rate > 0 ([#24](https://github.com/Anexen/pyxirr/issues/24))
