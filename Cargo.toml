@@ -28,8 +28,8 @@ name = "pyxirr"
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-pyo3 = "0.16"
-numpy = "0.16"
+pyo3 = "0.17"
+numpy = "0.17"
 time = { version = "0.3", features = ["parsing", "macros"] }
 
 [dev-dependencies]
