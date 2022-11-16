@@ -139,14 +139,14 @@ $ maturin develop
 ### Testing
 
 ```bash
-$ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/3.8.6/lib cargo test --no-default-features --features tests
+$ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/3.10.8/lib cargo test --no-default-features --features tests
 ```
 
 ### Benchmarks
 
 ```bash
 $ pip install -r bench-requirements.txt
-$ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/3.8.6/lib cargo +nightly bench --no-default-features --features tests
+$ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/3.10.8/lib cargo +nightly bench --no-default-features --features tests
 ```
 
 # Building and distribution
@@ -154,6 +154,6 @@ $ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/3.8.6/lib cargo +nightly bench --no-def
 This library uses [maturin](https://github.com/PyO3/maturin) to build and distribute python wheels.
 
 ```bash
-$ docker run --rm -v $(pwd):/io konstin2/maturin build --release --manylinux 2010 --strip
+$ docker run --rm -v $(pwd):/io ghcr.io/pyo3/maturin build --release --manylinux 2010 --strip
 $ maturin upload target/wheels/pyxirr-${version}*
 ```

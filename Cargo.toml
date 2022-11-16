@@ -9,22 +9,6 @@ homepage = "https://github.com/Anexen/pyxirr"
 keywords = ["python", "fast", "financial", "xirr", "cashflow"]
 license = "Unlicense"
 
-[package.metadata.maturin]
-description-content-type = "text/markdown; charset=UTF-8; variant=GFM"
-requires-python = ">=3.7,<3.12"
-classifiers = [
-    "Development Status :: 4 - Beta",
-    "Topic :: Office/Business :: Financial",
-    "Programming Language :: Rust",
-    "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "License :: OSI Approved :: The Unlicense (Unlicense)",
-]
-
 [lib]
 name = "pyxirr"
 crate-type = ["rlib", "cdylib"]
