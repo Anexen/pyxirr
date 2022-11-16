@@ -96,21 +96,21 @@ jobs:
         uses: messense/maturin-action@v1
         with:
           maturin-version: v0.13.7
-          args: -i python --release --target aarch64-apple-darwin --no-sdist --strip
+          args: -i python --release --target aarch64-apple-darwin --strip
 
       - name: Build Wheels - MacOS [x86_64]
         if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch != 'aarch64' }}
         uses: messense/maturin-action@v1
         with:
           maturin-version: v0.13.7
-          args: -i python --release --universal2 --no-sdist --strip
+          args: -i python --release --universal2 --strip
 
       - name: Build Wheels - Windows
         if: matrix.os.platform == 'windows-latest'
         uses: messense/maturin-action@v1
         with:
           maturin-version: v0.13.7
-          args: -i python --release --no-sdist --strip
+          args: -i python --release --strip
 
       - name: Upload wheels
         uses: actions/upload-artifact@v3
@@ -146,7 +146,7 @@ jobs:
           maturin-version: v0.13.7
           target: ${{ matrix.target }}
           manylinux: auto
-          args: -i python3.9 --release --no-sdist --strip
+          args: -i python3.9 --release --strip
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
@@ -173,7 +173,7 @@ jobs:
           maturin-version: v0.13.7
           target: ${{ matrix.target }}
           manylinux: musllinux_1_2
-          args: --release --no-sdist --strip -i ${{ matrix.python_version }}
+          args: --release --strip -i ${{ matrix.python_version }}
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
