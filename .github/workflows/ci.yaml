@@ -167,7 +167,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           manylinux: musllinux_1_2
-          args: --release --no-sdist -o dist -i ${{ matrix.python_version }}
+          args: --release --no-sdist -i ${{ matrix.python_version }}
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
