@@ -12,9 +12,10 @@ PyXIRR stands for "Python XIRR" (for historical reasons), but contains many othe
 Features:
 
 - correct
-- blazingly fast
+- supports different day count conventions (e.g. ACT/360, 30E/360, etc.)
 - works with different input data types (iterators, numpy arrays, pandas DataFrames)
 - no external dependencies
+- blazingly fast
 
 # Installation
 
@@ -57,7 +58,7 @@ xirr(dict(zip(dates, amounts)))
 xirr(['2020-01-01', '2021-01-01'], [-1000, 1200])
 ```
 
-Numpy and Pandas support
+### Numpy and Pandas
 
 ```python
 import numpy as np
@@ -84,7 +85,20 @@ df = pd.DataFrame(
 df.apply(xirr)  # Series(index=["one", "two"], data=[5.09623547168478, 8.780801977141174])
 ```
 
-Other financial functions:
+### Day count conventions
+
+Check out the available options on the [docs/day-count-conventions](https://anexen.github.io/pyxirr/functions.html#day-count-conventions).
+
+```python
+from pyxirr import DayCount
+
+xirr(dates, amounts, day_count=DayCount.ACT_360)
+
+# parse day count from string
+xirr(dates, amounts, day_count="30E/360")
+```
+
+### Other financial functions
 
 ```python
 import pyxirr

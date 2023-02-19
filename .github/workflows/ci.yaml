@@ -14,16 +14,9 @@ on:
 
 jobs:
   test:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        python-version: ['3.9']
-        os: ['ubuntu-latest']
+    runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -164,7 +157,6 @@ jobs:
           - i686-unknown-linux-musl
           - aarch64-unknown-linux-musl
           - armv7-unknown-linux-musleabihf
-        python_version: ["3.7", "3.8", "3.9", "3.10", "3.11"]
     steps:
       - uses: actions/checkout@v3
       - name: Build Wheels - musl
@@ -173,7 +165,7 @@ jobs:
           maturin-version: v0.13.7
           target: ${{ matrix.target }}
           manylinux: musllinux_1_2
-          args: --release --strip -i ${{ matrix.python_version }}
+          args: --release --strip -i 3.7 3.8 3.9 3.10 3.11
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
@@ -188,9 +180,6 @@ jobs:
       - uses: actions/download-artifact@v3
         with:
           name: wheels
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
 
       - run: pip install maturin
 
@@ -201,7 +190,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: PyPi publish
+      - name: PyPI publish
         env:
           MATURIN_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: find . -name 'pyxirr*' | xargs -l maturin upload --skip-existing --username __token__

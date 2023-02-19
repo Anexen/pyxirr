@@ -6,7 +6,14 @@ edition = "2021"
 description = "Rust-powered collection of financial functions for Python."
 readme = "README.md"
 homepage = "https://github.com/Anexen/pyxirr"
-keywords = ["python", "fast", "financial", "xirr", "cashflow"]
+keywords = [
+    "python",
+    "fast",
+    "financial",
+    "xirr",
+    "cashflow",
+    "day count convention"
+]
 license = "Unlicense"
 
 [lib]
@@ -14,12 +21,12 @@ name = "pyxirr"
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-pyo3 = "0.17"
-numpy = "0.17"
+pyo3 = "0.18"
+numpy = "0.18"
 time = { version = "0.3", features = ["parsing", "macros"] }
 
 [dev-dependencies]
-rstest = "0.15"
+rstest = "0.16"
 
 [features]
 default = ["pyo3/extension-module"]

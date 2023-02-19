@@ -1,9 +1,66 @@
-use crate::core::DateLike;
+use std::str::FromStr;
+
+use crate::core::{DateLike, DayCount};
+use numpy::datetime::{units, Datetime as datetime64};
 use numpy::PyArray1;
-use pyo3::{exceptions, prelude::*, types::*};
+use pyo3::{
+    exceptions::{PyTypeError, PyValueError},
+    prelude::*,
+    types::*,
+};
 use time::Date;
 
-const SECONDS_IN_DAY: i64 = 24 * 60 * 60;
+// time::Date::from_ordinal_date(1970, 1).unwrap().to_julian_day();
+static UNIX_EPOCH_JULIAN_DAY: i32 = 2440588;
+
+#[derive(FromPyObject)]
+pub enum PyDayCount {
+    String(String),
+    DayCount(DayCount),
+}
+
+impl TryInto<DayCount> for PyDayCount {
+    type Error = PyErr;
+
+    fn try_into(self) -> Result<DayCount, Self::Error> {
+        match self {
+            PyDayCount::String(s) => DayCount::of(&s),
+            PyDayCount::DayCount(d) => Ok(d),
+        }
+    }
+}
+
+#[pymethods]
+impl DayCount {
+    #[staticmethod]
+    fn of(value: &str) -> PyResult<Self> {
+        DayCount::from_str(value).map_err(|e| PyValueError::new_err(e))
+    }
+
+    fn __str__(&self) -> String {
+        self.to_string()
+    }
+}
+
+struct DaysSinceUnixEpoch(i32);
+
+impl<'s> FromPyObject<'s> for DaysSinceUnixEpoch {
+    fn extract(obj: &'s PyAny) -> PyResult<Self> {
+        obj.extract::<i64>().map(|x| Self(x as i32))
+    }
+}
+
+impl From<DaysSinceUnixEpoch> for DateLike {
+    fn from(value: DaysSinceUnixEpoch) -> Self {
+        Date::from_julian_day(UNIX_EPOCH_JULIAN_DAY + value.0).unwrap().into()
+    }
+}
+
+impl From<i64> for DateLike {
+    fn from(value: i64) -> Self {
+        Date::from_julian_day(UNIX_EPOCH_JULIAN_DAY + (value as i32)).unwrap().into()
+    }
+}
 
 impl From<&PyDate> for DateLike {
     fn from(value: &PyDate) -> Self {
@@ -13,6 +70,15 @@ impl From<&PyDate> for DateLike {
             value.get_day(),
         )
         .unwrap();
+        date.into()
+    }
+}
+
+impl From<&datetime64<units::Days>> for DateLike {
+    fn from(value: &datetime64<units::Days>) -> Self {
+        let days_since_unix_epoch: i32 = Into::<i64>::into(*value) as i32;
+        let date = Date::from_julian_day(UNIX_EPOCH_JULIAN_DAY + days_since_unix_epoch).unwrap();
+
         date.into()
     }
 }
@@ -27,21 +93,19 @@ impl<'s> FromPyObject<'s> for DateLike {
             return py_string
                 .to_str()?
                 .parse::<DateLike>()
-                .map_err(|e| exceptions::PyValueError::new_err(e.to_string()));
+                .map_err(|e| PyValueError::new_err(e.to_string()));
         }
 
         match obj.get_type().name()? {
-            "datetime64" => {
-                Ok(obj.call_method1("astype", ("datetime64[D]",))?.extract::<i32>()?.into())
-            }
-            "Timestamp" => {
-                let timestamp: i64 =
-                    obj.call_method0("to_pydatetime")?.call_method0("timestamp")?.extract()?;
+            "datetime64" => Ok(obj
+                .call_method1("astype", ("datetime64[D]",))?
+                .call_method1("astype", ("int",))?
+                .extract::<DaysSinceUnixEpoch>()?
+                .into()),
 
-                Ok(((timestamp / SECONDS_IN_DAY) as i32).into())
-            }
+            "Timestamp" => Ok(obj.call_method0("to_pydatetime")?.downcast::<PyDate>()?.into()),
 
-            other => Err(exceptions::PyTypeError::new_err(format!(
+            other => Err(PyTypeError::new_err(format!(
                 "Type {:?} is not understood. Expected: date",
                 other
             ))),
@@ -59,12 +123,11 @@ where
 fn extract_date_series_from_numpy(series: &PyAny) -> PyResult<Vec<DateLike>> {
     Ok(series
         .call_method1("astype", ("datetime64[D]",))?
-        .call_method1("astype", ("int32",))?
-        .extract::<&PyArray1<i32>>()?
+        .downcast::<PyArray1<datetime64<units::Days>>>()?
         .readonly()
         .as_slice()?
         .iter()
-        .map(|&x| x.into())
+        .map(|x| x.into())
         .collect())
 }
 
@@ -160,5 +223,50 @@ pub fn extract_payments(
             ))
         }
         _ => extract_records(dates),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use pyo3::{prelude::*, types::PyDict};
+    use rstest::rstest;
+    use time::{Date, Month};
+
+    use crate::core::DateLike;
+
+    fn get_locals<'p>(py: &'p Python) -> &'p PyDict {
+        py.eval("{ 'np': __import__('numpy') }", None, None).unwrap().downcast::<PyDict>().unwrap()
+    }
+
+    #[rstest]
+    #[cfg_attr(feature = "nonumpy", ignore)]
+    fn test_extract_from_numpy_datetime_array() {
+        Python::with_gil(|py| {
+            let locals = get_locals(&py);
+            let data = py
+                .eval(
+                    "np.array(['2007-02-01', '2009-09-30'], dtype='datetime64[D]')",
+                    Some(locals),
+                    None,
+                )
+                .unwrap();
+            let dt: Vec<DateLike> = data.extract().unwrap();
+            let exp: DateLike = Date::from_calendar_date(2007, Month::February, 1).unwrap().into();
+
+            assert_eq!(dt[0], exp);
+        })
+    }
+
+    #[rstest]
+    #[cfg_attr(feature = "nonumpy", ignore)]
+    fn test_extract_from_numpy_datetime() {
+        Python::with_gil(|py| {
+            let locals = get_locals(&py);
+            let data = py.eval("np.datetime64('2007-02-01', '[D]')", Some(locals), None).unwrap();
+            let dt: DateLike = data.extract().unwrap();
+            let exp: DateLike = Date::from_calendar_date(2007, Month::February, 1).unwrap().into();
+
+            assert_eq!(dt, exp);
+        })
     }
 }

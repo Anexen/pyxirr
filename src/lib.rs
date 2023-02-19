@@ -1,3 +1,4 @@
+use conversions::PyDayCount;
 use pyo3::prelude::*;
 use pyo3::{create_exception, exceptions, wrap_pyfunction};
 
@@ -37,41 +38,54 @@ where
 }
 
 /// Internal Rate of Return for a non-periodic cash flows.
-#[pyfunction(amounts = "None", "*", guess = "0.1", silent = "false")]
-#[pyo3(text_signature = "(dates, amounts, *, guess=0.1, silent=False)")]
+#[pyfunction]
+#[pyo3(signature = (dates, amounts=None, *, guess=0.1, silent=false, day_count=None))]
+#[pyo3(
+    text_signature = "(dates, amounts=None, *, guess=0.1, silent=False, day_count=DayCount.ACT_365F)"
+)]
 fn xirr(
     py: Python,
     dates: &PyAny,
     amounts: Option<&PyAny>,
     guess: Option<f64>,
     silent: Option<bool>,
+    day_count: Option<PyDayCount>,
 ) -> PyResult<Option<f64>> {
     let (dates, amounts) = conversions::extract_payments(dates, amounts)?;
+    let day_count = day_count.map(|x| x.try_into()).transpose()?;
+
     py.allow_threads(move || {
-        let result = core::xirr(&dates, &amounts, guess);
+        let result = core::xirr(&dates, &amounts, guess, day_count);
         fallible_float_or_none(result, silent.unwrap_or(false))
     })
 }
 
 /// Net Present Value for a non-periodic cash flows.
-#[pyfunction(amounts = "None", "*", silent = "false")]
-#[pyo3(text_signature = "(rate, dates, amounts, *, silent=False)")]
+#[pyfunction]
+#[pyo3(signature = (rate, dates, amounts=None, *, silent=false, day_count=None))]
+#[pyo3(
+    text_signature = "(rate, dates, amounts=None, *, silent=False, day_count=DayCount.ACT_365F)"
+)]
 fn xnpv(
     py: Python,
     rate: f64,
     dates: &PyAny,
     amounts: Option<&PyAny>,
     silent: Option<bool>,
+    day_count: Option<PyDayCount>,
 ) -> PyResult<Option<f64>> {
     let (dates, amounts) = conversions::extract_payments(dates, amounts)?;
+    let day_count = day_count.map(|x| x.try_into()).transpose()?;
+
     py.allow_threads(move || {
-        let result = core::xnpv(rate, &dates, &amounts);
+        let result = core::xnpv(rate, &dates, &amounts, day_count);
         fallible_float_or_none(result, silent.unwrap_or(false))
     })
 }
 
 /// Internal Rate of Return
-#[pyfunction("*", guess = "0.1", silent = "false")]
+#[pyfunction]
+#[pyo3(signature = (amounts, *, guess=0.1, silent=false))]
 #[pyo3(text_signature = "(amounts, *, guess=0.1, silent=False)")]
 fn irr(
     py: Python,
@@ -92,7 +106,8 @@ fn irr(
 /// There is a difference between numpy NPV and excel NPV.
 /// By default, npv function starts from zero (numpy compatible),
 /// but you can call it with `start_from_zero=False` parameter to make it Excel compatible.
-#[pyfunction("*", start_from_zero = "true")]
+#[pyfunction]
+#[pyo3(signature = (rate, amounts, *, start_from_zero=true))]
 #[pyo3(text_signature = "(rate, amounts, *, start_from_zero = True)")]
 fn npv(
     py: Python,
@@ -108,7 +123,8 @@ fn npv(
 }
 
 /// Future Value.
-#[pyfunction("*", pmt_at_begining = "false")]
+#[pyfunction]
+#[pyo3(signature = (rate, nper, pmt, pv, *, pmt_at_begining=false))]
 #[pyo3(text_signature = "(rate, nper, pmt, pv, *, pmt_at_begining=False)")]
 fn fv(
     py: Python,
@@ -133,7 +149,10 @@ fn nfv(py: Python, rate: f64, nper: f64, amounts: &PyAny) -> PyResult<Option<f64
 /// Future value of a cash flow between two dates.
 #[pyfunction]
 #[pyo3(
-    text_signature = "(start_date, cash_flow_date, end_date, cash_flow_rate, end_rate, cash_flow)"
+    signature = (start_date, cash_flow_date, end_date, cash_flow_rate, end_rate, cash_flow, *, day_count=None)
+)]
+#[pyo3(
+    text_signature = "(start_date, cash_flow_date, end_date, cash_flow_rate, end_rate, cash_flow, * day_count=DayCount.ACT_365F)"
 )]
 fn xfv(
     py: Python,
@@ -143,7 +162,10 @@ fn xfv(
     cash_flow_rate: f64,
     end_rate: f64,
     cash_flow: f64,
+    day_count: Option<PyDayCount>,
 ) -> PyResult<Option<f64>> {
+    let day_count = day_count.map(|x| x.try_into()).transpose()?;
+
     py.allow_threads(move || {
         Ok(float_or_none(core::xfv(
             &start_date,
@@ -152,20 +174,30 @@ fn xfv(
             cash_flow_rate,
             end_rate,
             cash_flow,
+            day_count,
         )))
     })
 }
 
 /// Net future value of a series of irregular cash flows
-#[pyfunction(amounts = "None")]
-#[pyo3(text_signature = "(rate, dates, amounts)")]
-fn xnfv(py: Python, rate: f64, dates: &PyAny, amounts: Option<&PyAny>) -> PyResult<Option<f64>> {
+#[pyfunction]
+#[pyo3(signature = (rate, dates, amounts=None, *, day_count=None))]
+#[pyo3(text_signature = "(rate, dates, amounts=None, day_count=DayCount.ACT_365F)")]
+fn xnfv(
+    py: Python,
+    rate: f64,
+    dates: &PyAny,
+    amounts: Option<&PyAny>,
+    day_count: Option<PyDayCount>,
+) -> PyResult<Option<f64>> {
     let (dates, amounts) = conversions::extract_payments(dates, amounts)?;
-    py.allow_threads(move || Ok(float_or_none(core::xnfv(rate, &dates, &amounts)?)))
+    let day_count = day_count.map(|x| x.try_into()).transpose()?;
+    py.allow_threads(move || Ok(float_or_none(core::xnfv(rate, &dates, &amounts, day_count)?)))
 }
 
 /// Present Value
-#[pyfunction(fv = "0.0", "*", pmt_at_begining = "false")]
+#[pyfunction]
+#[pyo3(signature = (rate, nper, pmt, fv=0.0, *, pmt_at_begining=false))]
 #[pyo3(text_signature = "(rate, nper, pmt, fv=0, *, pmt_at_begining=False)")]
 fn pv(
     py: Python,
@@ -179,16 +211,17 @@ fn pv(
 }
 
 /// Modified Internal Rate of Return.
-#[pyfunction("*", silent = "false")]
+#[pyfunction]
+#[pyo3(signature = (amounts, finance_rate, reinvest_rate, *, silent=false))]
 #[pyo3(text_signature = "(amounts, finance_rate, reinvest_rate, *, silent=False)")]
 fn mirr(
     py: Python,
-    values: &PyAny,
+    amounts: &PyAny,
     finance_rate: f64,
     reinvest_rate: f64,
     silent: Option<bool>,
 ) -> PyResult<Option<f64>> {
-    let values = conversions::extract_amount_series(values)?;
+    let values = conversions::extract_amount_series(amounts)?;
     py.allow_threads(move || {
         let result = core::mirr(&values, finance_rate, reinvest_rate);
         fallible_float_or_none(result, silent.unwrap_or(false))
@@ -196,7 +229,8 @@ fn mirr(
 }
 
 /// Compute the payment against loan principal plus interest.
-#[pyfunction(fv = "0.0", "*", pmt_at_begining = "false")]
+#[pyfunction]
+#[pyo3(signature = (rate, nper, pv, fv=0.0, *, pmt_at_begining=false))]
 #[pyo3(text_signature = "(rate, nper, pv, fv=0, *, pmt_at_begining=False)")]
 fn pmt(
     py: Python,
@@ -210,7 +244,8 @@ fn pmt(
 }
 
 /// Compute the interest portion of a payment.
-#[pyfunction(fv = "0.0", "*", pmt_at_begining = "false")]
+#[pyfunction]
+#[pyo3(signature = (rate, per, nper, pv, fv=0.0, *, pmt_at_begining=false))]
 #[pyo3(text_signature = "(rate, per, nper, pv, fv=0, *, pmt_at_begining=False)")]
 fn ipmt(
     rate: f64,
@@ -224,7 +259,8 @@ fn ipmt(
 }
 
 /// Compute the payment against loan principal.
-#[pyfunction(fv = "0.0", "*", pmt_at_begining = "false")]
+#[pyfunction]
+#[pyo3(signature = (rate, per, nper, pv, fv=0.0, *, pmt_at_begining=false))]
 #[pyo3(text_signature = "(rate, per, nper, pv, fv=0, *, pmt_at_begining=False)")]
 fn ppmt(
     py: Python,
@@ -239,7 +275,8 @@ fn ppmt(
 }
 
 /// Compute the number of periodic payments.
-#[pyfunction(fv = "0.0", "*", pmt_at_begining = "false")]
+#[pyfunction]
+#[pyo3(signature = (rate, pmt, pv, fv=0.0, *, pmt_at_begining=false))]
 #[pyo3(text_signature = "(rate, pmt, pv, fv=0, *, pmt_at_begining=False)")]
 fn nper(
     py: Python,
@@ -253,7 +290,8 @@ fn nper(
 }
 
 /// Compute the number of periodic payments.
-#[pyfunction(fv = "0.0", "*", pmt_at_begining = "false", guess = "0.1")]
+#[pyfunction]
+#[pyo3(signature = (nper, pmt, pv, fv=0.0, *, pmt_at_begining=false, guess=0.1))]
 #[pyo3(text_signature = "(nper, pmt, pv, fv=0, *, pmt_at_begining=False, guess=0.1)")]
 fn rate(
     py: Python,
@@ -267,8 +305,22 @@ fn rate(
     py.allow_threads(move || float_or_none(core::rate(nper, pmt, pv, fv, pmt_at_begining, guess)))
 }
 
+#[pyfunction]
+fn year_fraction(d1: core::DateLike, d2: core::DateLike, day_count: PyDayCount) -> PyResult<f64> {
+    Ok(core::year_fraction(&d1, &d2, day_count.try_into()?))
+}
+
+#[pyfunction]
+fn days_between(d1: core::DateLike, d2: core::DateLike, day_count: PyDayCount) -> PyResult<i32> {
+    Ok(core::days_between(&d1, &d2, day_count.try_into()?))
+}
+
 #[pymodule]
 pub fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
+    m.add_class::<core::DayCount>()?;
+    m.add_function(wrap_pyfunction!(year_fraction, m)?)?;
+    m.add_function(wrap_pyfunction!(days_between, m)?)?;
+
     m.add_function(wrap_pyfunction!(pmt, m)?)?;
     m.add_function(wrap_pyfunction!(ipmt, m)?)?;
     m.add_function(wrap_pyfunction!(ppmt, m)?)?;

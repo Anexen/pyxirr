@@ -10,13 +10,12 @@ from typing import (
     Union,
     overload,
     Hashable,
-    Literal,
 )
 
 if sys.version_info >= (3, 8):
-    from typing import Protocol
+    from typing import Protocol, Literal
 else:
-    from typing_extensions import Protocol
+    from typing_extensions import Protocol, Literal
 
 # We are using protocols because mypy does not support dynamic type hints for
 # optional libraries, e.g in the ideal world:
@@ -104,11 +103,31 @@ class _Timestamp(Protocol):
 
 # fmt: on
 
+
+class DayCount:
+    ACT_ACT_ISDA: "DayCount"
+    ACT_365F: "DayCount"
+    ACT_365_25: "DayCount"
+    ACT_364: "DayCount"
+    ACT_360: "DayCount"
+    THIRTY_360_ISDA: "DayCount"
+    THIRTY_E_360: "DayCount"
+    THIRTY_E_PLUS_360: "DayCount"
+    THIRTY_E_360_ISDA: "DayCount"
+    THIRTY_U_360: "DayCount"
+    NL_365: "DayCount"
+    NL_360: "DayCount"
+
+    def __init__(self, day_count: str):
+        ...
+
+
 # rate as decimal, not percentage, normally between [-1, 1]
 _Rate = Union[float, Decimal]
 _Period = Union[int, float, Decimal]
 _Guess = Optional[_Rate]
 _Amount = Union[int, float, Decimal]
+_DayCount = Union[DayCount | str]
 
 _DateLike = Union[str, date, datetime, _datetime64, _Timestamp]
 _Payment = Tuple[_DateLike, _Amount]
@@ -154,6 +173,8 @@ def xfv(
 def xnfv(
     rate: _Rate,  # annual rate
     dates: _CashFlow,
+    *,
+    day_count: _DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
     ...
 
@@ -163,6 +184,8 @@ def xnfv(
     rate: _Rate,  # annual rate
     dates: _DateLikeArray,
     amounts: _AmountArray,
+    *,
+    day_count: _DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
     ...
 
@@ -193,6 +216,7 @@ def xnpv(
     dates: _CashFlow,
     *,
     silent: bool = False,
+    day_count: _DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
     ...
 
@@ -204,6 +228,7 @@ def xnpv(
     amounts: _AmountArray,
     *,
     silent: bool = False,
+    day_count: _DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
     ...
 
@@ -292,6 +317,7 @@ def xirr(
     *,
     guess: _Guess = 0.1,
     silent: bool = False,
+    day_count: _DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
     ...
 
@@ -302,5 +328,6 @@ def xirr(
     *,
     guess: _Guess = 0.1,
     silent: bool = False,
+    day_count: _DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
     ...
