@@ -72,6 +72,8 @@ jobs:
             target
           key: ${{ runner.os.platform }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
+      - run: rustup target list
+
       - name: Build Wheels - Linux
         if: matrix.os.platform == 'ubuntu-latest'
         uses: messense/maturin-action@v1
@@ -93,7 +95,7 @@ jobs:
 
       - name: Build Wheels - MacOS [x86_64]
         if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch != 'aarch64' }}
-        run: rustup target add univeral2-apple-darwin
+        run: rustup target add x86_64-apple-darwin
 
       - name: Build Wheels - MacOS [x86_64]
         if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch != 'aarch64' }}
