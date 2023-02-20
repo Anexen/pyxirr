@@ -102,7 +102,7 @@ jobs:
         uses: messense/maturin-action@v1
         with:
           maturin-version: v0.14.13
-          args: -i python --release --target univeral2-apple-darwin --strip
+          args: -i python --release --target universal2-apple-darwin --strip
 
       - name: Build Wheels - Windows
         if: matrix.os.platform == 'windows-latest'
