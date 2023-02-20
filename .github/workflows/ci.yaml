@@ -84,10 +84,6 @@ jobs:
 
       - name: Build Wheels - MacOS [aarch64]
         if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch == 'aarch64' }}
-        run: rustup target add aarch64-apple-darwin
-
-      - name: Build Wheels - MacOS [aarch64]
-        if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch == 'aarch64' }}
         uses: messense/maturin-action@v1
         with:
           maturin-version: v0.14.13
@@ -95,14 +91,10 @@ jobs:
 
       - name: Build Wheels - MacOS [x86_64]
         if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch != 'aarch64' }}
-        run: rustup target add x86_64-apple-darwin
-
-      - name: Build Wheels - MacOS [x86_64]
-        if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch != 'aarch64' }}
         uses: messense/maturin-action@v1
         with:
           maturin-version: v0.14.13
-          args: -i python --release --target universal2-apple-darwin --strip
+          args: -i python --release --universal2 --strip
 
       - name: Build Wheels - Windows
         if: matrix.os.platform == 'windows-latest'
