@@ -161,3 +161,23 @@ fn test_sum_xfv_eq_xnfv() {
         assert_almost_eq!(xnfv_result, sum_xfv_result);
     });
 }
+
+// https://www.mathworks.com/help/finance/xirr.html
+#[rstest]
+#[case("30/360 SIA", 0.100675477282743)] // 1
+#[case("act/360", 0.0991988898057063)] // 2
+#[case("act/365F", 0.10064378342638)] // 3
+#[case("30/360 ISDA", 0.100675477282743)] // 5
+#[case("30E/360", 0.100675477282743)] // 6
+#[case("act/act ISDA", 0.100739648987346)] // 12
+fn test_xirr_day_count(#[case] day_count: &str, #[case] expected: f64) {
+    Python::with_gil(|py| {
+        let dates = ["01/12/2007", "02/14/2008", "03/03/2008", "06/14/2008", "12/01/2008"];
+        let amounts = [-10000, 2500, 2000, 3000, 4000];
+
+        let kwargs = py_dict!(py, "day_count" => day_count);
+        let value: f64 = pyxirr_call!(py, "xirr", (dates, amounts), kwargs);
+
+        assert_almost_eq!(value, expected);
+    })
+}

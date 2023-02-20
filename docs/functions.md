@@ -24,6 +24,54 @@ CashFlowDict = Dict[DateLike, Amount]
 CashFlow = Union[CashFlowSeries, CashFlowTable, CashFlowDict]
 ```
 
+## Day Count Conventions
+
+The [day count convention](https://en.wikipedia.org/wiki/Day_count_convention)
+determines how interest accrues over time in a variety of transactions,
+including bonds, swaps, bills and loans.
+
+The following conventions are supported:
+
+| Name               | Constant                   | Also known                      |
+| ------------------ | -------------------------- | ------------------------------- |
+| Actual/Actual ISDA | DayCount.ACT_ACT_ISDA      | Act/Act ISDA                    |
+| Actual/365 Fixed   | DayCount.ACT_365F          | Act/365F, English               |
+| Actual/365.25      | DayCount.ACT_365_25        |                                 |
+| Actual/364         | DayCount.ACT_364           |                                 |
+| Actual/360         | DayCount.ACT_360           | French                          |
+| 30/360 ISDA        | DayCount.THIRTY_360_ISDA   | Bond basis                      |
+| 30E/360            | DayCount.THIRTY_E_360      | 30/360 ISMA, Eurobond basis     |
+| 30E+/360           | DayCount.THIRTY_E_PLUS_360 |                                 |
+| 30E/360 ISDA       | DayCount.THIRTY_E_360_ISDA | 30E/360 German, German          |
+| 30U/360            | DayCount.THIRTY_U_360      | 30/360 US, 30US/360, 30/360 SIA |
+| NL/365             | DayCount.NL_365            | Actual/365 No leap year         |
+| NL/360             | DayCount.NL_360            |                                 |
+
+Definition:
+
+```python
+def year_fraction(
+    d1: DateLike,
+    d2: DateLike,
+    day_count: DayCount,
+) -> float:
+    ...
+
+```
+
+Usage:
+
+```python
+from pyxirr import year_fraction, DayCount
+year_fraction("2019-11-09", "2020-03-05", DayCount.THIRTY_E_360)
+year_fraction("2019-11-09", "2020-03-05", "act/360")
+```
+
+See also:
+
+- [2006 ISDA definitions](https://www.rbccm.com/assets/rbccm/docs/legal/doddfrank/Documents/ISDALibrary/2006%20ISDA%20Definitions.pdf)
+- http://www.deltaquants.com/day-count-conventions
+
 ## Exceptions
 
 - `InvalidPaymentsError`. Occurs if either:
@@ -114,11 +162,13 @@ def xfv(
     cash_flow_rate: Rate,  # annual rate
     end_rate: Rate,  # annual rate
     cash_flow: Amount,
+    *,
+    day_count: DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
     ...
 ```
 
-When:
+Where:
 
 - `start_date`: the starting date for the annual interest rates used in the XFV calculation.
 - `cash_flow_date`: the date on which the cash flows occurs.
@@ -126,6 +176,7 @@ When:
 - `cash_flow_rate`: the annual interest rate for the cash flow date. This should be the interest rate from the `start_date` to the `cash_flow_date`.
 - `end_rate`: the annual interest rate for the end date. This should be the interest rate from the `start_date` to the `end_date`.
 - `cash_flow`: the cash flow value.
+- `day_count`: Day count convention.
 
 See also: [XLeratorDB.XFV](http://westclintech.com/SQL-Server-Financial-Functions/SQL-Server-XFV-function)
 
@@ -164,6 +215,7 @@ def xnfv(
     amounts: Optional[AmountArray] = None,
     *,
     silent: bool = False
+    day_count: DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
     ...
 ```
@@ -384,6 +436,7 @@ def xnpv(
     amounts: Optional[AmountArray] = None,
     *,
     silent: bool = False
+    day_count: DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
     ...
 ```
@@ -392,7 +445,7 @@ XNPV is calculated as follows:
 
 $$XNPV=\sum_{i=1}^n \frac{P_i}{(1 + rate)^{(d_i - d_0)/365}}$$
 
-where:
+Where:
 
 - `di` = the ith, or last, payment date.
 - `d0` = the 0th payment date.
@@ -547,6 +600,7 @@ def xirr(
     *,
     guess: Guess = 0.1,
     silent: bool = False,
+    day_count: DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
     ...
 ```

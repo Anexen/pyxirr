@@ -1,52 +1,29 @@
 use std::error::Error;
-use std::fmt;
+use std::{fmt, str::FromStr};
 use time::{macros::format_description, Date};
 
 #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Copy)]
-pub struct DateLike(i32);
+pub struct DateLike(Date);
 
-impl From<i32> for DateLike {
-    fn from(value: i32) -> Self {
-        Self(value)
+impl Into<Date> for DateLike {
+    fn into(self) -> Date {
+        self.0
     }
 }
 
 impl From<Date> for DateLike {
     fn from(value: Date) -> Self {
-        // See chrono.num_days_from_ce implementation.
-        // we know this wouldn't overflow since year is limited to 1/2^13 of i32's full range.
-        let mut year = value.year() - 1;
-        let mut ndays = 0;
-        if year < 0 {
-            let excess = 1 + (-year) / 400;
-            year += excess * 400;
-            ndays -= excess * 146_097;
-        }
-        let div_100 = year / 100;
-        ndays += ((year * 1461) >> 2) - div_100 + (div_100 >> 2);
-        ndays += value.ordinal() as i32;
-
-        Self(ndays)
+        Self(value)
     }
 }
 
-impl std::ops::Sub for DateLike {
-    type Output = i32;
-
-    fn sub(self, other: DateLike) -> Self::Output {
-        self.0 - other.0
+impl AsRef<Date> for DateLike {
+    fn as_ref(&self) -> &Date {
+        &self.0
     }
 }
 
-impl std::ops::Sub for &DateLike {
-    type Output = i32;
-
-    fn sub(self, other: &DateLike) -> Self::Output {
-        self.0 - other.0
-    }
-}
-
-impl std::str::FromStr for DateLike {
+impl FromStr for DateLike {
     type Err = time::error::Parse;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
