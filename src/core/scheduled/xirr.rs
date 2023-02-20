@@ -45,7 +45,7 @@ fn day_count_factor(dates: &[DateLike], day_count: Option<DayCount>) -> Vec<f64>
 
 // \sum_{i=1}^n \frac{P_i}{(1 + rate)^{(d_i - d_0)/365}}
 fn xnpv_result(payments: &[f64], deltas: &[f64], rate: f64) -> f64 {
-    payments.iter().zip(deltas).map(|(p, &e)| p / (1.0 + rate).powf(e)).sum()
+    payments.iter().zip(deltas).map(|(p, &e)| p * (1.0 + rate).powf(-e)).sum()
 }
 
 // XNPV first derivative
@@ -53,5 +53,5 @@ fn xnpv_result(payments: &[f64], deltas: &[f64], rate: f64) -> f64 {
 // simplify in order to reuse cached deltas (d_i - d_0)/365
 // \sum_{i=1}^n \frac{P_i * -(d_i - d_0) / 365}{(1 + rate)^{((d_i - d_0)/365 + 1)}}
 fn xnpv_result_deriv(payments: &[f64], deltas: &[f64], rate: f64) -> f64 {
-    payments.iter().zip(deltas).map(|(p, e)| p * -e / (1.0 + rate).powf(e + 1.0)).sum()
+    payments.iter().zip(deltas).map(|(p, e)| p * -e * (1.0 + rate).powf(-e - 1.0)).sum()
 }

@@ -3,25 +3,23 @@ use std::{fmt, str::FromStr};
 use time::{macros::format_description, Date};
 
 #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Copy)]
-pub struct DateLike {
-    pub date: Date,
-}
+pub struct DateLike(Date);
 
 impl Into<Date> for DateLike {
     fn into(self) -> Date {
-        self.date
+        self.0
     }
 }
 
 impl From<Date> for DateLike {
     fn from(value: Date) -> Self {
-        Self { date: value }
+        Self(value)
     }
 }
 
 impl AsRef<Date> for DateLike {
     fn as_ref(&self) -> &Date {
-        &self.date
+        &self.0
     }
 }
 

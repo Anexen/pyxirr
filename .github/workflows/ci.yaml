@@ -93,6 +93,10 @@ jobs:
 
       - name: Build Wheels - MacOS [x86_64]
         if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch != 'aarch64' }}
+        run: rustup target add univeral2-apple-darwin
+
+      - name: Build Wheels - MacOS [x86_64]
+        if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch != 'aarch64' }}
         uses: messense/maturin-action@v1
         with:
           maturin-version: v0.14.13
