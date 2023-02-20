@@ -43,7 +43,7 @@ jobs:
           name: Rust Benchmark
           tool: 'cargo'
           gh-pages-branch: main
-          gh-repository: github/Anexen/pyxirr
+          gh-repository: github.com/Anexen/pyxirr
           benchmark-data-dir-path: docs/bench
           output-file-path: output.txt
           auto-push: true
