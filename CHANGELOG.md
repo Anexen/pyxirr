@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.8.0] - 2023-02-20
+
+- Add support for different day count conventions ([#34](https://github.com/Anexen/pyxirr/pull/34))
+- Upgrade Rust libraries
+- Upgrade maturin to v0.14.13
+
 ## [0.7.3] - 2022-11-05
 
 - Upgrade Rust libraries
