@@ -40,9 +40,7 @@ where
 /// Internal Rate of Return for a non-periodic cash flows.
 #[pyfunction]
 #[pyo3(signature = (dates, amounts=None, *, guess=0.1, silent=false, day_count=None))]
-#[pyo3(
-    text_signature = "(dates, amounts=None, *, guess=0.1, silent=False, day_count=DayCount.ACT_365F)"
-)]
+#[pyo3(text_signature = "(dates, amounts=None, *, guess=0.1, silent=False, day_count=None)")]
 fn xirr(
     py: Python,
     dates: &PyAny,
@@ -63,9 +61,7 @@ fn xirr(
 /// Net Present Value for a non-periodic cash flows.
 #[pyfunction]
 #[pyo3(signature = (rate, dates, amounts=None, *, silent=false, day_count=None))]
-#[pyo3(
-    text_signature = "(rate, dates, amounts=None, *, silent=False, day_count=DayCount.ACT_365F)"
-)]
+#[pyo3(text_signature = "(rate, dates, amounts=None, *, silent=False, day_count=None)")]
 fn xnpv(
     py: Python,
     rate: f64,
@@ -149,10 +145,8 @@ fn nfv(py: Python, rate: f64, nper: f64, amounts: &PyAny) -> PyResult<Option<f64
 /// Future value of a cash flow between two dates.
 #[pyfunction]
 #[pyo3(
-    signature = (start_date, cash_flow_date, end_date, cash_flow_rate, end_rate, cash_flow, *, day_count=None)
-)]
-#[pyo3(
-    text_signature = "(start_date, cash_flow_date, end_date, cash_flow_rate, end_rate, cash_flow, * day_count=DayCount.ACT_365F)"
+    signature = (start_date, cash_flow_date, end_date, cash_flow_rate, end_rate, cash_flow, *, day_count=None),
+    text_signature = "(start_date, cash_flow_date, end_date, cash_flow_rate, end_rate, cash_flow, * day_count=None)"
 )]
 fn xfv(
     py: Python,
@@ -182,7 +176,7 @@ fn xfv(
 /// Net future value of a series of irregular cash flows
 #[pyfunction]
 #[pyo3(signature = (rate, dates, amounts=None, *, day_count=None))]
-#[pyo3(text_signature = "(rate, dates, amounts=None, day_count=DayCount.ACT_365F)")]
+#[pyo3(text_signature = "(rate, dates, *, amounts=None, day_count=None)")]
 fn xnfv(
     py: Python,
     rate: f64,

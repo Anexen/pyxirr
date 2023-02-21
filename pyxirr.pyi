@@ -85,8 +85,6 @@ class _Timestamp(Protocol):
     def month_name(self, locale: Optional[str]) -> str: ...
     def normalize(self) -> "_Timestamp": ...
     @property
-    def freqstr(self) -> str: ...
-    @property
     def is_month_end(self) -> bool: ...
     @property
     def is_month_start(self) -> bool: ...
@@ -104,6 +102,27 @@ class _Timestamp(Protocol):
 # fmt: on
 
 
+# rate as decimal, not percentage, normally between [-1, 1]
+_Rate = Union[float, Decimal]
+_Period = Union[int, float, Decimal]
+_Guess = Optional[_Rate]
+_Amount = Union[int, float, Decimal]
+_DayCount = Union["DayCount" | str]
+
+_DateLike = Union[str, date, datetime, _datetime64, _Timestamp]
+_Payment = Tuple[_DateLike, _Amount]
+_CashFlowTable = Union[Iterable[_Payment], _DataFrame, _ndarray]
+_CashFlowDict = Dict[_DateLike, _Amount]
+_CashFlow = Union[_CashFlowTable, _CashFlowDict, _Series]
+
+_DateLikeArray = Iterable[_DateLike]
+_AmountArray = Iterable[_Amount]
+
+
+class InvalidPaymentsError(Exception):
+    pass
+
+
 class DayCount:
     ACT_ACT_ISDA: "DayCount"
     ACT_365F: "DayCount"
@@ -118,25 +137,17 @@ class DayCount:
     NL_365: "DayCount"
     NL_360: "DayCount"
 
-    def __init__(self, day_count: str):
+    @staticmethod
+    def of(day_count: str) -> "DayCount":
         ...
 
 
-# rate as decimal, not percentage, normally between [-1, 1]
-_Rate = Union[float, Decimal]
-_Period = Union[int, float, Decimal]
-_Guess = Optional[_Rate]
-_Amount = Union[int, float, Decimal]
-_DayCount = Union[DayCount | str]
+def year_fraction(d1: _DateLike, d2: _DateLike, day_count: _DayCount) -> float:
+    ...
 
-_DateLike = Union[str, date, datetime, _datetime64, _Timestamp]
-_Payment = Tuple[_DateLike, _Amount]
-_CashFlowTable = Union[Iterable[_Payment], _DataFrame, _ndarray]
-_CashFlowDict = Dict[_DateLike, _Amount]
-_CashFlow = Union[_CashFlowTable, _CashFlowDict, _Series]
 
-_DateLikeArray = Iterable[_DateLike]
-_AmountArray = Iterable[_Amount]
+def days_between(d1: _DateLike, d2: _DateLike, day_count: _DayCount) -> int:
+    ...
 
 
 def fv(
