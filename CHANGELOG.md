@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.8.1] - 2023-02-21
+
+- Fix type annotations ([#35](https://github.com/Anexen/pyxirr/issues/35))
+
 ## [0.8.0] - 2023-02-20
 
 - Add support for different day count conventions ([#34](https://github.com/Anexen/pyxirr/pull/34))
