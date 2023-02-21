@@ -22,25 +22,40 @@
     return bench;
   });
 
-  var formatDuration = function (x) {
+  const formatRatio = (x) => {
+    return "x" + Plotly.d3.format("0.2f")(x);
+  };
+  const formatDuration = (x) => {
     return Plotly.d3.format("0.4s")(x.value / 1e9) + "s";
   };
 
-  let cmpChartData = _(lastBenches)
+  const cmpChartData = _(lastBenches)
     .orderBy(["implCode", "value"])
     .groupBy("impl")
-    .map((group) => ({
-      x: _.map(group, "sample_size"),
-      y: _.map(group, (x) => x.value / 1e9), // convert from ns to sec
-      name: group[0].impl,
+    .map((impl) => ({
+      x: _.map(impl, "sample_size"),
+      y: _.map(impl, (x) => x.value / 1e9), // convert from ns to sec
+      name: impl[0].impl,
       type: "bar",
-      text: _.map(group, formatDuration),
+      text: _.map(impl, (x, i) => {
+        let duration = formatDuration(x);
+
+        if (x.impl != "rust") {
+          const group = _.filter(lastBenches, {
+            impl: "rust",
+            sample_size: x.sample_size,
+          });
+          const ratio = formatRatio(x.value / group[0].value);
+          duration += `<br>(${ratio})`;
+        }
+        return duration;
+      }),
       textposition: "auto",
       hoverinfo: "none",
     }))
     .value();
 
-  var cmpLayout = {
+  const cmpLayout = {
     title: "PyXIRR vs other implementations",
     barmode: "group",
     xaxis: {
@@ -60,7 +75,7 @@
 
   Plotly.newPlot("comparison", cmpChartData, cmpLayout);
 
-  var compiled = _.template(`
+  const compiled = _.template(`
     <tr>
         <th>Implementation</th>
         <th>Sample size</th>
@@ -80,7 +95,7 @@
     format: formatDuration,
   });
 
-  let perfChartData = [
+  const perfChartData = [
     {
       y: _(benches)
         .map("benches")
@@ -93,7 +108,7 @@
     },
   ];
 
-  var perfLayout = {
+  const perfLayout = {
     title: "PyXIRR performance over time",
     barmode: "group",
     xaxis: {
