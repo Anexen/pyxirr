@@ -24,6 +24,7 @@ crate-type = ["rlib", "cdylib"]
 pyo3 = "0.18"
 numpy = "0.18"
 time = { version = "0.3", features = ["parsing", "macros"] }
+ndarray = "0.15"
 
 [dev-dependencies]
 rstest = "0.16"

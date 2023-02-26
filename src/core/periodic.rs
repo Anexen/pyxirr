@@ -1,4 +1,9 @@
+use ndarray::{ArrayD, ArrayViewD};
 use std::iter::successors;
+use std::mem::MaybeUninit;
+
+use crate::broadcast_together;
+use crate::broadcasting::BroadcastingError;
 
 use super::models::{validate, InvalidPaymentsError};
 use super::optimize::{brentq, find_root, newton_raphson_with_default_deriv};
@@ -26,6 +31,33 @@ pub fn fv(rate: f64, nper: f64, pmt: f64, pv: f64, pmt_at_begining: Option<bool>
     let factor = f64::powf(1.0 + rate, nper);
 
     -pv * factor - pmt * (1.0 + rate * pmt_at_begining) / rate * (factor - 1.0)
+}
+
+pub fn fv_vec(
+    rate: ArrayViewD<f64>,
+    nper: ArrayViewD<f64>,
+    pmt: ArrayViewD<f64>,
+    pv: ArrayViewD<f64>,
+    pmt_at_begining: Option<bool>,
+) -> Result<ArrayD<f64>, BroadcastingError> {
+    let pmt_at_begining = convert_pmt_at_begining(pmt_at_begining);
+    let (rate, nper, pmt, pv) = broadcast_together!(rate, nper, pmt, pv)?;
+
+    let mut result = ArrayD::uninit(rate.shape());
+
+    ndarray::Zip::from(&mut result).and(rate).and(nper).and(pmt).and(pv).for_each(
+        |result, rate, nper, pmt, pv| {
+            let value = if rate == &0.0 {
+                -(pv + pmt * nper)
+            } else {
+                let f = (rate + 1.0).powf(*nper);
+                -pv * f - pmt * (1.0 + rate * pmt_at_begining) / rate * (f - 1.0)
+            };
+            *result = MaybeUninit::new(value);
+        },
+    );
+
+    Ok(unsafe { result.assume_init() })
 }
 
 pub fn pv(rate: f64, nper: f64, pmt: f64, fv: Option<f64>, pmt_at_begining: Option<bool>) -> f64 {

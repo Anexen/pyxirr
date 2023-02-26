@@ -1,15 +1,25 @@
+use broadcasting::Arg;
 use conversions::PyDayCount;
+use ndarray::ArrayD;
 use pyo3::prelude::*;
 use pyo3::{create_exception, exceptions, wrap_pyfunction};
 
+mod broadcasting;
 mod conversions;
 mod core;
 
 create_exception!(pyxirr, InvalidPaymentsError, exceptions::PyException);
+create_exception!(pyxirr, BroadcastingError, exceptions::PyException);
 
 impl From<core::InvalidPaymentsError> for PyErr {
     fn from(value: core::InvalidPaymentsError) -> Self {
         InvalidPaymentsError::new_err(value.to_string())
+    }
+}
+
+impl From<broadcasting::BroadcastingError> for PyErr {
+    fn from(value: broadcasting::BroadcastingError) -> Self {
+        BroadcastingError::new_err(value.to_string())
     }
 }
 
@@ -124,13 +134,41 @@ fn npv(
 #[pyo3(text_signature = "(rate, nper, pmt, pv, *, pmt_at_begining=False)")]
 fn fv(
     py: Python,
-    rate: f64,
-    nper: f64,
-    pmt: f64,
-    pv: f64,
+    rate: Arg,
+    nper: Arg,
+    pmt: Arg,
+    pv: Arg,
     pmt_at_begining: Option<bool>,
-) -> Option<f64> {
-    py.allow_threads(move || float_or_none(core::fv(rate, nper, pmt, pv, pmt_at_begining)))
+) -> PyResult<PyObject> {
+    use Arg::*;
+
+    match (rate, nper, pmt, pv) {
+        (Scalar(rate), Scalar(nper), Scalar(pmt), Scalar(pv)) => {
+            let result = py.allow_threads(move || {
+                float_or_none(core::fv(rate, nper, pmt, pv, pmt_at_begining))
+            });
+            return Ok(result.to_object(py));
+        }
+        (rate, nper, pmt, pv) => {
+            let rate: ArrayD<f64> = rate.try_into()?;
+            let nper: ArrayD<f64> = nper.try_into()?;
+            let pmt: ArrayD<f64> = pmt.try_into()?;
+            let pv: ArrayD<f64> = pv.try_into()?;
+
+            let result = py.allow_threads(move || {
+                core::periodic::fv_vec(
+                    rate.view(),
+                    nper.view(),
+                    pmt.view(),
+                    pv.view(),
+                    pmt_at_begining,
+                )
+            })?;
+
+            broadcasting::arrayd_to_pylist(py, result.view()).map(|x| x.into())
+            // Ok(result.to_pyarray(py).to_object(py))
+        }
+    }
 }
 
 /// Net Future Value.
@@ -332,6 +370,7 @@ pub fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(xirr, m)?)?;
 
     m.add("InvalidPaymentsError", py.get_type::<InvalidPaymentsError>())?;
+    m.add("BroadcastingError", py.get_type::<BroadcastingError>())?;
 
     Ok(())
 }

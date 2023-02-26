@@ -340,6 +340,7 @@ dependencies = [
 name = "pyxirr"
 version = "0.8.1"
 dependencies = [
+ "ndarray",
  "numpy",
  "pyo3",
  "rstest",

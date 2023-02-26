@@ -72,6 +72,32 @@ fn test_fv_zero_rate() {
     })
 }
 
+#[rstest]
+fn test_fv_vectorized() {
+    Python::with_gil(|py| {
+        let rates = [[0.05 / 12.0, 0.06 / 12.0], [0.07 / 12.0, 0.0]];
+        let result: Vec<Vec<f64>> = pyxirr_call!(py, "fv", (rates, 10 * 12, -100, -100));
+
+        assert_almost_eq!(result[0][0], 15692.92889434, 1e-8);
+        assert_almost_eq!(result[0][1], 16569.87435405, 1e-8);
+        assert_almost_eq!(result[1][0], 17509.44688102, 1e-8);
+        assert_almost_eq!(result[1][1], 12100.0, 1e-8);
+    })
+}
+
+#[rstest]
+fn test_fv_vectorized_2() {
+    Python::with_gil(|py| {
+        let rates = [0.05 / 12.0, 0.06 / 12.0];
+        let nper = [5 * 12, 10 * 12];
+        let pv = [-100, -150];
+        let result: Vec<f64> = pyxirr_call!(py, "fv", (rates, nper, -100, pv));
+
+        assert_almost_eq!(result[0], 6928.94415193, 1e-8);
+        assert_almost_eq!(result[1], 16660.84419075, 1e-8);
+    })
+}
+
 // ------------ PV ----------------
 
 #[rstest]

@@ -2,7 +2,7 @@
 
 mod models;
 mod optimize;
-mod periodic;
+pub mod periodic;
 mod scheduled;
 
 pub use models::{DateLike, InvalidPaymentsError};
