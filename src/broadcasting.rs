@@ -1,7 +1,12 @@
 use std::{error::Error, fmt};
 
-use ndarray::{ArrayD, ArrayViewD, Axis, IxDyn};
-use pyo3::{exceptions::PyTypeError, prelude::*, types::PyList};
+use ndarray::{ArrayD, ArrayViewD, Axis, CowArray, IxDyn};
+use numpy::PyArrayDyn;
+use pyo3::{
+    exceptions::{PyNotImplementedError, PyTypeError},
+    prelude::*,
+    types::PyList,
+};
 
 /// An error returned when the payments do not contain both negative and positive payments.
 #[derive(Debug)]
@@ -118,72 +123,173 @@ fn flatten_pylist(pylist: &PyList, flat_list: &mut Vec<f64>) -> PyResult<()> {
     Ok(())
 }
 
-#[derive(FromPyObject)]
-pub enum Arg {
+pub enum Arg<'p> {
     Scalar(f64),
-    List(Py<PyList>),
-    Any(Py<PyAny>),
+    Array(CowArray<'p, f64, IxDyn>),
 }
 
-impl ToPyObject for Arg {
+impl<'p> Arg<'p> {
+    pub fn to_arrayd(self) -> CowArray<'p, f64, IxDyn> {
+        self.into()
+    }
+}
+
+impl<'p> FromPyObject<'p> for Arg<'p> {
+    fn extract(obj: &'p PyAny) -> PyResult<Self> {
+        if let Ok(value) = obj.extract::<f64>() {
+            return Ok(Arg::Scalar(value));
+        };
+
+        if let Ok(py_list) = obj.downcast::<PyList>() {
+            let arr = pylist_to_arrayd(py_list)?;
+            return Ok(Arg::Array(CowArray::from(arr)));
+        }
+
+        if let Ok(a) = obj.downcast::<numpy::PyArrayDyn<i64>>() {
+            let arr = a.cast::<f64>(false)?.to_owned_array();
+            return Ok(Arg::Array(CowArray::from(arr)));
+        }
+
+        if let Ok(a) = obj.downcast::<numpy::PyArrayDyn<f64>>() {
+            let arr = unsafe { a.as_array() };
+            return Ok(Arg::Array(CowArray::from(arr)));
+        }
+
+        Err(PyTypeError::new_err(""))
+    }
+}
+
+impl IntoPy<PyObject> for Arg<'_> {
+    fn into_py(self, py: Python<'_>) -> PyObject {
+        self.to_object(py)
+    }
+}
+
+impl ToPyObject for Arg<'_> {
     fn to_object(&self, py: Python<'_>) -> PyObject {
+        // broadcasting::arrayd_to_pylist(py, result.view()).map(|x| x.into())
+        // Ok(numpy::ToPyArray::to_pyarray(&result, py).to_object(py))
         match self {
             Arg::Scalar(s) => s.into_py(py),
-            Arg::List(s) => s.into_py(py),
-            Arg::Any(s) => s.into_py(py),
+            Arg::Array(s) => match arrayd_to_pylist(py, s.view()) {
+                Ok(py_list) => py_list.into_py(py),
+                Err(err) => err.into_py(py),
+            },
         }
     }
 }
 
-impl TryFrom<Arg> for ndarray::ArrayD<f64> {
-    type Error = PyErr;
-
-    fn try_from(value: Arg) -> Result<Self, Self::Error> {
-        let a = match value {
-            Arg::Scalar(s) => ndarray::arr1(&[s]).into_dyn(),
-            Arg::List(l) => Python::with_gil(|py| pylist_to_arrayd(l.as_ref(py)).unwrap()),
-            Arg::Any(obj) => {
-                Python::with_gil(|py| {
-                    if !numpy::get_array_module(py).is_ok() {
-                        unimplemented!();
-                    }
-
-                    if let Ok(a) = obj.downcast::<numpy::PyArrayDyn<i64>>(py) {
-                        return Ok(a.cast::<f64>(false).unwrap().to_owned_array());
-                    }
-
-                    if let Ok(a) = obj.downcast::<numpy::PyArrayDyn<f64>>(py) {
-                        return Ok(a.to_owned_array());
-                    }
-
-                    Err(PyTypeError::new_err(""))
-                })?
-
-                // use numpy::npyffi::PY_ARRAY_API;
-
-                // Python::with_gil(|py| {
-                //     let dt = numpy::dtype::<f64>(py);
-
-                //     let a_ptr = unsafe {
-                //         PY_ARRAY_API.PyArray_FromAny(
-                //             py,
-                //             obj.as_ptr(),
-                //             dt.as_dtype_ptr(),
-                //             0 as c_int,
-                //             0 as c_int,
-                //             0 as c_int,
-                //             std::ptr::null_mut(),
-                //         )
-                //     };
-
-                //     let pa: Py<PyArrayDyn<f64>> = unsafe { Py::from_borrowed_ptr(py, a_ptr) };
-                //     pa.as_ref(py).to_owned_array()
-                // })
-            }
-        };
-        Ok(a)
+impl<'p> From<Arg<'p>> for CowArray<'p, f64, IxDyn> {
+    fn from(arg: Arg<'p>) -> Self {
+        match arg {
+            Arg::Scalar(value) => CowArray::from(ndarray::arr1(&[value]).into_dyn()),
+            Arg::Array(a) => a,
+        }
     }
 }
+
+impl From<ArrayD<f64>> for Arg<'_> {
+    fn from(arr: ArrayD<f64>) -> Self {
+        Arg::Array(CowArray::from(arr))
+    }
+}
+
+// use numpy::npyffi::PY_ARRAY_API;
+// use std::ffi::c_int;
+
+// Python::with_gil(|py| {
+//     let dt = numpy::dtype::<f64>(py);
+
+//     let a_ptr = unsafe {
+//         PY_ARRAY_API.PyArray_FromAny(
+//             py,
+//             obj.as_ptr(),
+//             dt.as_dtype_ptr(),
+//             0 as c_int,
+//             0 as c_int,
+//             0 as c_int,
+//             std::ptr::null_mut(),
+//         )
+//     };
+
+//     let pa: Py<PyArrayDyn<f64>> = unsafe { Py::from_borrowed_ptr(py, a_ptr) };
+//     pa.as_ref(py).to_owned_array()
+
+// impl<'p> Arg<'p> {
+//     pub fn try_to_arrayd(&'p self) -> PyResult<CowArray<'p, f64, IxDyn>> {
+//         match self {
+//             Arg::Scalar(value) => {
+//                 let arr = ndarray::arr1(&[*value]).into_dyn();
+//                 Ok(CowArray::from(arr))
+//             }
+//             Arg::Any(obj) => {
+//                 if let Ok(py_list) = obj.downcast::<PyList>() {
+//                     return pylist_to_arrayd(py_list).map(CowArray::from);
+//                 }
+
+//                 // if !numpy::get_array_module().is_ok() {
+//                 //     unimplemented!();
+//                 // }
+
+//                 if let Ok(a) = obj.downcast::<numpy::PyArrayDyn<i64>>() {
+//                     return a.cast::<f64>(false).map(|p| CowArray::from(p.to_owned_array()));
+//                 }
+
+//                 if let Ok(a) = obj.downcast::<numpy::PyArrayDyn<f64>>() {
+//                     return Ok(CowArray::from(unsafe { a.as_array() }));
+//                 }
+
+//                 Err(PyNotImplementedError::new_err(""))
+//             }
+//         }
+//     }
+// }
+
+// trait ToCowArrayViewD {
+//     fn to_cowarray_view_d<'p>(&'p self) -> Option<CowArray<'p, f64, IxDyn>>;
+// }
+
+// impl ToCowArrayViewD for f64 {
+//     fn to_cowarray_view_d<'p>(&'p self) -> Option<CowArray<'p, f64, IxDyn>> {
+//         let array = ndarray::arr1(&[*self]).into_dyn();
+//         Some(CowArray::from(array))
+//     }
+// }
+
+// impl ToCowArrayViewD for &PyList {
+//     fn to_cowarray_view_d<'p>(&'p self) -> Option<CowArray<'p, f64, IxDyn>> {
+//         pylist_to_arrayd(self).ok().map(CowArray::from)
+//     }
+// }
+
+// impl<'p> ToCowArrayViewD<'p> for &'p PyArrayDyn<i64> {
+//     fn to_cowarray_view_d(&'p self) -> Option<CowArray<'p, f64, IxDyn>> {
+//         let py_array_f64 = self.cast::<f64>(false).ok()?;
+//         let array = unsafe { py_array_f64.as_array().into_dyn() };
+//         Some(CowArray::from(array))
+//     }
+// }
+
+// impl<'p> ToCowArrayViewD<'p> for &'p PyArrayDyn<f64> {
+//     fn to_cowarray_view_d(&'p self) -> Option<CowArray<'p, f64, IxDyn>> {
+//         let array = unsafe { self.as_array().into_dyn() };
+//         Some(CowArray::from(array))
+//     }
+// }
+
+// impl ToCowArrayViewD for &PyAny {
+//     fn to_cowarray_view_d<'p>(&'p self) -> Option<CowArray<'p, f64, IxDyn>> {
+//         // if let Ok(value) = self.extract::<f64>() {
+//         //     return value.to_cowarray_view_d();
+//         // };
+
+//         if let Ok(value) = self.downcast::<PyList>() {
+//             return value.to_cowarray_view_d();
+//         };
+
+//         None
+//     }
+// }
 
 #[cfg(test)]
 mod tests {
@@ -200,4 +306,13 @@ mod tests {
             Some(vec![5, 6, 7])
         );
     }
+
+    // #[rstest]
+    // fn test_cow_array() {
+    //     Python::with_gil(|py| {
+    //         let pyarray = PyArray1::arange(py, 1i64, 5, 1).to_dyn();
+    //         let array = pyarray.to_cowarray_view_d().unwrap();
+    //         assert_eq!(array.sum(), 10.0);
+    //     });
+    // }
 }

@@ -161,6 +161,19 @@ fn test_pv_default_pv() {
     })
 }
 
+#[rstest]
+fn test_pv_vectorized() {
+    Python::with_gil(|py| {
+        let rates = [[0.05 / 12.0, 0.06 / 12.0], [0.07 / 12.0, 0.0]];
+        let result: Vec<Vec<f64>> = pyxirr_call!(py, "pv", (rates, 10 * 12, -100));
+
+        assert_almost_eq!(result[0][0], 9428.13503282, 1e-8);
+        assert_almost_eq!(result[0][1], 9007.34533272, 1e-8);
+        assert_almost_eq!(result[1][0], 8612.63541414, 1e-8);
+        assert_almost_eq!(result[1][1], 12000.0, 1e-8);
+    })
+}
+
 // ------------ NPV ----------------
 
 #[rstest]

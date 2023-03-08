@@ -47,6 +47,25 @@ where
     }
 }
 
+macro_rules! dispatch_vectorized {
+    ($py:ident, ($($vars:ident),*), $non_vec:expr, $vec:expr ) => {
+        {
+            match ($($vars,)*) {
+                ($(Arg::Scalar($vars),)*) => {
+                    let result = $py.allow_threads(move || $non_vec);
+                    Ok(result.map(Arg::Scalar))
+                },
+                ($($vars,)*) => {
+                    let ($($vars,)*) = ($($vars.to_arrayd(),)*);
+                    let result = $py.allow_threads(move || $vec);
+                    result.map(|r| Some(Arg::from(r))).map_err(|e| e.into())
+                    // Ok(Some(Arg::from(result)))
+                }
+            }
+        }
+    };
+}
+
 /// Internal Rate of Return for a non-periodic cash flows.
 #[pyfunction]
 #[pyo3(signature = (dates, amounts=None, *, guess=0.1, silent=false, day_count=None))]
@@ -132,43 +151,20 @@ fn npv(
 #[pyfunction]
 #[pyo3(signature = (rate, nper, pmt, pv, *, pmt_at_begining=false))]
 #[pyo3(text_signature = "(rate, nper, pmt, pv, *, pmt_at_begining=False)")]
-fn fv(
-    py: Python,
-    rate: Arg,
-    nper: Arg,
-    pmt: Arg,
-    pv: Arg,
+fn fv<'a>(
+    py: Python<'a>,
+    rate: Arg<'a>,
+    nper: Arg<'a>,
+    pmt: Arg<'a>,
+    pv: Arg<'a>,
     pmt_at_begining: Option<bool>,
-) -> PyResult<PyObject> {
-    use Arg::*;
-
-    match (rate, nper, pmt, pv) {
-        (Scalar(rate), Scalar(nper), Scalar(pmt), Scalar(pv)) => {
-            let result = py.allow_threads(move || {
-                float_or_none(core::fv(rate, nper, pmt, pv, pmt_at_begining))
-            });
-            return Ok(result.to_object(py));
-        }
-        (rate, nper, pmt, pv) => {
-            let rate: ArrayD<f64> = rate.try_into()?;
-            let nper: ArrayD<f64> = nper.try_into()?;
-            let pmt: ArrayD<f64> = pmt.try_into()?;
-            let pv: ArrayD<f64> = pv.try_into()?;
-
-            let result = py.allow_threads(move || {
-                core::periodic::fv_vec(
-                    rate.view(),
-                    nper.view(),
-                    pmt.view(),
-                    pv.view(),
-                    pmt_at_begining,
-                )
-            })?;
-
-            broadcasting::arrayd_to_pylist(py, result.view()).map(|x| x.into())
-            // Ok(result.to_pyarray(py).to_object(py))
-        }
-    }
+) -> PyResult<Option<Arg<'a>>> {
+    dispatch_vectorized!(
+        py,
+        (rate, nper, pmt, pv),
+        float_or_none(core::fv(rate, nper, pmt, pv, pmt_at_begining)),
+        core::periodic::fv_vec(rate.view(), nper.view(), pmt.view(), pv.view(), pmt_at_begining)
+    )
 }
 
 /// Net Future Value.
@@ -229,17 +225,22 @@ fn xnfv(
 
 /// Present Value
 #[pyfunction]
-#[pyo3(signature = (rate, nper, pmt, fv=0.0, *, pmt_at_begining=false))]
+#[pyo3(signature = (rate, nper, pmt, fv=Arg::Scalar(0.0), *, pmt_at_begining=false))]
 #[pyo3(text_signature = "(rate, nper, pmt, fv=0, *, pmt_at_begining=False)")]
-fn pv(
-    py: Python,
-    rate: f64,
-    nper: f64,
-    pmt: f64,
-    fv: Option<f64>,
+fn pv<'a>(
+    py: Python<'a>,
+    rate: Arg<'a>,
+    nper: Arg<'a>,
+    pmt: Arg<'a>,
+    fv: Arg<'a>,
     pmt_at_begining: Option<bool>,
-) -> Option<f64> {
-    py.allow_threads(move || float_or_none(core::pv(rate, nper, pmt, fv, pmt_at_begining)))
+) -> PyResult<Option<Arg<'a>>> {
+    dispatch_vectorized!(
+        py,
+        (rate, nper, pmt, fv),
+        float_or_none(core::pv(rate, nper, pmt, Some(fv), pmt_at_begining)),
+        core::periodic::pv_vec(rate.view(), nper.view(), pmt.view(), fv.view(), pmt_at_begining)
+    )
 }
 
 /// Modified Internal Rate of Return.
@@ -347,11 +348,17 @@ fn days_between(d1: core::DateLike, d2: core::DateLike, day_count: PyDayCount) -
     Ok(core::days_between(&d1, &d2, day_count.try_into()?))
 }
 
+#[pyfunction]
+fn demo(a: broadcasting::Arg) -> PyResult<f64> {
+    Ok(a.to_arrayd().sum())
+}
+
 #[pymodule]
 pub fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<core::DayCount>()?;
     m.add_function(wrap_pyfunction!(year_fraction, m)?)?;
     m.add_function(wrap_pyfunction!(days_between, m)?)?;
+    m.add_function(wrap_pyfunction!(demo, m)?)?;
 
     m.add_function(wrap_pyfunction!(pmt, m)?)?;
     m.add_function(wrap_pyfunction!(ipmt, m)?)?;

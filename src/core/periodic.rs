@@ -73,6 +73,34 @@ pub fn pv(rate: f64, nper: f64, pmt: f64, fv: Option<f64>, pmt_at_begining: Opti
     -(fv + pmt * factor) / exp
 }
 
+pub fn pv_vec(
+    rate: ArrayViewD<f64>,
+    nper: ArrayViewD<f64>,
+    pmt: ArrayViewD<f64>,
+    fv: ArrayViewD<f64>,
+    pmt_at_begining: Option<bool>,
+) -> Result<ArrayD<f64>, BroadcastingError> {
+    let pmt_at_begining = convert_pmt_at_begining(pmt_at_begining);
+    let (rate, nper, pmt, fv) = broadcast_together!(rate, nper, pmt, fv)?;
+
+    let mut result = ArrayD::uninit(rate.shape());
+
+    ndarray::Zip::from(&mut result).and(rate).and(nper).and(pmt).and(fv).for_each(
+        |result, rate, nper, pmt, fv| {
+            let value = if rate == &0.0 {
+                -(fv + pmt * nper)
+            } else {
+                let exp = (rate + 1.0).powf(*nper);
+                let f = (1.0 + rate * pmt_at_begining) * (exp - 1.0) / rate;
+                -(fv + pmt * f) / exp
+            };
+            *result = MaybeUninit::new(value);
+        },
+    );
+
+    Ok(unsafe { result.assume_init() })
+}
+
 pub fn pmt(rate: f64, nper: f64, pv: f64, fv: Option<f64>, pmt_at_begining: Option<bool>) -> f64 {
     let fv = fv.unwrap_or(0.0);
 
