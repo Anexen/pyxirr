@@ -6,5 +6,5 @@ pub mod periodic;
 mod scheduled;
 
 pub use models::{DateLike, InvalidPaymentsError};
-pub use periodic::{fv, ipmt, irr, mirr, nfv, nper, npv, pmt, ppmt, pv, rate};
+pub use periodic::*;
 pub use scheduled::{days_between, xfv, xirr, xnfv, xnpv, year_fraction, DayCount};

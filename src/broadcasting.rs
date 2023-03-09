@@ -1,12 +1,8 @@
 use std::{error::Error, fmt};
 
+use crate::conversions::float_or_none;
 use ndarray::{ArrayD, ArrayViewD, Axis, CowArray, IxDyn};
-use numpy::PyArrayDyn;
-use pyo3::{
-    exceptions::{PyNotImplementedError, PyTypeError},
-    prelude::*,
-    types::PyList,
-};
+use pyo3::{exceptions::PyTypeError, prelude::*, types::PyList};
 
 /// An error returned when the payments do not contain both negative and positive payments.
 #[derive(Debug)]
@@ -80,7 +76,7 @@ pub fn arrayd_to_pylist<'a>(py: Python<'a>, array: ArrayViewD<'_, f64>) -> PyRes
     let list = PyList::empty(py);
     if array.ndim() == 1 {
         for &x in array {
-            list.append(x.to_object(py))?;
+            list.append(float_or_none(x).to_object(py))?;
         }
     } else {
         for subarray in array.axis_iter(Axis(0)) {
@@ -170,7 +166,7 @@ impl ToPyObject for Arg<'_> {
         // broadcasting::arrayd_to_pylist(py, result.view()).map(|x| x.into())
         // Ok(numpy::ToPyArray::to_pyarray(&result, py).to_object(py))
         match self {
-            Arg::Scalar(s) => s.into_py(py),
+            Arg::Scalar(s) => float_or_none(*s).into_py(py),
             Arg::Array(s) => match arrayd_to_pylist(py, s.view()) {
                 Ok(py_list) => py_list.into_py(py),
                 Err(err) => err.into_py(py),

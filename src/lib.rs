@@ -1,6 +1,5 @@
 use broadcasting::Arg;
-use conversions::PyDayCount;
-use ndarray::ArrayD;
+use conversions::{fallible_float_or_none, float_or_none, PyDayCount};
 use pyo3::prelude::*;
 use pyo3::{create_exception, exceptions, wrap_pyfunction};
 
@@ -23,43 +22,19 @@ impl From<broadcasting::BroadcastingError> for PyErr {
     }
 }
 
-fn float_or_none(result: f64) -> Option<f64> {
-    if result.is_nan() {
-        None
-    } else {
-        Some(result)
-    }
-}
-
-fn fallible_float_or_none<T>(result: Result<f64, T>, silent: bool) -> PyResult<Option<f64>>
-where
-    pyo3::PyErr: From<T>,
-{
-    match result {
-        Err(e) => {
-            if silent {
-                Ok(None)
-            } else {
-                Err(e.into())
-            }
-        }
-        Ok(v) => Ok(float_or_none(v)),
-    }
-}
-
 macro_rules! dispatch_vectorized {
     ($py:ident, ($($vars:ident),*), $non_vec:expr, $vec:expr ) => {
         {
             match ($($vars,)*) {
                 ($(Arg::Scalar($vars),)*) => {
                     let result = $py.allow_threads(move || $non_vec);
-                    Ok(result.map(Arg::Scalar))
+                    Ok(Arg::Scalar(result))
                 },
                 ($($vars,)*) => {
                     let ($($vars,)*) = ($($vars.to_arrayd(),)*);
+                    let ($($vars,)*) = ($($vars.view(),)*);
                     let result = $py.allow_threads(move || $vec);
-                    result.map(|r| Some(Arg::from(r))).map_err(|e| e.into())
-                    // Ok(Some(Arg::from(result)))
+                    result.map(|r| Arg::from(r)).map_err(|e| e.into())
                 }
             }
         }
@@ -158,12 +133,12 @@ fn fv<'a>(
     pmt: Arg<'a>,
     pv: Arg<'a>,
     pmt_at_begining: Option<bool>,
-) -> PyResult<Option<Arg<'a>>> {
+) -> PyResult<Arg<'a>> {
     dispatch_vectorized!(
         py,
         (rate, nper, pmt, pv),
-        float_or_none(core::fv(rate, nper, pmt, pv, pmt_at_begining)),
-        core::periodic::fv_vec(rate.view(), nper.view(), pmt.view(), pv.view(), pmt_at_begining)
+        core::fv(rate, nper, pmt, pv, pmt_at_begining),
+        core::fv_vec(rate, nper, pmt, pv, pmt_at_begining)
     )
 }
 
@@ -234,12 +209,12 @@ fn pv<'a>(
     pmt: Arg<'a>,
     fv: Arg<'a>,
     pmt_at_begining: Option<bool>,
-) -> PyResult<Option<Arg<'a>>> {
+) -> PyResult<Arg<'a>> {
     dispatch_vectorized!(
         py,
         (rate, nper, pmt, fv),
-        float_or_none(core::pv(rate, nper, pmt, Some(fv), pmt_at_begining)),
-        core::periodic::pv_vec(rate.view(), nper.view(), pmt.view(), fv.view(), pmt_at_begining)
+        core::pv(rate, nper, pmt, Some(fv), pmt_at_begining),
+        core::pv_vec(rate, nper, pmt, fv, pmt_at_begining)
     )
 }
 
@@ -263,63 +238,84 @@ fn mirr(
 
 /// Compute the payment against loan principal plus interest.
 #[pyfunction]
-#[pyo3(signature = (rate, nper, pv, fv=0.0, *, pmt_at_begining=false))]
+#[pyo3(signature = (rate, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=false))]
 #[pyo3(text_signature = "(rate, nper, pv, fv=0, *, pmt_at_begining=False)")]
-fn pmt(
-    py: Python,
-    rate: f64,
-    nper: f64,
-    pv: f64,
-    fv: Option<f64>,
+fn pmt<'a>(
+    py: Python<'a>,
+    rate: Arg<'a>,
+    nper: Arg<'a>,
+    pv: Arg<'a>,
+    fv: Arg<'a>,
     pmt_at_begining: Option<bool>,
-) -> Option<f64> {
-    py.allow_threads(move || float_or_none(core::pmt(rate, nper, pv, fv, pmt_at_begining)))
+) -> PyResult<Arg<'a>> {
+    dispatch_vectorized!(
+        py,
+        (rate, nper, pv, fv),
+        core::pmt(rate, nper, pv, Some(fv), pmt_at_begining),
+        core::pmt_vec(rate, nper, pv, fv, pmt_at_begining)
+    )
 }
 
 /// Compute the interest portion of a payment.
 #[pyfunction]
-#[pyo3(signature = (rate, per, nper, pv, fv=0.0, *, pmt_at_begining=false))]
+#[pyo3(signature = (rate, per, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=false))]
 #[pyo3(text_signature = "(rate, per, nper, pv, fv=0, *, pmt_at_begining=False)")]
-fn ipmt(
-    rate: f64,
-    per: f64,
-    nper: f64,
-    pv: f64,
-    fv: Option<f64>,
+fn ipmt<'a>(
+    py: Python<'a>,
+    rate: Arg<'a>,
+    per: Arg<'a>,
+    nper: Arg<'a>,
+    pv: Arg<'a>,
+    fv: Arg<'a>,
     pmt_at_begining: Option<bool>,
-) -> Option<f64> {
-    float_or_none(core::ipmt(rate, per, nper, pv, fv, pmt_at_begining))
+) -> PyResult<Arg<'a>> {
+    dispatch_vectorized!(
+        py,
+        (rate, per, nper, pv, fv),
+        core::ipmt(rate, per, nper, pv, Some(fv), pmt_at_begining),
+        core::ipmt_vec(rate, per, nper, pv, fv, pmt_at_begining)
+    )
 }
 
 /// Compute the payment against loan principal.
 #[pyfunction]
-#[pyo3(signature = (rate, per, nper, pv, fv=0.0, *, pmt_at_begining=false))]
+#[pyo3(signature = (rate, per, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=false))]
 #[pyo3(text_signature = "(rate, per, nper, pv, fv=0, *, pmt_at_begining=False)")]
-fn ppmt(
-    py: Python,
-    rate: f64,
-    per: f64,
-    nper: f64,
-    pv: f64,
-    fv: Option<f64>,
+fn ppmt<'a>(
+    py: Python<'a>,
+    rate: Arg<'a>,
+    per: Arg<'a>,
+    nper: Arg<'a>,
+    pv: Arg<'a>,
+    fv: Arg<'a>,
     pmt_at_begining: Option<bool>,
-) -> Option<f64> {
-    py.allow_threads(move || float_or_none(core::ppmt(rate, per, nper, pv, fv, pmt_at_begining)))
+) -> PyResult<Arg<'a>> {
+    dispatch_vectorized!(
+        py,
+        (rate, per, nper, pv, fv),
+        core::ppmt(rate, per, nper, pv, Some(fv), pmt_at_begining),
+        core::ppmt_vec(rate, per, nper, pv, fv, pmt_at_begining)
+    )
 }
 
 /// Compute the number of periodic payments.
 #[pyfunction]
-#[pyo3(signature = (rate, pmt, pv, fv=0.0, *, pmt_at_begining=false))]
+#[pyo3(signature = (rate, pmt, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=false))]
 #[pyo3(text_signature = "(rate, pmt, pv, fv=0, *, pmt_at_begining=False)")]
-fn nper(
-    py: Python,
-    rate: f64,
-    pmt: f64,
-    pv: f64,
-    fv: Option<f64>,
+fn nper<'a>(
+    py: Python<'a>,
+    rate: Arg<'a>,
+    pmt: Arg<'a>,
+    pv: Arg<'a>,
+    fv: Arg<'a>,
     pmt_at_begining: Option<bool>,
-) -> Option<f64> {
-    py.allow_threads(move || float_or_none(core::nper(rate, pmt, pv, fv, pmt_at_begining)))
+) -> PyResult<Arg<'a>> {
+    dispatch_vectorized!(
+        py,
+        (rate, pmt, pv, fv),
+        core::nper(rate, pmt, pv, Some(fv), pmt_at_begining),
+        core::nper_vec(rate, pmt, pv, fv, pmt_at_begining)
+    )
 }
 
 /// Compute the number of periodic payments.
@@ -348,17 +344,11 @@ fn days_between(d1: core::DateLike, d2: core::DateLike, day_count: PyDayCount) -
     Ok(core::days_between(&d1, &d2, day_count.try_into()?))
 }
 
-#[pyfunction]
-fn demo(a: broadcasting::Arg) -> PyResult<f64> {
-    Ok(a.to_arrayd().sum())
-}
-
 #[pymodule]
 pub fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<core::DayCount>()?;
     m.add_function(wrap_pyfunction!(year_fraction, m)?)?;
     m.add_function(wrap_pyfunction!(days_between, m)?)?;
-    m.add_function(wrap_pyfunction!(demo, m)?)?;
 
     m.add_function(wrap_pyfunction!(pmt, m)?)?;
     m.add_function(wrap_pyfunction!(ipmt, m)?)?;

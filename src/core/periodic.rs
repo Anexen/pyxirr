@@ -116,6 +116,34 @@ pub fn pmt(rate: f64, nper: f64, pv: f64, fv: Option<f64>, pmt_at_begining: Opti
     -(fv + pv * exp) / factor
 }
 
+pub fn pmt_vec(
+    rate: ArrayViewD<f64>,
+    nper: ArrayViewD<f64>,
+    pv: ArrayViewD<f64>,
+    fv: ArrayViewD<f64>,
+    pmt_at_begining: Option<bool>,
+) -> Result<ArrayD<f64>, BroadcastingError> {
+    let pmt_at_begining = convert_pmt_at_begining(pmt_at_begining);
+    let (rate, nper, pv, fv) = broadcast_together!(rate, nper, pv, fv)?;
+
+    let mut result = ArrayD::uninit(rate.shape());
+
+    ndarray::Zip::from(&mut result).and(rate).and(nper).and(pv).and(fv).for_each(
+        |result, rate, nper, pv, fv| {
+            let value = if rate == &0.0 {
+                -(fv + pv) / nper
+            } else {
+                let exp = (rate + 1.0).powf(*nper);
+                let f = (1.0 + rate * pmt_at_begining) * (exp - 1.0) / rate;
+                -(fv + pv * exp) / f
+            };
+            *result = MaybeUninit::new(value);
+        },
+    );
+
+    Ok(unsafe { result.assume_init() })
+}
+
 pub fn ipmt(
     rate: f64,
     per: f64,
@@ -125,7 +153,7 @@ pub fn ipmt(
     pmt_at_begining: Option<bool>,
 ) -> f64 {
     // payments before first period don't make any sense.
-    if per < 1.0 {
+    if per < 1.0 || per > nper {
         return f64::NAN;
     }
 
@@ -146,6 +174,36 @@ pub fn ipmt(
     }
 }
 
+pub fn ipmt_vec(
+    rate: ArrayViewD<f64>,
+    per: ArrayViewD<f64>,
+    nper: ArrayViewD<f64>,
+    pv: ArrayViewD<f64>,
+    fv: ArrayViewD<f64>,
+    pmt_at_begining: Option<bool>,
+) -> Result<ArrayD<f64>, BroadcastingError> {
+    let (rate, per, nper, pv, fv) = broadcast_together!(rate, per, nper, pv, fv)?;
+
+    let total_pmt = self::pmt_vec(rate.view(), nper.view(), pv.view(), fv.view(), pmt_at_begining)?;
+    let per_prev = &per - 1.0;
+    let result =
+        &rate * self::fv_vec(rate.view(), per_prev.view(), total_pmt.view(), pv, pmt_at_begining)?;
+
+    let pmt_at_begining = pmt_at_begining.unwrap_or(false);
+
+    let mut result = if pmt_at_begining { &result / (1.0 + &rate) } else { result };
+
+    ndarray::Zip::from(&mut result).and(per).and(nper).for_each(|r, per, nper| {
+        if per < &1.0 || per > nper {
+            *r = f64::NAN
+        } else if per == &1.0 && pmt_at_begining {
+            *r = 0.0
+        }
+    });
+
+    Ok(result)
+}
+
 pub fn ppmt(
     rate: f64,
     per: f64,
@@ -156,6 +214,19 @@ pub fn ppmt(
 ) -> f64 {
     self::pmt(rate, nper, pv, fv, pmt_at_begining)
         - self::ipmt(rate, per, nper, pv, fv, pmt_at_begining)
+}
+
+pub fn ppmt_vec(
+    rate: ArrayViewD<f64>,
+    per: ArrayViewD<f64>,
+    nper: ArrayViewD<f64>,
+    pv: ArrayViewD<f64>,
+    fv: ArrayViewD<f64>,
+    pmt_at_begining: Option<bool>,
+) -> Result<ArrayD<f64>, BroadcastingError> {
+    let pmt = self::pmt_vec(rate.view(), nper.view(), pv.view(), fv.view(), pmt_at_begining)?;
+    let ipmt = self::ipmt_vec(rate, per, nper, pv, fv, pmt_at_begining)?;
+    Ok(pmt - ipmt)
 }
 
 pub fn nper(rate: f64, pmt: f64, pv: f64, fv: Option<f64>, pmt_at_begining: Option<bool>) -> f64 {
@@ -169,6 +240,33 @@ pub fn nper(rate: f64, pmt: f64, pv: f64, fv: Option<f64>, pmt_at_begining: Opti
 
     let z = pmt * (1. + rate * pmt_at_begining) / rate;
     f64::log10((-fv + z) / (pv + z)) / f64::log10(1. + rate)
+}
+
+pub fn nper_vec(
+    rate: ArrayViewD<f64>,
+    pmt: ArrayViewD<f64>,
+    pv: ArrayViewD<f64>,
+    fv: ArrayViewD<f64>,
+    pmt_at_begining: Option<bool>,
+) -> Result<ArrayD<f64>, BroadcastingError> {
+    let pmt_at_begining = convert_pmt_at_begining(pmt_at_begining);
+    let (rate, pmt, pv, fv) = broadcast_together!(rate, pmt, pv, fv)?;
+
+    let mut result = ArrayD::uninit(rate.shape());
+
+    ndarray::Zip::from(&mut result).and(rate).and(pmt).and(pv).and(fv).for_each(
+        |result, rate, pmt, pv, fv| {
+            let value = if rate == &0.0 {
+                -(fv + pv) / pmt
+            } else {
+                let z = pmt * (1. + rate * pmt_at_begining) / rate;
+                f64::log10((-fv + z) / (pv + z)) / f64::log10(1. + rate)
+            };
+            *result = MaybeUninit::new(value);
+        },
+    );
+
+    Ok(unsafe { result.assume_init() })
 }
 
 pub fn rate(
