@@ -15,8 +15,8 @@ pub fn xfv(
     let dc = day_count.unwrap_or_default();
     let yf1 = year_fraction(start_date, end_date, dc);
     let yf2 = year_fraction(start_date, cash_flow_date, dc);
-    let fv1 = self::fv(end_rate, yf1, 0., -1., None);
-    let fv2 = self::fv(cash_flow_rate, yf2, 0., -1., None);
+    let fv1 = self::fv(end_rate, yf1, 0., -1., false);
+    let fv2 = self::fv(cash_flow_rate, yf2, 0., -1., false);
     fv1 / fv2 * cash_flow
 }
 
@@ -32,5 +32,5 @@ pub fn xnfv(
     let d2 = dates.iter().max().unwrap();
     let periods = year_fraction(d1, d2, day_count.unwrap_or_default());
     let pv = super::xnpv(rate, dates, amounts, None)?;
-    Ok(self::fv(rate, periods, 0., -pv, None))
+    Ok(self::fv(rate, periods, 0., -pv, false))
 }

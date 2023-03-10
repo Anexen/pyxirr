@@ -420,8 +420,8 @@ fn test_ppmt_works() {
 #[rstest]
 fn test_ppmt_vec() {
     Python::with_gil(|py| {
-        let per = (1..5).collect::<Vec<_>>();
-        let result: Vec<f64> = pyxirr_call!(py, "ppmt", (0.1 / 12., per, 24, 2000, 0));
+        let per = (1..6).collect::<Vec<_>>();
+        let result: Vec<f64> = pyxirr_call!(py, "ppmt", (0.1 / 12., per, 24, 2000));
         let expected = vec![
             -75.62318600836664,
             -76.25337922510303,

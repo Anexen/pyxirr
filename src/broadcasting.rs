@@ -64,7 +64,10 @@ macro_rules! broadcast_together {
     };
 }
 
-pub fn pylist_to_arrayd(pylist: &PyList) -> PyResult<ArrayD<f64>> {
+pub fn pylist_to_arrayd<'p, T>(pylist: &'p PyList) -> PyResult<ArrayD<T>>
+where
+    T: FromPyObject<'p>,
+{
     let dims = get_pylist_dims(pylist)?;
     let mut flat_list = Vec::new();
     flatten_pylist(pylist, &mut flat_list)?;
@@ -106,9 +109,12 @@ fn get_pylist_dims(pylist: &PyList) -> PyResult<Vec<usize>> {
     Ok(dims)
 }
 
-fn flatten_pylist(pylist: &PyList, flat_list: &mut Vec<f64>) -> PyResult<()> {
+fn flatten_pylist<'p, T>(pylist: &'p PyList, flat_list: &mut Vec<T>) -> PyResult<()>
+where
+    T: FromPyObject<'p>,
+{
     for item in pylist.iter() {
-        match item.extract::<f64>() {
+        match item.extract::<T>() {
             Ok(val) => flat_list.push(val),
             Err(_) => {
                 let sublist = item.extract::<&PyList>()?;
@@ -119,18 +125,21 @@ fn flatten_pylist(pylist: &PyList, flat_list: &mut Vec<f64>) -> PyResult<()> {
     Ok(())
 }
 
-pub enum Arg<'p> {
-    Scalar(f64),
-    Array(CowArray<'p, f64, IxDyn>),
+pub enum Arg<'p, T> {
+    Scalar(T),
+    Array(CowArray<'p, T, IxDyn>),
 }
 
-impl<'p> Arg<'p> {
-    pub fn to_arrayd(self) -> CowArray<'p, f64, IxDyn> {
+impl<'p, T> Arg<'p, T>
+where
+    T: Clone,
+{
+    pub fn to_arrayd(self) -> CowArray<'p, T, IxDyn> {
         self.into()
     }
 }
 
-impl<'p> FromPyObject<'p> for Arg<'p> {
+impl<'p> FromPyObject<'p> for Arg<'p, f64> {
     fn extract(obj: &'p PyAny) -> PyResult<Self> {
         if let Ok(value) = obj.extract::<f64>() {
             return Ok(Arg::Scalar(value));
@@ -155,13 +164,33 @@ impl<'p> FromPyObject<'p> for Arg<'p> {
     }
 }
 
-impl IntoPy<PyObject> for Arg<'_> {
+impl<'p> FromPyObject<'p> for Arg<'p, bool> {
+    fn extract(obj: &'p PyAny) -> PyResult<Self> {
+        if let Ok(value) = obj.extract::<bool>() {
+            return Ok(Arg::Scalar(value));
+        };
+
+        if let Ok(py_list) = obj.downcast::<PyList>() {
+            let arr = pylist_to_arrayd(py_list)?;
+            return Ok(Arg::Array(CowArray::from(arr)));
+        }
+
+        if let Ok(a) = obj.downcast::<numpy::PyArrayDyn<bool>>() {
+            let arr = unsafe { a.as_array() };
+            return Ok(Arg::Array(CowArray::from(arr)));
+        }
+
+        Err(PyTypeError::new_err(""))
+    }
+}
+
+impl IntoPy<PyObject> for Arg<'_, f64> {
     fn into_py(self, py: Python<'_>) -> PyObject {
         self.to_object(py)
     }
 }
 
-impl ToPyObject for Arg<'_> {
+impl ToPyObject for Arg<'_, f64> {
     fn to_object(&self, py: Python<'_>) -> PyObject {
         // broadcasting::arrayd_to_pylist(py, result.view()).map(|x| x.into())
         // Ok(numpy::ToPyArray::to_pyarray(&result, py).to_object(py))
@@ -175,8 +204,11 @@ impl ToPyObject for Arg<'_> {
     }
 }
 
-impl<'p> From<Arg<'p>> for CowArray<'p, f64, IxDyn> {
-    fn from(arg: Arg<'p>) -> Self {
+impl<'p, T> From<Arg<'p, T>> for CowArray<'p, T, IxDyn>
+where
+    T: Clone,
+{
+    fn from(arg: Arg<'p, T>) -> Self {
         match arg {
             Arg::Scalar(value) => CowArray::from(ndarray::arr1(&[value]).into_dyn()),
             Arg::Array(a) => a,
@@ -184,8 +216,8 @@ impl<'p> From<Arg<'p>> for CowArray<'p, f64, IxDyn> {
     }
 }
 
-impl From<ArrayD<f64>> for Arg<'_> {
-    fn from(arr: ArrayD<f64>) -> Self {
+impl<T> From<ArrayD<T>> for Arg<'_, T> {
+    fn from(arr: ArrayD<T>) -> Self {
         Arg::Array(CowArray::from(arr))
     }
 }

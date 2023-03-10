@@ -124,19 +124,19 @@ fn npv(
 
 /// Future Value.
 #[pyfunction]
-#[pyo3(signature = (rate, nper, pmt, pv, *, pmt_at_begining=false))]
+#[pyo3(signature = (rate, nper, pmt, pv, *, pmt_at_begining=Arg::Scalar(false)))]
 #[pyo3(text_signature = "(rate, nper, pmt, pv, *, pmt_at_begining=False)")]
 fn fv<'a>(
     py: Python<'a>,
-    rate: Arg<'a>,
-    nper: Arg<'a>,
-    pmt: Arg<'a>,
-    pv: Arg<'a>,
-    pmt_at_begining: Option<bool>,
-) -> PyResult<Arg<'a>> {
+    rate: Arg<'a, f64>,
+    nper: Arg<'a, f64>,
+    pmt: Arg<'a, f64>,
+    pv: Arg<'a, f64>,
+    pmt_at_begining: Arg<'a, bool>,
+) -> PyResult<Arg<'a, f64>> {
     dispatch_vectorized!(
         py,
-        (rate, nper, pmt, pv),
+        (rate, nper, pmt, pv, pmt_at_begining),
         core::fv(rate, nper, pmt, pv, pmt_at_begining),
         core::fv_vec(rate, nper, pmt, pv, pmt_at_begining)
     )
@@ -200,20 +200,20 @@ fn xnfv(
 
 /// Present Value
 #[pyfunction]
-#[pyo3(signature = (rate, nper, pmt, fv=Arg::Scalar(0.0), *, pmt_at_begining=false))]
+#[pyo3(signature = (rate, nper, pmt, fv=Arg::Scalar(0.0), *, pmt_at_begining=Arg::Scalar(false)))]
 #[pyo3(text_signature = "(rate, nper, pmt, fv=0, *, pmt_at_begining=False)")]
 fn pv<'a>(
     py: Python<'a>,
-    rate: Arg<'a>,
-    nper: Arg<'a>,
-    pmt: Arg<'a>,
-    fv: Arg<'a>,
-    pmt_at_begining: Option<bool>,
-) -> PyResult<Arg<'a>> {
+    rate: Arg<'a, f64>,
+    nper: Arg<'a, f64>,
+    pmt: Arg<'a, f64>,
+    fv: Arg<'a, f64>,
+    pmt_at_begining: Arg<'a, bool>,
+) -> PyResult<Arg<'a, f64>> {
     dispatch_vectorized!(
         py,
-        (rate, nper, pmt, fv),
-        core::pv(rate, nper, pmt, Some(fv), pmt_at_begining),
+        (rate, nper, pmt, fv, pmt_at_begining),
+        core::pv(rate, nper, pmt, fv, pmt_at_begining),
         core::pv_vec(rate, nper, pmt, fv, pmt_at_begining)
     )
 }
@@ -238,82 +238,82 @@ fn mirr(
 
 /// Compute the payment against loan principal plus interest.
 #[pyfunction]
-#[pyo3(signature = (rate, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=false))]
+#[pyo3(signature = (rate, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=Arg::Scalar(false)))]
 #[pyo3(text_signature = "(rate, nper, pv, fv=0, *, pmt_at_begining=False)")]
 fn pmt<'a>(
     py: Python<'a>,
-    rate: Arg<'a>,
-    nper: Arg<'a>,
-    pv: Arg<'a>,
-    fv: Arg<'a>,
-    pmt_at_begining: Option<bool>,
-) -> PyResult<Arg<'a>> {
+    rate: Arg<'a, f64>,
+    nper: Arg<'a, f64>,
+    pv: Arg<'a, f64>,
+    fv: Arg<'a, f64>,
+    pmt_at_begining: Arg<'a, bool>,
+) -> PyResult<Arg<'a, f64>> {
     dispatch_vectorized!(
         py,
-        (rate, nper, pv, fv),
-        core::pmt(rate, nper, pv, Some(fv), pmt_at_begining),
+        (rate, nper, pv, fv, pmt_at_begining),
+        core::pmt(rate, nper, pv, fv, pmt_at_begining),
         core::pmt_vec(rate, nper, pv, fv, pmt_at_begining)
     )
 }
 
 /// Compute the interest portion of a payment.
 #[pyfunction]
-#[pyo3(signature = (rate, per, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=false))]
+#[pyo3(signature = (rate, per, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=Arg::Scalar(false)))]
 #[pyo3(text_signature = "(rate, per, nper, pv, fv=0, *, pmt_at_begining=False)")]
 fn ipmt<'a>(
     py: Python<'a>,
-    rate: Arg<'a>,
-    per: Arg<'a>,
-    nper: Arg<'a>,
-    pv: Arg<'a>,
-    fv: Arg<'a>,
-    pmt_at_begining: Option<bool>,
-) -> PyResult<Arg<'a>> {
+    rate: Arg<'a, f64>,
+    per: Arg<'a, f64>,
+    nper: Arg<'a, f64>,
+    pv: Arg<'a, f64>,
+    fv: Arg<'a, f64>,
+    pmt_at_begining: Arg<'a, bool>,
+) -> PyResult<Arg<'a, f64>> {
     dispatch_vectorized!(
         py,
-        (rate, per, nper, pv, fv),
-        core::ipmt(rate, per, nper, pv, Some(fv), pmt_at_begining),
+        (rate, per, nper, pv, fv, pmt_at_begining),
+        core::ipmt(rate, per, nper, pv, fv, pmt_at_begining),
         core::ipmt_vec(rate, per, nper, pv, fv, pmt_at_begining)
     )
 }
 
 /// Compute the payment against loan principal.
 #[pyfunction]
-#[pyo3(signature = (rate, per, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=false))]
+#[pyo3(signature = (rate, per, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=Arg::Scalar(false)))]
 #[pyo3(text_signature = "(rate, per, nper, pv, fv=0, *, pmt_at_begining=False)")]
 fn ppmt<'a>(
     py: Python<'a>,
-    rate: Arg<'a>,
-    per: Arg<'a>,
-    nper: Arg<'a>,
-    pv: Arg<'a>,
-    fv: Arg<'a>,
-    pmt_at_begining: Option<bool>,
-) -> PyResult<Arg<'a>> {
+    rate: Arg<'a, f64>,
+    per: Arg<'a, f64>,
+    nper: Arg<'a, f64>,
+    pv: Arg<'a, f64>,
+    fv: Arg<'a, f64>,
+    pmt_at_begining: Arg<'a, bool>,
+) -> PyResult<Arg<'a, f64>> {
     dispatch_vectorized!(
         py,
-        (rate, per, nper, pv, fv),
-        core::ppmt(rate, per, nper, pv, Some(fv), pmt_at_begining),
+        (rate, per, nper, pv, fv, pmt_at_begining),
+        core::ppmt(rate, per, nper, pv, fv, pmt_at_begining),
         core::ppmt_vec(rate, per, nper, pv, fv, pmt_at_begining)
     )
 }
 
 /// Compute the number of periodic payments.
 #[pyfunction]
-#[pyo3(signature = (rate, pmt, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=false))]
+#[pyo3(signature = (rate, pmt, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=Arg::Scalar(false)))]
 #[pyo3(text_signature = "(rate, pmt, pv, fv=0, *, pmt_at_begining=False)")]
 fn nper<'a>(
     py: Python<'a>,
-    rate: Arg<'a>,
-    pmt: Arg<'a>,
-    pv: Arg<'a>,
-    fv: Arg<'a>,
-    pmt_at_begining: Option<bool>,
-) -> PyResult<Arg<'a>> {
+    rate: Arg<'a, f64>,
+    pmt: Arg<'a, f64>,
+    pv: Arg<'a, f64>,
+    fv: Arg<'a, f64>,
+    pmt_at_begining: Arg<'a, bool>,
+) -> PyResult<Arg<'a, f64>> {
     dispatch_vectorized!(
         py,
-        (rate, pmt, pv, fv),
-        core::nper(rate, pmt, pv, Some(fv), pmt_at_begining),
+        (rate, pmt, pv, fv, pmt_at_begining),
+        core::nper(rate, pmt, pv, fv, pmt_at_begining),
         core::nper_vec(rate, pmt, pv, fv, pmt_at_begining)
     )
 }
@@ -344,11 +344,17 @@ fn days_between(d1: core::DateLike, d2: core::DateLike, day_count: PyDayCount) -
     Ok(core::days_between(&d1, &d2, day_count.try_into()?))
 }
 
+#[pyfunction]
+fn demo(d1: bool) -> f64 {
+    d1 as u8 as f64
+}
+
 #[pymodule]
 pub fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<core::DayCount>()?;
     m.add_function(wrap_pyfunction!(year_fraction, m)?)?;
     m.add_function(wrap_pyfunction!(days_between, m)?)?;
+    m.add_function(wrap_pyfunction!(demo, m)?)?;
 
     m.add_function(wrap_pyfunction!(pmt, m)?)?;
     m.add_function(wrap_pyfunction!(ipmt, m)?)?;

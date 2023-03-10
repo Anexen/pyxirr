@@ -14,15 +14,15 @@ pub fn powers(base: f64, n: usize, start_from_zero: bool) -> Vec<f64> {
     successors(Some(start), |x| Some(x * base)).take(n).collect()
 }
 
-fn convert_pmt_at_begining(pmt_at_begining: Option<bool>) -> f64 {
-    if pmt_at_begining.unwrap_or(false) {
+fn convert_pmt_at_begining(pmt_at_begining: bool) -> f64 {
+    if pmt_at_begining {
         1.
     } else {
         0.
     }
 }
 
-pub fn fv(rate: f64, nper: f64, pmt: f64, pv: f64, pmt_at_begining: Option<bool>) -> f64 {
+pub fn fv(rate: f64, nper: f64, pmt: f64, pv: f64, pmt_at_begining: bool) -> f64 {
     if rate == 0.0 {
         return -(pv + pmt * nper);
     }
@@ -38,15 +38,21 @@ pub fn fv_vec(
     nper: ArrayViewD<f64>,
     pmt: ArrayViewD<f64>,
     pv: ArrayViewD<f64>,
-    pmt_at_begining: Option<bool>,
+    pmt_at_begining: ArrayViewD<bool>,
 ) -> Result<ArrayD<f64>, BroadcastingError> {
-    let pmt_at_begining = convert_pmt_at_begining(pmt_at_begining);
-    let (rate, nper, pmt, pv) = broadcast_together!(rate, nper, pmt, pv)?;
+    let pmt_at_begining = pmt_at_begining.mapv(convert_pmt_at_begining);
+    let (rate, nper, pmt, pv, pmt_at_begining) =
+        broadcast_together!(rate, nper, pmt, pv, pmt_at_begining)?;
 
     let mut result = ArrayD::uninit(rate.shape());
 
-    ndarray::Zip::from(&mut result).and(rate).and(nper).and(pmt).and(pv).for_each(
-        |result, rate, nper, pmt, pv| {
+    ndarray::Zip::from(&mut result)
+        .and(rate)
+        .and(nper)
+        .and(pmt)
+        .and(pv)
+        .and(pmt_at_begining)
+        .for_each(|result, rate, nper, pmt, pv, pmt_at_begining| {
             let value = if rate == &0.0 {
                 -(pv + pmt * nper)
             } else {
@@ -54,15 +60,12 @@ pub fn fv_vec(
                 -pv * f - pmt * (1.0 + rate * pmt_at_begining) / rate * (f - 1.0)
             };
             *result = MaybeUninit::new(value);
-        },
-    );
+        });
 
     Ok(unsafe { result.assume_init() })
 }
 
-pub fn pv(rate: f64, nper: f64, pmt: f64, fv: Option<f64>, pmt_at_begining: Option<bool>) -> f64 {
-    let fv = fv.unwrap_or(0.);
-
+pub fn pv(rate: f64, nper: f64, pmt: f64, fv: f64, pmt_at_begining: bool) -> f64 {
     if rate == 0.0 {
         return -(fv + pmt * nper);
     }
@@ -78,15 +81,21 @@ pub fn pv_vec(
     nper: ArrayViewD<f64>,
     pmt: ArrayViewD<f64>,
     fv: ArrayViewD<f64>,
-    pmt_at_begining: Option<bool>,
+    pmt_at_begining: ArrayViewD<bool>,
 ) -> Result<ArrayD<f64>, BroadcastingError> {
-    let pmt_at_begining = convert_pmt_at_begining(pmt_at_begining);
-    let (rate, nper, pmt, fv) = broadcast_together!(rate, nper, pmt, fv)?;
+    let pmt_at_begining = pmt_at_begining.mapv(convert_pmt_at_begining);
+    let (rate, nper, pmt, fv, pmt_at_begining) =
+        broadcast_together!(rate, nper, pmt, fv, pmt_at_begining)?;
 
     let mut result = ArrayD::uninit(rate.shape());
 
-    ndarray::Zip::from(&mut result).and(rate).and(nper).and(pmt).and(fv).for_each(
-        |result, rate, nper, pmt, fv| {
+    ndarray::Zip::from(&mut result)
+        .and(rate)
+        .and(nper)
+        .and(pmt)
+        .and(fv)
+        .and(pmt_at_begining)
+        .for_each(|result, rate, nper, pmt, fv, pmt_at_begining| {
             let value = if rate == &0.0 {
                 -(fv + pmt * nper)
             } else {
@@ -95,15 +104,12 @@ pub fn pv_vec(
                 -(fv + pmt * f) / exp
             };
             *result = MaybeUninit::new(value);
-        },
-    );
+        });
 
     Ok(unsafe { result.assume_init() })
 }
 
-pub fn pmt(rate: f64, nper: f64, pv: f64, fv: Option<f64>, pmt_at_begining: Option<bool>) -> f64 {
-    let fv = fv.unwrap_or(0.0);
-
+pub fn pmt(rate: f64, nper: f64, pv: f64, fv: f64, pmt_at_begining: bool) -> f64 {
     if rate == 0.0 {
         return -(fv + pv) / nper;
     }
@@ -121,15 +127,21 @@ pub fn pmt_vec(
     nper: ArrayViewD<f64>,
     pv: ArrayViewD<f64>,
     fv: ArrayViewD<f64>,
-    pmt_at_begining: Option<bool>,
+    pmt_at_begining: ArrayViewD<bool>,
 ) -> Result<ArrayD<f64>, BroadcastingError> {
-    let pmt_at_begining = convert_pmt_at_begining(pmt_at_begining);
-    let (rate, nper, pv, fv) = broadcast_together!(rate, nper, pv, fv)?;
+    let pmt_at_begining = pmt_at_begining.mapv(convert_pmt_at_begining);
+    let (rate, nper, pv, fv, pmt_at_begining) =
+        broadcast_together!(rate, nper, pv, fv, pmt_at_begining)?;
 
     let mut result = ArrayD::uninit(rate.shape());
 
-    ndarray::Zip::from(&mut result).and(rate).and(nper).and(pv).and(fv).for_each(
-        |result, rate, nper, pv, fv| {
+    ndarray::Zip::from(&mut result)
+        .and(rate)
+        .and(nper)
+        .and(pv)
+        .and(fv)
+        .and(pmt_at_begining)
+        .for_each(|result, rate, nper, pv, fv, pmt_at_begining| {
             let value = if rate == &0.0 {
                 -(fv + pv) / nper
             } else {
@@ -138,20 +150,12 @@ pub fn pmt_vec(
                 -(fv + pv * exp) / f
             };
             *result = MaybeUninit::new(value);
-        },
-    );
+        });
 
     Ok(unsafe { result.assume_init() })
 }
 
-pub fn ipmt(
-    rate: f64,
-    per: f64,
-    nper: f64,
-    pv: f64,
-    fv: Option<f64>,
-    pmt_at_begining: Option<bool>,
-) -> f64 {
+pub fn ipmt(rate: f64, per: f64, nper: f64, pv: f64, fv: f64, pmt_at_begining: bool) -> f64 {
     // payments before first period don't make any sense.
     if per < 1.0 || per > nper {
         return f64::NAN;
@@ -159,14 +163,14 @@ pub fn ipmt(
 
     // no interest if payment occurs at the beginning
     // of a period and this is the first period
-    if per == 1.0 && pmt_at_begining.unwrap_or(false) {
+    if per == 1.0 && pmt_at_begining {
         return 0.0;
     }
 
     let total_pmt = self::pmt(rate, nper, pv, fv, pmt_at_begining);
     let result = rate * self::fv(rate, per - 1.0, total_pmt, pv, pmt_at_begining);
 
-    if pmt_at_begining.unwrap_or(false) {
+    if pmt_at_begining {
         // if paying at the beginning we need to discount by one period.
         result / (1.0 + rate)
     } else {
@@ -180,38 +184,33 @@ pub fn ipmt_vec(
     nper: ArrayViewD<f64>,
     pv: ArrayViewD<f64>,
     fv: ArrayViewD<f64>,
-    pmt_at_begining: Option<bool>,
+    pmt_at_begining: ArrayViewD<bool>,
 ) -> Result<ArrayD<f64>, BroadcastingError> {
-    let (rate, per, nper, pv, fv) = broadcast_together!(rate, per, nper, pv, fv)?;
+    let (rate, per, nper, pv, fv, pmt_at_begining) =
+        broadcast_together!(rate, per, nper, pv, fv, pmt_at_begining)?;
 
-    let total_pmt = self::pmt_vec(rate.view(), nper.view(), pv.view(), fv.view(), pmt_at_begining)?;
+    let total_pmt =
+        self::pmt_vec(rate.view(), nper.view(), pv.view(), fv.view(), pmt_at_begining.view())?;
     let per_prev = &per - 1.0;
-    let result =
-        &rate * self::fv_vec(rate.view(), per_prev.view(), total_pmt.view(), pv, pmt_at_begining)?;
+    let mut result = &rate
+        * self::fv_vec(rate.view(), per_prev.view(), total_pmt.view(), pv, pmt_at_begining.view())?;
 
-    let pmt_at_begining = pmt_at_begining.unwrap_or(false);
-
-    let mut result = if pmt_at_begining { &result / (1.0 + &rate) } else { result };
-
-    ndarray::Zip::from(&mut result).and(per).and(nper).for_each(|r, per, nper| {
-        if per < &1.0 || per > nper {
-            *r = f64::NAN
-        } else if per == &1.0 && pmt_at_begining {
-            *r = 0.0
-        }
-    });
+    ndarray::Zip::from(&mut result).and(rate).and(per).and(nper).and(pmt_at_begining).for_each(
+        |r, rate, per, nper, &pmt_at_begining| {
+            if per < &1.0 || per > nper {
+                *r = f64::NAN
+            } else if per == &1.0 && pmt_at_begining {
+                *r = 0.0
+            } else if pmt_at_begining {
+                *r /= 1.0 + rate
+            }
+        },
+    );
 
     Ok(result)
 }
 
-pub fn ppmt(
-    rate: f64,
-    per: f64,
-    nper: f64,
-    pv: f64,
-    fv: Option<f64>,
-    pmt_at_begining: Option<bool>,
-) -> f64 {
+pub fn ppmt(rate: f64, per: f64, nper: f64, pv: f64, fv: f64, pmt_at_begining: bool) -> f64 {
     self::pmt(rate, nper, pv, fv, pmt_at_begining)
         - self::ipmt(rate, per, nper, pv, fv, pmt_at_begining)
 }
@@ -222,16 +221,15 @@ pub fn ppmt_vec(
     nper: ArrayViewD<f64>,
     pv: ArrayViewD<f64>,
     fv: ArrayViewD<f64>,
-    pmt_at_begining: Option<bool>,
+    pmt_at_begining: ArrayViewD<bool>,
 ) -> Result<ArrayD<f64>, BroadcastingError> {
-    let pmt = self::pmt_vec(rate.view(), nper.view(), pv.view(), fv.view(), pmt_at_begining)?;
+    let pmt =
+        self::pmt_vec(rate.view(), nper.view(), pv.view(), fv.view(), pmt_at_begining.view())?;
     let ipmt = self::ipmt_vec(rate, per, nper, pv, fv, pmt_at_begining)?;
     Ok(pmt - ipmt)
 }
 
-pub fn nper(rate: f64, pmt: f64, pv: f64, fv: Option<f64>, pmt_at_begining: Option<bool>) -> f64 {
-    let fv = fv.unwrap_or(0.0);
-
+pub fn nper(rate: f64, pmt: f64, pv: f64, fv: f64, pmt_at_begining: bool) -> f64 {
     if rate == 0.0 {
         return -(fv + pv) / pmt;
     }
@@ -247,15 +245,21 @@ pub fn nper_vec(
     pmt: ArrayViewD<f64>,
     pv: ArrayViewD<f64>,
     fv: ArrayViewD<f64>,
-    pmt_at_begining: Option<bool>,
+    pmt_at_begining: ArrayViewD<bool>,
 ) -> Result<ArrayD<f64>, BroadcastingError> {
-    let pmt_at_begining = convert_pmt_at_begining(pmt_at_begining);
-    let (rate, pmt, pv, fv) = broadcast_together!(rate, pmt, pv, fv)?;
+    let pmt_at_begining = pmt_at_begining.mapv(convert_pmt_at_begining);
+    let (rate, pmt, pv, fv, pmt_at_begining) =
+        broadcast_together!(rate, pmt, pv, fv, pmt_at_begining)?;
 
     let mut result = ArrayD::uninit(rate.shape());
 
-    ndarray::Zip::from(&mut result).and(rate).and(pmt).and(pv).and(fv).for_each(
-        |result, rate, pmt, pv, fv| {
+    ndarray::Zip::from(&mut result)
+        .and(rate)
+        .and(pmt)
+        .and(pv)
+        .and(fv)
+        .and(pmt_at_begining)
+        .for_each(|result, rate, pmt, pv, fv, pmt_at_begining| {
             let value = if rate == &0.0 {
                 -(fv + pv) / pmt
             } else {
@@ -263,8 +267,7 @@ pub fn nper_vec(
                 f64::log10((-fv + z) / (pv + z)) / f64::log10(1. + rate)
             };
             *result = MaybeUninit::new(value);
-        },
-    );
+        });
 
     Ok(unsafe { result.assume_init() })
 }
@@ -278,6 +281,7 @@ pub fn rate(
     guess: Option<f64>,
 ) -> f64 {
     let fv = fv.unwrap_or(0.0);
+    let pmt_at_begining = pmt_at_begining.unwrap_or(false);
     newton_raphson_with_default_deriv(guess.unwrap_or(0.1), |rate| {
         fv - self::fv(rate, nper, pmt, pv, pmt_at_begining)
     })
@@ -286,7 +290,7 @@ pub fn rate(
 // http://westclintech.com/SQL-Server-Financial-Functions/SQL-Server-NFV-function
 pub fn nfv(rate: f64, nper: f64, amounts: &[f64]) -> f64 {
     let pv = self::npv(rate, amounts, Some(false));
-    self::fv(rate, nper, 0.0, -pv, None)
+    self::fv(rate, nper, 0.0, -pv, false)
 }
 
 pub fn npv(rate: f64, values: &[f64], start_from_zero: Option<bool>) -> f64 {
