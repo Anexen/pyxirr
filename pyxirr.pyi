@@ -156,7 +156,7 @@ def fv(
     pmt: _Amount,
     pv: _Amount,
     *,
-    pmt_at_begining: bool = False,
+    pmt_at_beginning: bool = False,
 ) -> Optional[float]:
     ...
 
@@ -207,7 +207,7 @@ def pv(
     pmt: _Amount,
     fv: _Amount,
     *,
-    pmt_at_begining: bool = False,
+    pmt_at_beginning: bool = False,
 ) -> Optional[float]:
     ...
 
@@ -250,7 +250,7 @@ def rate(
     pv: _Amount,
     fv: _Amount = 0,
     *,
-    pmt_at_begining: bool = False,
+    pmt_at_beginning: bool = False,
     guess: _Guess = 0.1,
 ):
     ...
@@ -262,7 +262,7 @@ def nper(
     pv: _Amount,
     fv: _Amount = 0,
     *,
-    pmt_at_begining: bool = False,
+    pmt_at_beginning: bool = False,
 ) -> Optional[float]:
     ...
 
@@ -273,7 +273,7 @@ def pmt(
     pv: _Amount,
     fv: _Amount = 0,
     *,
-    pmt_at_begining: bool = False,
+    pmt_at_beginning: bool = False,
 ) -> Optional[float]:
     ...
 
@@ -285,7 +285,7 @@ def ipmt(
     pv: _Amount,
     fv: _Amount = 0,
     *,
-    pmt_at_begining: bool = False,
+    pmt_at_beginning: bool = False,
 ) -> Optional[float]:
     ...
 
@@ -297,7 +297,7 @@ def ppmt(
     pv: _Amount,
     fv: _Amount = 0,
     *,
-    pmt_at_begining: bool = False,
+    pmt_at_beginning: bool = False,
 ) -> Optional[float]:
     ...
 

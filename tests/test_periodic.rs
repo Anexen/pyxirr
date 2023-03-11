@@ -40,13 +40,13 @@ fn test_fv_pmt_at_end() {
 }
 
 #[rstest]
-fn test_fv_pmt_at_begining() {
+fn test_fv_pmt_at_beginning() {
     Python::with_gil(|py| {
         let result: f64 = pyxirr_call!(
             py,
             "fv",
             (0.05 / 12.0, 10 * 12, -100, -100),
-            py_dict!(py, "pmt_at_begining" => true)
+            py_dict!(py, "pmt_at_beginning" => true)
         );
         assert_almost_eq!(result, 15757.6298441047);
 
@@ -115,13 +115,13 @@ fn test_pv_pmt_at_end() {
 }
 
 #[rstest]
-fn test_pv_pmt_at_begining() {
+fn test_pv_pmt_at_beginning() {
     Python::with_gil(|py| {
         let result: f64 = pyxirr_call!(
             py,
             "pv",
             (0.05 / 12.0, 10 * 12, -100, 15692.93),
-            py_dict!(py, "pmt_at_begining" => true)
+            py_dict!(py, "pmt_at_beginning" => true)
         );
         assert_almost_eq!(result, -60.71677534615);
 
@@ -233,13 +233,13 @@ fn test_pmt_pmt_at_end() {
 }
 
 #[rstest]
-fn test_pmt_pmt_at_begining() {
+fn test_pmt_pmt_at_beginning() {
     Python::with_gil(|py| {
         let pmt: f64 = pyxirr_call!(
             py,
             "pmt",
             (INTEREST_RATE, PERIODS, PV),
-            py_dict!(py, "pmt_at_begining" => true)
+            py_dict!(py, "pmt_at_beginning" => true)
         );
         assert_future_value!(INTEREST_RATE, PERIODS, pmt, PV, None, Some(true));
         if cfg!(not(feature = "nonumpy")) {
@@ -306,13 +306,13 @@ fn test_ipmt_works() {
 }
 
 #[rstest]
-fn test_ipmt_pmt_at_begining() {
+fn test_ipmt_pmt_at_beginning() {
     Python::with_gil(|py| {
         let result: f64 = pyxirr_call!(
             py,
             "ipmt",
             (INTEREST_RATE, 2.0, PERIODS, PAYMENT),
-            py_dict!(py, "pmt_at_begining" => true)
+            py_dict!(py, "pmt_at_beginning" => true)
         );
         assert_almost_eq!(result, 2191.6557738917);
 
@@ -331,7 +331,7 @@ fn test_ipmt_non_zero_fv() {
             py,
             "ipmt",
             (INTEREST_RATE, 2.0, PERIODS, PAYMENT, FV),
-            py_dict!(py, "pmt_at_begining" => true)
+            py_dict!(py, "pmt_at_beginning" => true)
         );
         assert_almost_eq!(result, 2608.108309425);
 
@@ -452,13 +452,13 @@ fn test_nper_pmt_at_end() {
 }
 
 #[rstest]
-fn test_nper_pmt_at_begining() {
+fn test_nper_pmt_at_beginning() {
     Python::with_gil(|py| {
         let nper: f64 = pyxirr_call!(
             py,
             "nper",
             (INTEREST_RATE, PAYMENT, PV),
-            py_dict!(py, "pmt_at_begining" => true)
+            py_dict!(py, "pmt_at_beginning" => true)
         );
         assert_future_value!(INTEREST_RATE, nper, PAYMENT, PV, None, Some(true));
 
@@ -540,13 +540,13 @@ fn test_rate_non_zero_fv() {
 }
 
 #[rstest]
-fn test_rate_pmt_at_begining() {
+fn test_rate_pmt_at_beginning() {
     Python::with_gil(|py| {
         let rate: f64 = pyxirr_call!(
             py,
             "rate",
             (PERIODS, PAYMENT, PV, FV),
-            py_dict!(py, "pmt_at_begining" => true)
+            py_dict!(py, "pmt_at_beginning" => true)
         );
         assert_future_value!(rate, PERIODS, PAYMENT, PV, Some(FV), Some(true));
 

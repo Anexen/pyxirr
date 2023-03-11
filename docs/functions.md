@@ -89,18 +89,18 @@ def fv(
     pmt: Amount, # Payment
     pv: Amount, # Present value
     *,
-    pmt_at_begining: bool = False  # When payments are due
+    pmt_at_beginning: bool = False  # When payments are due
 ) -> Optional[float]:
     ...
 ```
 
-> Changed in 0.7.0: make pmt_at_begining keyword-only argument
+> Changed in 0.7.0: make pmt_at_beginning keyword-only argument
 
 The future value is computed by solving the equation:
 
 $$fv + pv \times (1+rate)^{nper}+pmt \times \frac{(1+rate \times when)}{rate} \times ((1+rate)^{nper}-1)=0$$
 
-$$when=\begin{cases}0,&\text{pmt_at_begining is False}\\1,&\text{pmt_at_begining is True}\end{cases}$$
+$$when=\begin{cases}0,&\text{pmt_at_beginning is False}\\1,&\text{pmt_at_beginning is True}\end{cases}$$
 
 in case of `rate == 0`:
 
@@ -233,7 +233,7 @@ def pmt(
     pv: Amount, # Present value
     fv: Amount = 0, # Future value
     *,
-    pmt_at_begining: bool = False  # When payments are due
+    pmt_at_beginning: bool = False  # When payments are due
 ) -> Optional[float]:
     ...
 ```
@@ -242,7 +242,7 @@ def pmt(
 pmt = ipmt + ppmt
 ```
 
-> Changed in 0.7.0: make pmt_at_begining keyword-only argument
+> Changed in 0.7.0: make pmt_at_beginning keyword-only argument
 
 See also: [FV](functions.md#fv), [PV](functions.md#pv), [NPER](functions.md#nper)
 
@@ -258,12 +258,12 @@ def ipmt(
     pv: Amount, # Present value
     fv: Amount = 0, # Future value
     *,
-    pmt_at_begining: bool = False  # When payments are due
+    pmt_at_beginning: bool = False  # When payments are due
 ) -> Optional[float]:
     ...
 ```
 
-> Changed in 0.7.0: make pmt_at_begining keyword-only argument
+> Changed in 0.7.0: make pmt_at_beginning keyword-only argument
 
 See also: [PMT](functions.md#pmt)
 
@@ -279,12 +279,12 @@ def ppmt(
     pv: Amount, # Present value
     fv: Amount = 0, # Future value
     *,
-    pmt_at_begining: bool = False  # When payments are due
+    pmt_at_beginning: bool = False  # When payments are due
 ) -> Optional[float]:
     ...
 ```
 
-> Changed in 0.7.0: make pmt_at_begining keyword-only argument
+> Changed in 0.7.0: make pmt_at_beginning keyword-only argument
 
 See also: [PMT](functions.md#pmt)
 
@@ -299,12 +299,12 @@ def nper(
     pv: Amount, # Present value
     fv: Amount = 0, # Future value
     *,
-    pmt_at_begining: bool = False  # When payments are due
+    pmt_at_beginning: bool = False  # When payments are due
 ) -> Optional[float]:
     ...
 ```
 
-> Changed in 0.7.0: make pmt_at_begining keyword-only argument
+> Changed in 0.7.0: make pmt_at_beginning keyword-only argument
 
 See also: [FV](functions.md#fv), [PV](functions.md#pv), [PMT](functions.md#pmt)
 
@@ -319,13 +319,13 @@ def rate(
     pv: Amount, # Present value
     fv: Amount = 0, # Future value
     *,
-    pmt_at_begining: bool = False  # When payments are due
+    pmt_at_beginning: bool = False  # When payments are due
     guess: Guess = 0.1
 ) -> Optional[float]:
     ...
 ```
 
-> Changed in 0.7.0: make pmt_at_begining and guess keyword-only arguments
+> Changed in 0.7.0: make pmt_at_beginning and guess keyword-only arguments
 
 See also: [FV](functions.md#fv), [PV](functions.md#pv), [PMT](functions.md#pmt)
 
@@ -340,18 +340,18 @@ def pv(
     pmt: Amount, # Payment
     fv: Amount = 0, # Future value
     *,
-    pmt_at_begining: bool = False  # When payments are due
+    pmt_at_beginning: bool = False  # When payments are due
 ) -> Optional[float]:
     ...
 ```
 
-> Changed in 0.7.0: make pmt_at_begining keyword-only argument
+> Changed in 0.7.0: make pmt_at_beginning keyword-only argument
 
 The present value is computed by solving the same equation as for future value:
 
 $$fv+pv \times (1+rate)^{nper}+pmt \times \frac{(1+rate \times when)}{rate} \times ((1+rate)^{nper}-1)=0$$
 
-$$when=\begin{cases}0,&\text{pmt_at_begining is False}\\1,&\text{pmt_at_begining is True}\end{cases}$$
+$$when=\begin{cases}0,&\text{pmt_at_beginning is False}\\1,&\text{pmt_at_beginning is True}\end{cases}$$
 
 in case of `rate == 0`:
 

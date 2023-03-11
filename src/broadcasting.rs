@@ -24,16 +24,16 @@ impl Error for BroadcastingError {}
 
 pub fn broadcast_shapes(shapes: &[&[usize]]) -> Option<Vec<usize>> {
     /* Discover the broadcast number of dimensions */
-    let nd = shapes.iter().map(|s| s.len()).max()?;
-    let mut result = vec![0; nd];
+    let ndim = shapes.iter().map(|s| s.len()).max()?;
+    let mut result = vec![0; ndim];
 
     /* Discover the broadcast shape in each dimension */
-    for i in 0..nd {
+    for i in 0..ndim {
         result[i] = 1;
         for s in shapes.iter() {
-            /* This prepends 1 to shapes not already equal to nd */
-            if i + s.len() >= nd {
-                let k = i + s.len() - nd;
+            /* This prepends 1 to shapes not already equal to ndim */
+            if i + s.len() >= ndim {
+                let k = i + s.len() - ndim;
                 let tmp = s[k];
                 if tmp == 1 {
                     continue;

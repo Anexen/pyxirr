@@ -124,21 +124,21 @@ fn npv(
 
 /// Future Value.
 #[pyfunction]
-#[pyo3(signature = (rate, nper, pmt, pv, *, pmt_at_begining=Arg::Scalar(false)))]
-#[pyo3(text_signature = "(rate, nper, pmt, pv, *, pmt_at_begining=False)")]
+#[pyo3(signature = (rate, nper, pmt, pv, *, pmt_at_beginning=Arg::Scalar(false)))]
+#[pyo3(text_signature = "(rate, nper, pmt, pv, *, pmt_at_beginning=False)")]
 fn fv<'a>(
     py: Python<'a>,
     rate: Arg<'a, f64>,
     nper: Arg<'a, f64>,
     pmt: Arg<'a, f64>,
     pv: Arg<'a, f64>,
-    pmt_at_begining: Arg<'a, bool>,
+    pmt_at_beginning: Arg<'a, bool>,
 ) -> PyResult<Arg<'a, f64>> {
     dispatch_vectorized!(
         py,
-        (rate, nper, pmt, pv, pmt_at_begining),
-        core::fv(rate, nper, pmt, pv, pmt_at_begining),
-        core::fv_vec(&rate, &nper, &pmt, &pv, &pmt_at_begining)
+        (rate, nper, pmt, pv, pmt_at_beginning),
+        core::fv(rate, nper, pmt, pv, pmt_at_beginning),
+        core::fv_vec(&rate, &nper, &pmt, &pv, &pmt_at_beginning)
     )
 }
 
@@ -200,21 +200,21 @@ fn xnfv(
 
 /// Present Value
 #[pyfunction]
-#[pyo3(signature = (rate, nper, pmt, fv=Arg::Scalar(0.0), *, pmt_at_begining=Arg::Scalar(false)))]
-#[pyo3(text_signature = "(rate, nper, pmt, fv=0, *, pmt_at_begining=False)")]
+#[pyo3(signature = (rate, nper, pmt, fv=Arg::Scalar(0.0), *, pmt_at_beginning=Arg::Scalar(false)))]
+#[pyo3(text_signature = "(rate, nper, pmt, fv=0, *, pmt_at_beginning=False)")]
 fn pv<'a>(
     py: Python<'a>,
     rate: Arg<'a, f64>,
     nper: Arg<'a, f64>,
     pmt: Arg<'a, f64>,
     fv: Arg<'a, f64>,
-    pmt_at_begining: Arg<'a, bool>,
+    pmt_at_beginning: Arg<'a, bool>,
 ) -> PyResult<Arg<'a, f64>> {
     dispatch_vectorized!(
         py,
-        (rate, nper, pmt, fv, pmt_at_begining),
-        core::pv(rate, nper, pmt, fv, pmt_at_begining),
-        core::pv_vec(&rate, &nper, &pmt, &fv, &pmt_at_begining)
+        (rate, nper, pmt, fv, pmt_at_beginning),
+        core::pv(rate, nper, pmt, fv, pmt_at_beginning),
+        core::pv_vec(&rate, &nper, &pmt, &fv, &pmt_at_beginning)
     )
 }
 
@@ -238,28 +238,28 @@ fn mirr(
 
 /// Compute the payment against loan principal plus interest.
 #[pyfunction]
-#[pyo3(signature = (rate, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=Arg::Scalar(false)))]
-#[pyo3(text_signature = "(rate, nper, pv, fv=0, *, pmt_at_begining=False)")]
+#[pyo3(signature = (rate, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_beginning=Arg::Scalar(false)))]
+#[pyo3(text_signature = "(rate, nper, pv, fv=0, *, pmt_at_beginning=False)")]
 fn pmt<'a>(
     py: Python<'a>,
     rate: Arg<'a, f64>,
     nper: Arg<'a, f64>,
     pv: Arg<'a, f64>,
     fv: Arg<'a, f64>,
-    pmt_at_begining: Arg<'a, bool>,
+    pmt_at_beginning: Arg<'a, bool>,
 ) -> PyResult<Arg<'a, f64>> {
     dispatch_vectorized!(
         py,
-        (rate, nper, pv, fv, pmt_at_begining),
-        core::pmt(rate, nper, pv, fv, pmt_at_begining),
-        core::pmt_vec(&rate, &nper, &pv, &fv, &pmt_at_begining)
+        (rate, nper, pv, fv, pmt_at_beginning),
+        core::pmt(rate, nper, pv, fv, pmt_at_beginning),
+        core::pmt_vec(&rate, &nper, &pv, &fv, &pmt_at_beginning)
     )
 }
 
 /// Compute the interest portion of a payment.
 #[pyfunction]
-#[pyo3(signature = (rate, per, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=Arg::Scalar(false)))]
-#[pyo3(text_signature = "(rate, per, nper, pv, fv=0, *, pmt_at_begining=False)")]
+#[pyo3(signature = (rate, per, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_beginning=Arg::Scalar(false)))]
+#[pyo3(text_signature = "(rate, per, nper, pv, fv=0, *, pmt_at_beginning=False)")]
 fn ipmt<'a>(
     py: Python<'a>,
     rate: Arg<'a, f64>,
@@ -267,20 +267,20 @@ fn ipmt<'a>(
     nper: Arg<'a, f64>,
     pv: Arg<'a, f64>,
     fv: Arg<'a, f64>,
-    pmt_at_begining: Arg<'a, bool>,
+    pmt_at_beginning: Arg<'a, bool>,
 ) -> PyResult<Arg<'a, f64>> {
     dispatch_vectorized!(
         py,
-        (rate, per, nper, pv, fv, pmt_at_begining),
-        core::ipmt(rate, per, nper, pv, fv, pmt_at_begining),
-        core::ipmt_vec(&rate, &per, &nper, &pv, &fv, &pmt_at_begining)
+        (rate, per, nper, pv, fv, pmt_at_beginning),
+        core::ipmt(rate, per, nper, pv, fv, pmt_at_beginning),
+        core::ipmt_vec(&rate, &per, &nper, &pv, &fv, &pmt_at_beginning)
     )
 }
 
 /// Compute the payment against loan principal.
 #[pyfunction]
-#[pyo3(signature = (rate, per, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=Arg::Scalar(false)))]
-#[pyo3(text_signature = "(rate, per, nper, pv, fv=0, *, pmt_at_begining=False)")]
+#[pyo3(signature = (rate, per, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_beginning=Arg::Scalar(false)))]
+#[pyo3(text_signature = "(rate, per, nper, pv, fv=0, *, pmt_at_beginning=False)")]
 fn ppmt<'a>(
     py: Python<'a>,
     rate: Arg<'a, f64>,
@@ -288,54 +288,54 @@ fn ppmt<'a>(
     nper: Arg<'a, f64>,
     pv: Arg<'a, f64>,
     fv: Arg<'a, f64>,
-    pmt_at_begining: Arg<'a, bool>,
+    pmt_at_beginning: Arg<'a, bool>,
 ) -> PyResult<Arg<'a, f64>> {
     dispatch_vectorized!(
         py,
-        (rate, per, nper, pv, fv, pmt_at_begining),
-        core::ppmt(rate, per, nper, pv, fv, pmt_at_begining),
-        core::ppmt_vec(&rate, &per, &nper, &pv, &fv, &pmt_at_begining)
+        (rate, per, nper, pv, fv, pmt_at_beginning),
+        core::ppmt(rate, per, nper, pv, fv, pmt_at_beginning),
+        core::ppmt_vec(&rate, &per, &nper, &pv, &fv, &pmt_at_beginning)
     )
 }
 
 /// Compute the number of periodic payments.
 #[pyfunction]
-#[pyo3(signature = (rate, pmt, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=Arg::Scalar(false)))]
-#[pyo3(text_signature = "(rate, pmt, pv, fv=0, *, pmt_at_begining=False)")]
+#[pyo3(signature = (rate, pmt, pv, fv=Arg::Scalar(0.0), *, pmt_at_beginning=Arg::Scalar(false)))]
+#[pyo3(text_signature = "(rate, pmt, pv, fv=0, *, pmt_at_beginning=False)")]
 fn nper<'a>(
     py: Python<'a>,
     rate: Arg<'a, f64>,
     pmt: Arg<'a, f64>,
     pv: Arg<'a, f64>,
     fv: Arg<'a, f64>,
-    pmt_at_begining: Arg<'a, bool>,
+    pmt_at_beginning: Arg<'a, bool>,
 ) -> PyResult<Arg<'a, f64>> {
     dispatch_vectorized!(
         py,
-        (rate, pmt, pv, fv, pmt_at_begining),
-        core::nper(rate, pmt, pv, fv, pmt_at_begining),
-        core::nper_vec(&rate, &pmt, &pv, &fv, &pmt_at_begining)
+        (rate, pmt, pv, fv, pmt_at_beginning),
+        core::nper(rate, pmt, pv, fv, pmt_at_beginning),
+        core::nper_vec(&rate, &pmt, &pv, &fv, &pmt_at_beginning)
     )
 }
 
 /// Compute the number of periodic payments.
 #[pyfunction]
-#[pyo3(signature = (nper, pmt, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=Arg::Scalar(false), guess=0.1))]
-#[pyo3(text_signature = "(nper, pmt, pv, fv=0, *, pmt_at_begining=False, guess=0.1)")]
+#[pyo3(signature = (nper, pmt, pv, fv=Arg::Scalar(0.0), *, pmt_at_beginning=Arg::Scalar(false), guess=0.1))]
+#[pyo3(text_signature = "(nper, pmt, pv, fv=0, *, pmt_at_beginning=False, guess=0.1)")]
 fn rate<'a>(
     py: Python<'a>,
     nper: Arg<'a, f64>,
     pmt: Arg<'a, f64>,
     pv: Arg<'a, f64>,
     fv: Arg<'a, f64>,
-    pmt_at_begining: Arg<'a, bool>,
+    pmt_at_beginning: Arg<'a, bool>,
     guess: Option<f64>,
 ) -> PyResult<Arg<'a, f64>> {
     dispatch_vectorized!(
         py,
-        (nper, pmt, pv, fv, pmt_at_begining),
-        core::rate(nper, pmt, pv, fv, pmt_at_begining, guess),
-        core::rate_vec(&nper, &pmt, &pv, &fv, &pmt_at_begining, guess)
+        (nper, pmt, pv, fv, pmt_at_beginning),
+        core::rate(nper, pmt, pv, fv, pmt_at_beginning, guess),
+        core::rate_vec(&nper, &pmt, &pv, &fv, &pmt_at_beginning, guess)
     )
 }
 
