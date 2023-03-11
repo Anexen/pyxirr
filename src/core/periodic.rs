@@ -34,11 +34,11 @@ pub fn fv(rate: f64, nper: f64, pmt: f64, pv: f64, pmt_at_begining: bool) -> f64
 }
 
 pub fn fv_vec(
-    rate: ArrayViewD<f64>,
-    nper: ArrayViewD<f64>,
-    pmt: ArrayViewD<f64>,
-    pv: ArrayViewD<f64>,
-    pmt_at_begining: ArrayViewD<bool>,
+    rate: &ArrayViewD<f64>,
+    nper: &ArrayViewD<f64>,
+    pmt: &ArrayViewD<f64>,
+    pv: &ArrayViewD<f64>,
+    pmt_at_begining: &ArrayViewD<bool>,
 ) -> Result<ArrayD<f64>, BroadcastingError> {
     let pmt_at_begining = pmt_at_begining.mapv(convert_pmt_at_begining);
     let (rate, nper, pmt, pv, pmt_at_begining) =
@@ -77,11 +77,11 @@ pub fn pv(rate: f64, nper: f64, pmt: f64, fv: f64, pmt_at_begining: bool) -> f64
 }
 
 pub fn pv_vec(
-    rate: ArrayViewD<f64>,
-    nper: ArrayViewD<f64>,
-    pmt: ArrayViewD<f64>,
-    fv: ArrayViewD<f64>,
-    pmt_at_begining: ArrayViewD<bool>,
+    rate: &ArrayViewD<f64>,
+    nper: &ArrayViewD<f64>,
+    pmt: &ArrayViewD<f64>,
+    fv: &ArrayViewD<f64>,
+    pmt_at_begining: &ArrayViewD<bool>,
 ) -> Result<ArrayD<f64>, BroadcastingError> {
     let pmt_at_begining = pmt_at_begining.mapv(convert_pmt_at_begining);
     let (rate, nper, pmt, fv, pmt_at_begining) =
@@ -123,11 +123,11 @@ pub fn pmt(rate: f64, nper: f64, pv: f64, fv: f64, pmt_at_begining: bool) -> f64
 }
 
 pub fn pmt_vec(
-    rate: ArrayViewD<f64>,
-    nper: ArrayViewD<f64>,
-    pv: ArrayViewD<f64>,
-    fv: ArrayViewD<f64>,
-    pmt_at_begining: ArrayViewD<bool>,
+    rate: &ArrayViewD<f64>,
+    nper: &ArrayViewD<f64>,
+    pv: &ArrayViewD<f64>,
+    fv: &ArrayViewD<f64>,
+    pmt_at_begining: &ArrayViewD<bool>,
 ) -> Result<ArrayD<f64>, BroadcastingError> {
     let pmt_at_begining = pmt_at_begining.mapv(convert_pmt_at_begining);
     let (rate, nper, pv, fv, pmt_at_begining) =
@@ -179,21 +179,20 @@ pub fn ipmt(rate: f64, per: f64, nper: f64, pv: f64, fv: f64, pmt_at_begining: b
 }
 
 pub fn ipmt_vec(
-    rate: ArrayViewD<f64>,
-    per: ArrayViewD<f64>,
-    nper: ArrayViewD<f64>,
-    pv: ArrayViewD<f64>,
-    fv: ArrayViewD<f64>,
-    pmt_at_begining: ArrayViewD<bool>,
+    rate: &ArrayViewD<f64>,
+    per: &ArrayViewD<f64>,
+    nper: &ArrayViewD<f64>,
+    pv: &ArrayViewD<f64>,
+    fv: &ArrayViewD<f64>,
+    pmt_at_begining: &ArrayViewD<bool>,
 ) -> Result<ArrayD<f64>, BroadcastingError> {
     let (rate, per, nper, pv, fv, pmt_at_begining) =
         broadcast_together!(rate, per, nper, pv, fv, pmt_at_begining)?;
 
-    let total_pmt =
-        self::pmt_vec(rate.view(), nper.view(), pv.view(), fv.view(), pmt_at_begining.view())?;
+    let total_pmt = self::pmt_vec(&rate, &nper, &pv, &fv, &pmt_at_begining)?;
     let per_prev = &per - 1.0;
     let mut result = &rate
-        * self::fv_vec(rate.view(), per_prev.view(), total_pmt.view(), pv, pmt_at_begining.view())?;
+        * self::fv_vec(&rate, &per_prev.view(), &total_pmt.view(), &pv, &pmt_at_begining.view())?;
 
     ndarray::Zip::from(&mut result).and(rate).and(per).and(nper).and(pmt_at_begining).for_each(
         |r, rate, per, nper, &pmt_at_begining| {
@@ -216,15 +215,14 @@ pub fn ppmt(rate: f64, per: f64, nper: f64, pv: f64, fv: f64, pmt_at_begining: b
 }
 
 pub fn ppmt_vec(
-    rate: ArrayViewD<f64>,
-    per: ArrayViewD<f64>,
-    nper: ArrayViewD<f64>,
-    pv: ArrayViewD<f64>,
-    fv: ArrayViewD<f64>,
-    pmt_at_begining: ArrayViewD<bool>,
+    rate: &ArrayViewD<f64>,
+    per: &ArrayViewD<f64>,
+    nper: &ArrayViewD<f64>,
+    pv: &ArrayViewD<f64>,
+    fv: &ArrayViewD<f64>,
+    pmt_at_begining: &ArrayViewD<bool>,
 ) -> Result<ArrayD<f64>, BroadcastingError> {
-    let pmt =
-        self::pmt_vec(rate.view(), nper.view(), pv.view(), fv.view(), pmt_at_begining.view())?;
+    let pmt = self::pmt_vec(rate, nper, pv, fv, pmt_at_begining)?;
     let ipmt = self::ipmt_vec(rate, per, nper, pv, fv, pmt_at_begining)?;
     Ok(pmt - ipmt)
 }
@@ -241,11 +239,11 @@ pub fn nper(rate: f64, pmt: f64, pv: f64, fv: f64, pmt_at_begining: bool) -> f64
 }
 
 pub fn nper_vec(
-    rate: ArrayViewD<f64>,
-    pmt: ArrayViewD<f64>,
-    pv: ArrayViewD<f64>,
-    fv: ArrayViewD<f64>,
-    pmt_at_begining: ArrayViewD<bool>,
+    rate: &ArrayViewD<f64>,
+    pmt: &ArrayViewD<f64>,
+    pv: &ArrayViewD<f64>,
+    fv: &ArrayViewD<f64>,
+    pmt_at_begining: &ArrayViewD<bool>,
 ) -> Result<ArrayD<f64>, BroadcastingError> {
     let pmt_at_begining = pmt_at_begining.mapv(convert_pmt_at_begining);
     let (rate, pmt, pv, fv, pmt_at_begining) =
@@ -276,15 +274,74 @@ pub fn rate(
     nper: f64,
     pmt: f64,
     pv: f64,
-    fv: Option<f64>,
-    pmt_at_begining: Option<bool>,
+    fv: f64,
+    pmt_at_begining: bool,
     guess: Option<f64>,
 ) -> f64 {
-    let fv = fv.unwrap_or(0.0);
-    let pmt_at_begining = pmt_at_begining.unwrap_or(false);
     newton_raphson_with_default_deriv(guess.unwrap_or(0.1), |rate| {
         fv - self::fv(rate, nper, pmt, pv, pmt_at_begining)
     })
+}
+
+pub fn rate_vec(
+    nper: &ArrayViewD<f64>,
+    pmt: &ArrayViewD<f64>,
+    pv: &ArrayViewD<f64>,
+    fv: &ArrayViewD<f64>,
+    pmt_at_begining: &ArrayViewD<bool>,
+    guess: Option<f64>,
+) -> Result<ArrayD<f64>, BroadcastingError> {
+    let pmt_at_begining = pmt_at_begining.mapv(convert_pmt_at_begining);
+    let (nper, pmt, pv, fv, pmt_at_begining) =
+        broadcast_together!(nper, pmt, pv, fv, pmt_at_begining)?;
+
+    let mut rn = ArrayD::from_elem(nper.shape(), guess.unwrap_or(0.1));
+    let mut diff = ArrayD::ones(nper.shape());
+
+    for _ in 0..100 {
+        let rnp1 = &rn - _g_div_gp(&rn.view(), &nper, &pmt, &pv, &fv, &pmt_at_begining.view());
+        diff = &rnp1 - &rn;
+        let all_close = diff.iter().all(|x| x.abs() < 1e-6);
+        if all_close {
+            return Ok(rnp1);
+        }
+        rn = rnp1;
+    }
+
+    rn.zip_mut_with(&diff, |x, &d| {
+        if d > 1e-6 {
+            *x = f64::NAN
+        }
+    });
+
+    Ok(rn)
+}
+
+fn _g_div_gp(
+    rate: &ArrayViewD<f64>,
+    nper: &ArrayViewD<f64>,
+    pmt: &ArrayViewD<f64>,
+    pv: &ArrayViewD<f64>,
+    fv: &ArrayViewD<f64>,
+    when: &ArrayViewD<f64>,
+) -> ArrayD<f64> {
+    // Evaluate g(r_n)/g'(r_n), where g =
+    // fv + pv*(1+rate)**nper + pmt*(1+rate*when)/rate * ((1+rate)**nper - 1)
+    let mut t1 = rate + 1.0;
+    t1.zip_mut_with(nper, |x, &nper| *x = x.powf(nper));
+
+    let mut t2 = rate + 1.0;
+    t2.zip_mut_with(nper, |x, &nper| *x = x.powf(nper - 1.0));
+
+    let r2 = rate.mapv(|x| x.powf(2.0));
+
+    let g = fv + &t1 * pv + pmt * (&t1 - 1.) * (rate * when + 1.) / rate;
+
+    let gp = nper * &t2 * pv - pmt * (&t1 - 1.) * (rate * when + 1.) / r2
+        + nper * pmt * &t2 * (rate * when + 1.) / rate
+        + pmt * (&t1 - 1.0) * when / rate;
+
+    return g / gp;
 }
 
 // http://westclintech.com/SQL-Server-Financial-Functions/SQL-Server-NFV-function

@@ -138,7 +138,7 @@ fn fv<'a>(
         py,
         (rate, nper, pmt, pv, pmt_at_begining),
         core::fv(rate, nper, pmt, pv, pmt_at_begining),
-        core::fv_vec(rate, nper, pmt, pv, pmt_at_begining)
+        core::fv_vec(&rate, &nper, &pmt, &pv, &pmt_at_begining)
     )
 }
 
@@ -214,7 +214,7 @@ fn pv<'a>(
         py,
         (rate, nper, pmt, fv, pmt_at_begining),
         core::pv(rate, nper, pmt, fv, pmt_at_begining),
-        core::pv_vec(rate, nper, pmt, fv, pmt_at_begining)
+        core::pv_vec(&rate, &nper, &pmt, &fv, &pmt_at_begining)
     )
 }
 
@@ -252,7 +252,7 @@ fn pmt<'a>(
         py,
         (rate, nper, pv, fv, pmt_at_begining),
         core::pmt(rate, nper, pv, fv, pmt_at_begining),
-        core::pmt_vec(rate, nper, pv, fv, pmt_at_begining)
+        core::pmt_vec(&rate, &nper, &pv, &fv, &pmt_at_begining)
     )
 }
 
@@ -273,7 +273,7 @@ fn ipmt<'a>(
         py,
         (rate, per, nper, pv, fv, pmt_at_begining),
         core::ipmt(rate, per, nper, pv, fv, pmt_at_begining),
-        core::ipmt_vec(rate, per, nper, pv, fv, pmt_at_begining)
+        core::ipmt_vec(&rate, &per, &nper, &pv, &fv, &pmt_at_begining)
     )
 }
 
@@ -294,7 +294,7 @@ fn ppmt<'a>(
         py,
         (rate, per, nper, pv, fv, pmt_at_begining),
         core::ppmt(rate, per, nper, pv, fv, pmt_at_begining),
-        core::ppmt_vec(rate, per, nper, pv, fv, pmt_at_begining)
+        core::ppmt_vec(&rate, &per, &nper, &pv, &fv, &pmt_at_begining)
     )
 }
 
@@ -314,24 +314,29 @@ fn nper<'a>(
         py,
         (rate, pmt, pv, fv, pmt_at_begining),
         core::nper(rate, pmt, pv, fv, pmt_at_begining),
-        core::nper_vec(rate, pmt, pv, fv, pmt_at_begining)
+        core::nper_vec(&rate, &pmt, &pv, &fv, &pmt_at_begining)
     )
 }
 
 /// Compute the number of periodic payments.
 #[pyfunction]
-#[pyo3(signature = (nper, pmt, pv, fv=0.0, *, pmt_at_begining=false, guess=0.1))]
+#[pyo3(signature = (nper, pmt, pv, fv=Arg::Scalar(0.0), *, pmt_at_begining=Arg::Scalar(false), guess=0.1))]
 #[pyo3(text_signature = "(nper, pmt, pv, fv=0, *, pmt_at_begining=False, guess=0.1)")]
-fn rate(
-    py: Python,
-    nper: f64,
-    pmt: f64,
-    pv: f64,
-    fv: Option<f64>,
-    pmt_at_begining: Option<bool>,
+fn rate<'a>(
+    py: Python<'a>,
+    nper: Arg<'a, f64>,
+    pmt: Arg<'a, f64>,
+    pv: Arg<'a, f64>,
+    fv: Arg<'a, f64>,
+    pmt_at_begining: Arg<'a, bool>,
     guess: Option<f64>,
-) -> Option<f64> {
-    py.allow_threads(move || float_or_none(core::rate(nper, pmt, pv, fv, pmt_at_begining, guess)))
+) -> PyResult<Arg<'a, f64>> {
+    dispatch_vectorized!(
+        py,
+        (nper, pmt, pv, fv, pmt_at_begining),
+        core::rate(nper, pmt, pv, fv, pmt_at_begining, guess),
+        core::rate_vec(&nper, &pmt, &pv, &fv, &pmt_at_begining, guess)
+    )
 }
 
 #[pyfunction]
@@ -345,8 +350,11 @@ fn days_between(d1: core::DateLike, d2: core::DateLike, day_count: PyDayCount) -
 }
 
 #[pyfunction]
-fn demo(d1: bool) -> f64 {
-    d1 as u8 as f64
+fn demo(py: Python, value: Arg<bool>) -> PyObject {
+    match value {
+        Arg::Scalar(value) => (value as u8 as f64).into_py(py),
+        Arg::Array(value) => numpy::ToPyArray::to_pyarray(&value, py).into_py(py),
+    }
 }
 
 #[pymodule]

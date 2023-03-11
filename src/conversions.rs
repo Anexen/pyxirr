@@ -37,23 +37,6 @@ where
     }
 }
 
-pub enum DueType {
-    Begin,
-    End,
-}
-
-// impl<'s> FromPyObject<'s> for DueType {
-//     fn extract(obj: &'s PyAny) -> PyResult<Self> {
-//         if Ok(value) = obj.extract::<bool>() {
-//             match value {
-//                 true => Ok(DueType::Begin),
-//                 false => Ok(DueType::End),
-//             }
-//         } else if {
-//         }
-//     }
-// }
-
 #[derive(FromPyObject)]
 pub enum PyDayCount {
     String(String),

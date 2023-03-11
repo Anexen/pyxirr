@@ -1,7 +1,6 @@
-use numpy::PyArray1;
 use rstest::rstest;
 
-use pyo3::{pyfunction, types::PyList, Python};
+use pyo3::{types::PyList, Python};
 
 use pyxirr;
 
@@ -555,6 +554,24 @@ fn test_rate_pmt_at_begining() {
             let npf_rate = py.import("numpy_financial").unwrap().getattr("rate").unwrap();
             let npf_result = npf_rate.call1((PERIODS, PAYMENT, PV, FV, "start"));
             assert_almost_eq!(rate, npf_result.unwrap().extract::<f64>().unwrap());
+        }
+    })
+}
+
+#[rstest]
+fn test_rate_vec() {
+    Python::with_gil(|py| {
+        let pv = [-593.06, -4725.38, -662.05, -428.78, -13.65];
+        let fv = [214.07, 4509.97, 224.11, 686.29, -329.67];
+
+        let actual: Vec<Option<f64>> = pyxirr_call!(py, "rate", (2, 0, pv, fv));
+        let expected = [-0.39920185, -0.02305873, -0.41818459, 0.26513414, f64::NAN];
+
+        for i in 0..actual.len() {
+            match actual[i] {
+                Some(value) => assert_almost_eq!(value, expected[i], 1e-8),
+                None => assert!(expected[i].is_nan()),
+            }
         }
     })
 }
