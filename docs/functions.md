@@ -124,13 +124,13 @@ Compute the future value.
 
 ```python
 def fv(
-    rate: Rate, # Rate of interest per period
-    nper: Period, # Number of compounding periods
-    pmt: Amount, # Payment
-    pv: Amount, # Present value
+    rate: Rate,  # Rate of interest per period; scalar or array-like
+    nper: Period,  # Number of compounding periods; scalar or array-like
+    pmt: Amount,  # Payment; scalar or array-like
+    pv: Amount,  # Present value; scalar or array-like
     *,
-    pmt_at_beginning: bool = False  # When payments are due
-) -> Optional[float]:
+    pmt_at_beginning: bool = False  # When payments are due; scalar or array-like
+) -> Optional[float]:  # returns an array if any input parameter is an array
     ...
 ```
 
@@ -269,13 +269,13 @@ Compute the payment against loan principal plus interest.
 
 ```python
 def pmt(
-    rate: Rate, # Rate of interest per period
-    nper: Period, # Number of compounding periods
-    pv: Amount, # Present value
-    fv: Amount = 0, # Future value
+    rate: Rate,  # Rate of interest per period; scalar or array-like
+    nper: Period,  # Number of compounding periods; scalar or array-like
+    pv: Amount,  # Present value; scalar or array-like
+    fv: Amount = 0,  # Future value; scalar or array-like
     *,
-    pmt_at_beginning: bool = False  # When payments are due
-) -> Optional[float]:
+    pmt_at_beginning: bool = False  # When payments are due; scalar or array-like
+) -> Optional[float]:  # returns an array if any input parameter is an array
     ...
 ```
 
@@ -294,14 +294,14 @@ Compute the interest portion of a payment.
 
 ```python
 def ipmt(
-    rate: Rate, # Rate of interest per period
-    per: Period, # The payment period to calculate the interest amount.
-    nper: Period, # Number of compounding periods
-    pv: Amount, # Present value
-    fv: Amount = 0, # Future value
+    rate: Rate,  # Rate of interest per period; scalar or array-like
+    per: Period,  # The payment period to calculate the interest amount; scalar or array-like
+    nper: Period,  # Number of compounding periods; scalar or array-like
+    pv: Amount,  # Present value; scalar or array-like
+    fv: Amount = 0,  # Future value; scalar or array-like
     *,
-    pmt_at_beginning: bool = False  # When payments are due
-) -> Optional[float]:
+    pmt_at_beginning: bool = False  # When payments are due; scalar or array-like
+) -> Optional[float]:  # returns an array if any input parameter is an array
     ...
 ```
 
@@ -316,14 +316,14 @@ Compute the payment against loan principal.
 
 ```python
 def ppmt(
-    rate: Rate, # Rate of interest per period
-    per: Period, # The payment period to calculate the interest amount.
-    nper: Period, # Number of compounding periods
-    pv: Amount, # Present value
-    fv: Amount = 0, # Future value
+    rate: Rate,  # Rate of interest per period; scalar or array-like
+    per: Period,  # The payment period to calculate the interest amount; scalar or array-like
+    nper: Period,  # Number of compounding periods; scalar or array-like
+    pv: Amount,  # Present value; scalar or array-like
+    fv: Amount = 0,  # Future value; scalar or array-like
     *,
-    pmt_at_beginning: bool = False  # When payments are due
-) -> Optional[float]:
+    pmt_at_beginning: bool = False  # When payments are due; scalar or array-like
+) -> Optional[float]:  # returns an array if any input parameter is an array
     ...
 ```
 
@@ -338,13 +338,13 @@ Compute the payment against loan principal plus interest.
 
 ```python
 def nper(
-    rate: Rate, # Rate of interest per period
-    pmt: Amount, # Payment
-    pv: Amount, # Present value
-    fv: Amount = 0, # Future value
+    rate: Rate,  # Rate of interest per period; scalar or array-like
+    pmt: Amount,  # Payment; scalar or array-like
+    pv: Amount,  # Present value; scalar or array-like
+    fv: Amount = 0,  # Future value; scalar or array-like
     *,
-    pmt_at_beginning: bool = False  # When payments are due
-) -> Optional[float]:
+    pmt_at_beginning: bool = False  # When payments are due; scalar or array-like
+) -> Optional[float]:  # returns an array if any input parameter is an array
     ...
 ```
 
@@ -359,14 +359,14 @@ Compute the payment against loan principal plus interest.
 
 ```python
 def rate(
-    nper: Period, # Number of compounding periods
-    pmt: Amount, # Payment
-    pv: Amount, # Present value
-    fv: Amount = 0, # Future value
+    nper: Period, # Number of compounding periods; scalar or array-like
+    pmt: Amount, # Payment; scalar or array-like
+    pv: Amount, # Present value; scalar or array-like
+    fv: Amount = 0, # Future value; scalar or array-like
     *,
-    pmt_at_beginning: bool = False  # When payments are due
+    pmt_at_beginning: bool = False  # When payments are due; scalar or array-like
     guess: Guess = 0.1
-) -> Optional[float]:
+) -> Optional[float]:  # returns an array if any input parameter is an array
     ...
 ```
 
@@ -381,13 +381,13 @@ Compute the present value.
 
 ```python
 def pv(
-    rate: Rate, # Rate of interest per period
-    nper: Period, # Number of compounding periods
-    pmt: Amount, # Payment
-    fv: Amount = 0, # Future value
+    rate: Rate,  # Rate of interest per period; scalar or array-like
+    nper: Period,  # Number of compounding periods; scalar or array-like
+    pmt: Amount,  # Payment; scalar or array-like
+    fv: Amount = 0,  # Future value; scalar or array-like
     *,
-    pmt_at_beginning: bool = False  # When payments are due
-) -> Optional[float]:
+    pmt_at_beginning: bool = False  # When payments are due; scalar or array-like
+) -> Optional[float]:  # returns an array if any input parameter is an array
     ...
 ```
 
