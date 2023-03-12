@@ -89,13 +89,16 @@ fn test_fv_vectorized() {
 #[rstest]
 fn test_fv_vectorized_multi() {
     Python::with_gil(|py| {
-        let rates = [0.05 / 12.0, 0.06 / 12.0];
-        let nper = [5 * 12, 10 * 12];
-        let pv = [-100, -150];
-        let result: Vec<f64> = pyxirr_call!(py, "fv", (rates, nper, -100, pv));
+        let rates = [0.05 / 12.0, 0.06 / 12.0, 0.07 / 12.0];
+        let nper = [5 * 12, 10 * 12, 12 * 12];
+        let pv = [-100, -150, -200];
+        let kwargs = py_dict!(py, "pmt_at_beginning" => [false, false, true]);
+
+        let result: Vec<f64> = pyxirr_call!(py, "fv", (rates, nper, -100, pv), kwargs);
 
         assert_almost_eq!(result[0], 6928.944151934635);
         assert_almost_eq!(result[1], 16660.844190750646);
+        assert_almost_eq!(result[2], 23062.71469294612);
     })
 }
 
