@@ -124,7 +124,7 @@ See the [docs](https://anexen.github.io/pyxirr)
 - [x] Implement all functions from [numpy-financial](https://numpy.org/numpy-financial/latest/index.html)
 - [x] Improve docs, add more tests
 - [x] Type hints
-- [ ] Vectorized versions of numpy-financial functions.
+- [x] Vectorized versions of numpy-financial functions.
 - [ ] Compile library for rust/javascript/python
 
 # Development

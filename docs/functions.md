@@ -75,8 +75,26 @@ See also:
 ## Exceptions
 
 - `InvalidPaymentsError`. Occurs if either:
+
   - the amounts and dates arrays (`AmountArray`, `DateLikeArray`) are of different lengths
   - the given arrays do not contain at least one negative and at least one positive value
+
+- `BroadcastingError`. Occurs if function arguments could not be broadcast
+  together using numpy broadcasting rules.
+
+## numpy-like vectorization
+
+PyXIRR defines a vectorized functions which takes a nested sequence of objects
+or numpy arrays as inputs and returns a nested sequence of results of the same shape.
+
+General rules:
+
+- if all input is scalar, returns a scalar float.
+- if any input is array_like, returns values for each input element.
+- if multiple inputs are array_like, they all must have the same shape (or be
+  broadcastable into the same shape).
+
+PyXIRR has a certain conversion cost compared to numpy-financial. See the charts [here](bench/vectorization/index.html).
 
 ## FV
 
@@ -95,6 +113,7 @@ def fv(
 ```
 
 > Changed in 0.7.0: make pmt_at_beginning keyword-only argument
+> Added in 0.9.0: vectorization
 
 The future value is computed by solving the equation:
 
@@ -114,6 +133,17 @@ What is the future value after 10 years of saving $100 now, with an additional m
 >>> from pyxirr import fv
 >>> fv(0.05/12, 10*12, -100, -100)
 15692.92889433575
+```
+
+Vectorized:
+
+```python
+>>> fv([0.03/12, 0.05/12 ], 10*12, -100, -100)
+[14109.077242352068, 15692.92889433575]
+>>> fv(0.05/12, 10*12, [-100, -150], [-100, -50])
+[15692.92889433575, 23374.692391734596]
+>>> fv([[[0.01]], [[0.02]]], 12, -100, -100)
+[[[1380.9328043328946]], [[1468.0331522689821]]]
 ```
 
 ## NFV
@@ -243,6 +273,7 @@ pmt = ipmt + ppmt
 ```
 
 > Changed in 0.7.0: make pmt_at_beginning keyword-only argument
+> Added in 0.9.0: vectorization
 
 See also: [FV](functions.md#fv), [PV](functions.md#pv), [NPER](functions.md#nper)
 
@@ -264,6 +295,7 @@ def ipmt(
 ```
 
 > Changed in 0.7.0: make pmt_at_beginning keyword-only argument
+> Added in 0.9.0: vectorization
 
 See also: [PMT](functions.md#pmt)
 
@@ -285,6 +317,7 @@ def ppmt(
 ```
 
 > Changed in 0.7.0: make pmt_at_beginning keyword-only argument
+> Added in 0.9.0: vectorization
 
 See also: [PMT](functions.md#pmt)
 
@@ -305,6 +338,7 @@ def nper(
 ```
 
 > Changed in 0.7.0: make pmt_at_beginning keyword-only argument
+> Added in 0.9.0: vectorization
 
 See also: [FV](functions.md#fv), [PV](functions.md#pv), [PMT](functions.md#pmt)
 
@@ -326,6 +360,7 @@ def rate(
 ```
 
 > Changed in 0.7.0: make pmt_at_beginning and guess keyword-only arguments
+> Added in 0.9.0: vectorization
 
 See also: [FV](functions.md#fv), [PV](functions.md#pv), [PMT](functions.md#pmt)
 
@@ -346,6 +381,7 @@ def pv(
 ```
 
 > Changed in 0.7.0: make pmt_at_beginning keyword-only argument
+> Added in 0.9.0: vectorization
 
 The present value is computed by solving the same equation as for future value:
 
