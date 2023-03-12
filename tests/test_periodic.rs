@@ -1,7 +1,7 @@
-use numpy::{pyarray, PyArray2, PyArrayDyn};
+use numpy::{pyarray, PyArrayDyn};
 use rstest::rstest;
 
-use pyo3::{types::PyList, PyAny, Python};
+use pyo3::{types::PyList, Python};
 
 use pyxirr;
 
@@ -100,6 +100,19 @@ fn test_fv_vectorized_multi() {
 }
 
 #[rstest]
+fn test_fv_vectorized_iterable() {
+    Python::with_gil(|py| {
+        let pmt = py.eval("range(-100, -400, -100)", None, None).unwrap();
+        let actual: Vec<f64> = pyxirr_call!(py, "fv", (0.05 / 12.0, 10 * 12, pmt, -100));
+        let expected = vec![15692.92889433575, 31221.15683890247, 46749.38478346919];
+        for i in 0..actual.len() {
+            assert_almost_eq!(actual[i], expected[i]);
+        }
+    });
+}
+
+#[rstest]
+#[cfg_attr(feature = "nonumpy", ignore)]
 fn test_fv_vectorized_ndarray() {
     // pyarray input -> pyarray output
     // pylist input -> pylist output

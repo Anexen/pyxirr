@@ -94,7 +94,29 @@ General rules:
 - if multiple inputs are array_like, they all must have the same shape (or be
   broadcastable into the same shape).
 
-PyXIRR has a certain conversion cost compared to numpy-financial. See the charts [here](bench/vectorization/index.html).
+> PyXIRR has a certain conversion cost compared to numpy-financial. See the charts [here](bench/vectorization/index.html).
+
+> PyXIRR returns a numpy array if the input was a numpy array, otherwise it returns a list.
+
+Examples:
+
+```python
+>>> from pyxirr import fv
+>>> fv([0.03/12, 0.05/12], 10*12, -100, -100)
+[14109.077242352068, 15692.92889433575]
+>>> fv(0.05/12, 10*12, [-100, -150], [-100, -50])
+[15692.92889433575, 23374.692391734596]
+>>> fv([[[0.01]], [[0.02]]], 12, -100, -100)
+[[[1380.9328043328946]], [[1468.0331522689821]]]
+```
+
+Return numpy array if the input was a numpy array:
+
+```python
+>>> import numpy
+>>> fv(numpy.array([0.03/12, 0.05/12]), 10*12, -100, -100)
+array([14109.07724235, 15692.92889434])
+```
 
 ## FV
 
@@ -133,17 +155,6 @@ What is the future value after 10 years of saving $100 now, with an additional m
 >>> from pyxirr import fv
 >>> fv(0.05/12, 10*12, -100, -100)
 15692.92889433575
-```
-
-Vectorized:
-
-```python
->>> fv([0.03/12, 0.05/12 ], 10*12, -100, -100)
-[14109.077242352068, 15692.92889433575]
->>> fv(0.05/12, 10*12, [-100, -150], [-100, -50])
-[15692.92889433575, 23374.692391734596]
->>> fv([[[0.01]], [[0.02]]], 12, -100, -100)
-[[[1380.9328043328946]], [[1468.0331522689821]]]
 ```
 
 ## NFV

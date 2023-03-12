@@ -3,7 +3,12 @@ use std::{error::Error, fmt};
 use crate::conversions::float_or_none;
 use ndarray::{ArrayD, ArrayViewD, Axis, CowArray, IxDyn};
 use numpy::{npyffi, Element, PyArrayDyn, PY_ARRAY_API};
-use pyo3::{exceptions::PyTypeError, prelude::*, types::PyList, AsPyPointer};
+use pyo3::{
+    exceptions::PyTypeError,
+    prelude::*,
+    types::{PyIterator, PyList, PySequence, PyTuple},
+    AsPyPointer,
+};
 
 /// An error returned when the payments do not contain both negative and positive payments.
 #[derive(Debug)]
@@ -65,13 +70,13 @@ macro_rules! broadcast_together {
     };
 }
 
-pub fn pylist_to_arrayd<'p, T>(pylist: &'p PyList) -> PyResult<ArrayD<T>>
+pub fn pyiter_to_arrayd<'p, T>(pyiter: &'p PyIterator) -> PyResult<ArrayD<T>>
 where
     T: FromPyObject<'p>,
 {
-    let dims = get_pylist_dims(pylist)?;
+    let mut dims = Vec::new();
     let mut flat_list = Vec::new();
-    flatten_pylist(pylist, &mut flat_list)?;
+    flatten_pyiter(pyiter, &mut dims, &mut flat_list, 0)?;
     let arr = ArrayD::from_shape_vec(IxDyn(&dims), flat_list).unwrap();
     Ok(arr)
 }
@@ -91,38 +96,35 @@ pub fn arrayd_to_pylist<'a>(py: Python<'a>, array: ArrayViewD<'_, f64>) -> PyRes
     Ok(list)
 }
 
-fn get_pylist_dims(pylist: &PyList) -> PyResult<Vec<usize>> {
-    let mut dims = Vec::new();
-    let mut sublist = pylist;
-
-    loop {
-        dims.push(sublist.len());
-        if let Ok(new_sublist) = sublist.get_item(0) {
-            if let Ok(s) = new_sublist.downcast::<PyList>() {
-                sublist = s;
-            } else {
-                break;
-            }
-        } else {
-            break;
-        }
-    }
-    Ok(dims)
-}
-
-fn flatten_pylist<'p, T>(pylist: &'p PyList, flat_list: &mut Vec<T>) -> PyResult<()>
+fn flatten_pyiter<'p, T>(
+    pyiter: &'p PyIterator,
+    shape: &mut Vec<usize>,
+    flat_list: &mut Vec<T>,
+    depth: usize,
+) -> PyResult<()>
 where
     T: FromPyObject<'p>,
 {
-    for item in pylist.iter() {
+    let mut max_i = 0;
+    for (i, item) in pyiter.enumerate() {
+        let item = item?;
+        max_i = i;
         match item.extract::<T>() {
             Ok(val) => flat_list.push(val),
             Err(_) => {
-                let sublist = item.extract::<&PyList>()?;
-                flatten_pylist(&sublist, flat_list)?;
+                let sublist = item.iter()?;
+                flatten_pyiter(&sublist, shape, flat_list, depth + 1)?;
             }
         }
     }
+
+    max_i += 1;
+    if let Some(current) = shape.get(depth) {
+        shape[depth] = (*current).max(max_i);
+    } else {
+        shape.push(max_i);
+    }
+
     Ok(())
 }
 
@@ -141,7 +143,11 @@ where
     }
 }
 
-pub fn pyarray_cast<'p, U: Element>(ob: &'p PyAny) -> PyResult<&'p PyArrayDyn<U>> {
+fn is_numpy_available() -> bool {
+    Python::with_gil(|py| py.import("numpy").is_ok())
+}
+
+fn pyarray_cast<'p, U: Element>(ob: &'p PyAny) -> PyResult<&'p PyArrayDyn<U>> {
     let ptr = unsafe {
         PY_ARRAY_API.PyArray_CastToType(
             ob.py(),
@@ -163,22 +169,27 @@ impl<'p> FromPyObject<'p> for Arg<'p, f64> {
             return Ok(Arg::Scalar(value));
         };
 
-        if let Ok(py_list) = ob.downcast::<PyList>() {
-            let arr = pylist_to_arrayd(py_list)?;
+        if ob.downcast::<PyList>().is_ok()
+            || ob.downcast::<PyTuple>().is_ok()
+            || ob.downcast::<PyIterator>().is_ok()
+            || ob.downcast::<PySequence>().is_ok()
+        {
+            let arr = pyiter_to_arrayd(ob.iter()?)?;
             return Ok(Arg::Array(CowArray::from(arr)));
         }
-        if let Ok(a) = ob.downcast::<numpy::PyArrayDyn<f64>>() {
-            return Ok(Arg::NumpyArray(a));
-            // let arr = unsafe { a.as_array() };
-            // return Ok(Arg::Array(CowArray::from(arr)));
+
+        if is_numpy_available() {
+            if let Ok(a) = ob.downcast::<numpy::PyArrayDyn<f64>>() {
+                return Ok(Arg::NumpyArray(a));
+            }
+
+            if unsafe { npyffi::PyArray_Check(ob.py(), ob.as_ptr()) } == 1 {
+                let a = pyarray_cast::<f64>(ob)?;
+                return Ok(Arg::NumpyArray(a));
+            }
         }
 
-        if unsafe { npyffi::PyArray_Check(ob.py(), ob.as_ptr()) } == 1 {
-            let a = pyarray_cast::<f64>(ob)?;
-            return Ok(Arg::NumpyArray(a));
-        }
-
-        Err(PyTypeError::new_err(""))
+        Err(PyTypeError::new_err("must be float scalar or array-like"))
     }
 }
 
@@ -188,16 +199,22 @@ impl<'p> FromPyObject<'p> for Arg<'p, bool> {
             return Ok(Arg::Scalar(value));
         };
 
-        if let Ok(py_list) = ob.downcast::<PyList>() {
-            let arr = pylist_to_arrayd(py_list)?;
+        if ob.downcast::<PyList>().is_ok()
+            || ob.downcast::<PyTuple>().is_ok()
+            || ob.downcast::<PyIterator>().is_ok()
+            || ob.downcast::<PySequence>().is_ok()
+        {
+            let arr = pyiter_to_arrayd(ob.iter()?)?;
             return Ok(Arg::Array(CowArray::from(arr)));
         }
 
-        if let Ok(a) = ob.downcast::<numpy::PyArrayDyn<bool>>() {
-            return Ok(Arg::NumpyArray(a));
+        if is_numpy_available() {
+            if let Ok(a) = ob.downcast::<numpy::PyArrayDyn<bool>>() {
+                return Ok(Arg::NumpyArray(a));
+            }
         }
 
-        Err(PyTypeError::new_err(""))
+        Err(PyTypeError::new_err("must be bool scalar or array-like"))
     }
 }
 
@@ -245,27 +262,6 @@ impl<'p, T> From<&'p PyArrayDyn<T>> for Arg<'p, T> {
     }
 }
 
-// use numpy::npyffi::PY_ARRAY_API;
-// use std::ffi::c_int;
-
-// Python::with_gil(|py| {
-//     let dt = numpy::dtype::<f64>(py);
-
-//     let a_ptr = unsafe {
-//         PY_ARRAY_API.PyArray_FromAny(
-//             py,
-//             obj.as_ptr(),
-//             dt.as_dtype_ptr(),
-//             0 as c_int,
-//             0 as c_int,
-//             0 as c_int,
-//             std::ptr::null_mut(),
-//         )
-//     };
-
-//     let pa: Py<PyArrayDyn<f64>> = unsafe { Py::from_borrowed_ptr(py, a_ptr) };
-//     pa.as_ref(py).to_owned_array()
-
 #[cfg(test)]
 mod tests {
     use rstest::rstest;
@@ -282,12 +278,13 @@ mod tests {
         );
     }
 
-    // #[rstest]
-    // fn test_cow_array() {
-    //     Python::with_gil(|py| {
-    //         let pyarray = PyArray1::arange(py, 1i64, 5, 1).to_dyn();
-    //         let array = pyarray.to_cowarray_view_d().unwrap();
-    //         assert_eq!(array.sum(), 10.0);
-    //     });
-    // }
+    #[rstest]
+    fn test_flatten_pyiter() {
+        Python::with_gil(|py| {
+            let ob = py.eval("(range(i, i + 3) for i in range(3))", None, None).unwrap();
+            let array = pyiter_to_arrayd::<i64>(ob.iter().unwrap()).unwrap();
+            let expected = ndarray::array![[0, 1, 2], [1, 2, 3], [2, 3, 4]].into_dyn();
+            assert!(array == expected)
+        });
+    }
 }
