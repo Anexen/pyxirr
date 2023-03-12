@@ -1,6 +1,7 @@
+use numpy::{pyarray, PyArray2, PyArrayDyn};
 use rstest::rstest;
 
-use pyo3::{types::PyList, Python};
+use pyo3::{types::PyList, PyAny, Python};
 
 use pyxirr;
 
@@ -86,7 +87,7 @@ fn test_fv_vectorized() {
 }
 
 #[rstest]
-fn test_fv_vectorized_2() {
+fn test_fv_vectorized_multi() {
     Python::with_gil(|py| {
         let rates = [0.05 / 12.0, 0.06 / 12.0];
         let nper = [5 * 12, 10 * 12];
@@ -95,6 +96,38 @@ fn test_fv_vectorized_2() {
 
         assert_almost_eq!(result[0], 6928.944151934635);
         assert_almost_eq!(result[1], 16660.844190750646);
+    })
+}
+
+#[rstest]
+fn test_fv_vectorized_ndarray() {
+    // pyarray input -> pyarray output
+    // pylist input -> pylist output
+    Python::with_gil(|py| {
+        let rates = pyarray!(py, [[0.05 / 12.0, 0.06 / 12.0], [0.07 / 12.0, 0.0]]);
+
+        let actual: &PyArrayDyn<f64> =
+            pyxirr_call!(py, "fv", (rates.as_ref(), 10 * 12, -100, -100));
+
+        let expected =
+            pyarray![py, [15692.928894335748, 16569.874354049032], [17509.446881023265, 12100.0]];
+
+        actual.readonly().as_array().iter().zip(expected.readonly().as_array().iter()).for_each(
+            |(a, e)| {
+                assert_almost_eq!(a, e);
+            },
+        );
+
+        let actual: &PyList =
+            pyxirr_call!(py, "fv", (rates.to_vec().unwrap(), 10 * 12, -100, -100));
+
+        actual
+            .iter()
+            .map(|a| a.extract::<f64>().unwrap())
+            .zip(expected.readonly().as_array().iter())
+            .for_each(|(a, e)| {
+                assert_almost_eq!(a, e);
+            });
     })
 }
 

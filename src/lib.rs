@@ -35,11 +35,12 @@ macro_rules! dispatch_vectorized {
                     let ($($vars,)*) = ($($vars.to_arrayd(),)*);
                     let ($($vars,)*) = ($($vars.view(),)*);
                     let result = $py.allow_threads(move || $vec);
-                    if has_numpy_array {
-                        result.map(|r| Arg::NumpyArray(numpy::ToPyArray::to_pyarray(&r, $py))).map_err(|e| e.into())
+                    let result = if has_numpy_array {
+                        result.map(|r| Arg::from(numpy::ToPyArray::to_pyarray(&r, $py)))
                     } else {
-                        result.map(|r| Arg::from(r)).map_err(|e| e.into())
-                    }
+                        result.map(|r| Arg::from(r))
+                    };
+                    result.map_err(|e| e.into())
                 }
             }
         }

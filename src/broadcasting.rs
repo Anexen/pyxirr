@@ -209,8 +209,6 @@ impl IntoPy<PyObject> for Arg<'_, f64> {
 
 impl ToPyObject for Arg<'_, f64> {
     fn to_object(&self, py: Python<'_>) -> PyObject {
-        // broadcasting::arrayd_to_pylist(py, result.view()).map(|x| x.into())
-        // Ok(numpy::ToPyArray::to_pyarray(&result, py).to_object(py))
         match self {
             Arg::Scalar(s) => float_or_none(*s).into_py(py),
             Arg::Array(a) => match arrayd_to_pylist(py, a.view()) {
@@ -238,6 +236,12 @@ where
 impl<T> From<ArrayD<T>> for Arg<'_, T> {
     fn from(arr: ArrayD<T>) -> Self {
         Arg::Array(CowArray::from(arr))
+    }
+}
+
+impl<'p, T> From<&'p PyArrayDyn<T>> for Arg<'p, T> {
+    fn from(arr: &'p PyArrayDyn<T>) -> Self {
+        Arg::NumpyArray(arr)
     }
 }
 
