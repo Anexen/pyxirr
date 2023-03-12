@@ -2,7 +2,8 @@ use std::{error::Error, fmt};
 
 use crate::conversions::float_or_none;
 use ndarray::{ArrayD, ArrayViewD, Axis, CowArray, IxDyn};
-use pyo3::{exceptions::PyTypeError, prelude::*, types::PyList};
+use numpy::{npyffi, Element, PyArrayDyn, PY_ARRAY_API};
+use pyo3::{exceptions::PyTypeError, prelude::*, types::PyList, AsPyPointer};
 
 /// An error returned when the payments do not contain both negative and positive payments.
 #[derive(Debug)]
@@ -139,24 +140,39 @@ where
     }
 }
 
+pub fn pyarray_cast<'py, U: Element>(ob: &'py PyAny) -> PyResult<&'py PyArrayDyn<U>> {
+    let ptr = unsafe {
+        PY_ARRAY_API.PyArray_CastToType(
+            ob.py(),
+            ob.as_ptr() as _,
+            U::get_dtype(ob.py()).into_dtype_ptr(),
+            0,
+        )
+    };
+    if !ptr.is_null() {
+        Ok(unsafe { PyArrayDyn::<U>::from_owned_ptr(ob.py(), ptr) })
+    } else {
+        Err(PyErr::fetch(ob.py()))
+    }
+}
+
 impl<'p> FromPyObject<'p> for Arg<'p, f64> {
-    fn extract(obj: &'p PyAny) -> PyResult<Self> {
-        if let Ok(value) = obj.extract::<f64>() {
+    fn extract(ob: &'p PyAny) -> PyResult<Self> {
+        if let Ok(value) = ob.extract::<f64>() {
             return Ok(Arg::Scalar(value));
         };
 
-        if let Ok(py_list) = obj.downcast::<PyList>() {
+        if let Ok(py_list) = ob.downcast::<PyList>() {
             let arr = pylist_to_arrayd(py_list)?;
             return Ok(Arg::Array(CowArray::from(arr)));
         }
-
-        if let Ok(a) = obj.downcast::<numpy::PyArrayDyn<i64>>() {
-            let arr = a.cast::<f64>(false)?.to_owned_array();
+        if let Ok(a) = ob.downcast::<numpy::PyArrayDyn<f64>>() {
+            let arr = unsafe { a.as_array() };
             return Ok(Arg::Array(CowArray::from(arr)));
         }
 
-        if let Ok(a) = obj.downcast::<numpy::PyArrayDyn<f64>>() {
-            let arr = unsafe { a.as_array() };
+        if unsafe { npyffi::PyArray_Check(ob.py(), ob.as_ptr()) } == 1 {
+            let arr = pyarray_cast::<f64>(ob)?.to_owned_array();
             return Ok(Arg::Array(CowArray::from(arr)));
         }
 
@@ -165,17 +181,17 @@ impl<'p> FromPyObject<'p> for Arg<'p, f64> {
 }
 
 impl<'p> FromPyObject<'p> for Arg<'p, bool> {
-    fn extract(obj: &'p PyAny) -> PyResult<Self> {
-        if let Ok(value) = obj.extract::<bool>() {
+    fn extract(ob: &'p PyAny) -> PyResult<Self> {
+        if let Ok(value) = ob.extract::<bool>() {
             return Ok(Arg::Scalar(value));
         };
 
-        if let Ok(py_list) = obj.downcast::<PyList>() {
+        if let Ok(py_list) = ob.downcast::<PyList>() {
             let arr = pylist_to_arrayd(py_list)?;
             return Ok(Arg::Array(CowArray::from(arr)));
         }
 
-        if let Ok(a) = obj.downcast::<numpy::PyArrayDyn<bool>>() {
+        if let Ok(a) = ob.downcast::<numpy::PyArrayDyn<bool>>() {
             let arr = unsafe { a.as_array() };
             return Ok(Arg::Array(CowArray::from(arr)));
         }
@@ -242,82 +258,6 @@ impl<T> From<ArrayD<T>> for Arg<'_, T> {
 
 //     let pa: Py<PyArrayDyn<f64>> = unsafe { Py::from_borrowed_ptr(py, a_ptr) };
 //     pa.as_ref(py).to_owned_array()
-
-// impl<'p> Arg<'p> {
-//     pub fn try_to_arrayd(&'p self) -> PyResult<CowArray<'p, f64, IxDyn>> {
-//         match self {
-//             Arg::Scalar(value) => {
-//                 let arr = ndarray::arr1(&[*value]).into_dyn();
-//                 Ok(CowArray::from(arr))
-//             }
-//             Arg::Any(obj) => {
-//                 if let Ok(py_list) = obj.downcast::<PyList>() {
-//                     return pylist_to_arrayd(py_list).map(CowArray::from);
-//                 }
-
-//                 // if !numpy::get_array_module().is_ok() {
-//                 //     unimplemented!();
-//                 // }
-
-//                 if let Ok(a) = obj.downcast::<numpy::PyArrayDyn<i64>>() {
-//                     return a.cast::<f64>(false).map(|p| CowArray::from(p.to_owned_array()));
-//                 }
-
-//                 if let Ok(a) = obj.downcast::<numpy::PyArrayDyn<f64>>() {
-//                     return Ok(CowArray::from(unsafe { a.as_array() }));
-//                 }
-
-//                 Err(PyNotImplementedError::new_err(""))
-//             }
-//         }
-//     }
-// }
-
-// trait ToCowArrayViewD {
-//     fn to_cowarray_view_d<'p>(&'p self) -> Option<CowArray<'p, f64, IxDyn>>;
-// }
-
-// impl ToCowArrayViewD for f64 {
-//     fn to_cowarray_view_d<'p>(&'p self) -> Option<CowArray<'p, f64, IxDyn>> {
-//         let array = ndarray::arr1(&[*self]).into_dyn();
-//         Some(CowArray::from(array))
-//     }
-// }
-
-// impl ToCowArrayViewD for &PyList {
-//     fn to_cowarray_view_d<'p>(&'p self) -> Option<CowArray<'p, f64, IxDyn>> {
-//         pylist_to_arrayd(self).ok().map(CowArray::from)
-//     }
-// }
-
-// impl<'p> ToCowArrayViewD<'p> for &'p PyArrayDyn<i64> {
-//     fn to_cowarray_view_d(&'p self) -> Option<CowArray<'p, f64, IxDyn>> {
-//         let py_array_f64 = self.cast::<f64>(false).ok()?;
-//         let array = unsafe { py_array_f64.as_array().into_dyn() };
-//         Some(CowArray::from(array))
-//     }
-// }
-
-// impl<'p> ToCowArrayViewD<'p> for &'p PyArrayDyn<f64> {
-//     fn to_cowarray_view_d(&'p self) -> Option<CowArray<'p, f64, IxDyn>> {
-//         let array = unsafe { self.as_array().into_dyn() };
-//         Some(CowArray::from(array))
-//     }
-// }
-
-// impl ToCowArrayViewD for &PyAny {
-//     fn to_cowarray_view_d<'p>(&'p self) -> Option<CowArray<'p, f64, IxDyn>> {
-//         // if let Ok(value) = self.extract::<f64>() {
-//         //     return value.to_cowarray_view_d();
-//         // };
-
-//         if let Ok(value) = self.downcast::<PyList>() {
-//             return value.to_cowarray_view_d();
-//         };
-
-//         None
-//     }
-// }
 
 #[cfg(test)]
 mod tests {
