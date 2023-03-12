@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.9.0] - 2023-03-12
+
+- Vectorized versions of numpy-financial functions
+- Breaking change: fixed misspelling in keyword-only argument (pmt_at_beginning)
+
 ## [0.8.1] - 2023-02-21
 
 - Fix type annotations ([#35](https://github.com/Anexen/pyxirr/issues/35))
@@ -105,4 +110,3 @@
 - Support row-oriented input for xirr
 - Add XNPV
 - Faster XIRR implementation
-
