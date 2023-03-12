@@ -134,7 +134,12 @@ rates = np.array([0.05, 0.06, 0.07])/12
 pyxirr.fv(rates, 10*12, -100, -100)
 
 # feed any iterable!
-pyxirr.fv(0.05/12, 10*12, range(-100, -1000, 100), -100)
+pyxirr.fv(
+    np.linspace(0.01, 0.2, 10),
+    (x + 1 for x in range(10)),
+    range(-100, -1100, -100),
+    tuple(range(-100, -200, -10))
+)
 ```
 
 # API reference

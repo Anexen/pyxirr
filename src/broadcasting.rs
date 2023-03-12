@@ -4,7 +4,7 @@ use crate::conversions::float_or_none;
 use ndarray::{ArrayD, ArrayViewD, Axis, CowArray, IxDyn};
 use numpy::{npyffi, Element, PyArrayDyn, PY_ARRAY_API};
 use pyo3::{
-    exceptions::PyTypeError,
+    exceptions::{PyTypeError, PyValueError},
     prelude::*,
     types::{PyIterator, PyList, PySequence, PyTuple},
     AsPyPointer,
@@ -77,8 +77,8 @@ where
     let mut dims = Vec::new();
     let mut flat_list = Vec::new();
     flatten_pyiter(pyiter, &mut dims, &mut flat_list, 0)?;
-    let arr = ArrayD::from_shape_vec(IxDyn(&dims), flat_list).unwrap();
-    Ok(arr)
+    let arr = ArrayD::from_shape_vec(IxDyn(&dims), flat_list);
+    arr.map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
 pub fn arrayd_to_pylist<'a>(py: Python<'a>, array: ArrayViewD<'_, f64>) -> PyResult<&'a PyList> {
