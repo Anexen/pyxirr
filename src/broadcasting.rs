@@ -129,18 +129,19 @@ where
 pub enum Arg<'p, T> {
     Scalar(T),
     Array(CowArray<'p, T, IxDyn>),
+    NumpyArray(&'p PyArrayDyn<T>),
 }
 
 impl<'p, T> Arg<'p, T>
 where
-    T: Clone,
+    T: Clone + numpy::Element,
 {
     pub fn to_arrayd(self) -> CowArray<'p, T, IxDyn> {
         self.into()
     }
 }
 
-pub fn pyarray_cast<'py, U: Element>(ob: &'py PyAny) -> PyResult<&'py PyArrayDyn<U>> {
+pub fn pyarray_cast<'p, U: Element>(ob: &'p PyAny) -> PyResult<&'p PyArrayDyn<U>> {
     let ptr = unsafe {
         PY_ARRAY_API.PyArray_CastToType(
             ob.py(),
@@ -167,13 +168,14 @@ impl<'p> FromPyObject<'p> for Arg<'p, f64> {
             return Ok(Arg::Array(CowArray::from(arr)));
         }
         if let Ok(a) = ob.downcast::<numpy::PyArrayDyn<f64>>() {
-            let arr = unsafe { a.as_array() };
-            return Ok(Arg::Array(CowArray::from(arr)));
+            return Ok(Arg::NumpyArray(a));
+            // let arr = unsafe { a.as_array() };
+            // return Ok(Arg::Array(CowArray::from(arr)));
         }
 
         if unsafe { npyffi::PyArray_Check(ob.py(), ob.as_ptr()) } == 1 {
-            let arr = pyarray_cast::<f64>(ob)?.to_owned_array();
-            return Ok(Arg::Array(CowArray::from(arr)));
+            let a = pyarray_cast::<f64>(ob)?;
+            return Ok(Arg::NumpyArray(a));
         }
 
         Err(PyTypeError::new_err(""))
@@ -192,8 +194,7 @@ impl<'p> FromPyObject<'p> for Arg<'p, bool> {
         }
 
         if let Ok(a) = ob.downcast::<numpy::PyArrayDyn<bool>>() {
-            let arr = unsafe { a.as_array() };
-            return Ok(Arg::Array(CowArray::from(arr)));
+            return Ok(Arg::NumpyArray(a));
         }
 
         Err(PyTypeError::new_err(""))
@@ -212,22 +213,24 @@ impl ToPyObject for Arg<'_, f64> {
         // Ok(numpy::ToPyArray::to_pyarray(&result, py).to_object(py))
         match self {
             Arg::Scalar(s) => float_or_none(*s).into_py(py),
-            Arg::Array(s) => match arrayd_to_pylist(py, s.view()) {
+            Arg::Array(a) => match arrayd_to_pylist(py, a.view()) {
                 Ok(py_list) => py_list.into_py(py),
                 Err(err) => err.into_py(py),
             },
+            Arg::NumpyArray(a) => a.into_py(py),
         }
     }
 }
 
 impl<'p, T> From<Arg<'p, T>> for CowArray<'p, T, IxDyn>
 where
-    T: Clone,
+    T: Clone + numpy::Element,
 {
     fn from(arg: Arg<'p, T>) -> Self {
         match arg {
             Arg::Scalar(value) => CowArray::from(ndarray::arr1(&[value]).into_dyn()),
             Arg::Array(a) => a,
+            Arg::NumpyArray(a) => CowArray::from(unsafe { a.as_array() }),
         }
     }
 }

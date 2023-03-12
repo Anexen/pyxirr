@@ -31,10 +31,15 @@ macro_rules! dispatch_vectorized {
                     Ok(Arg::Scalar(result))
                 },
                 ($($vars,)*) => {
+                    let has_numpy_array = $(matches!($vars, Arg::NumpyArray(_)) || )* false;
                     let ($($vars,)*) = ($($vars.to_arrayd(),)*);
                     let ($($vars,)*) = ($($vars.view(),)*);
                     let result = $py.allow_threads(move || $vec);
-                    result.map(|r| Arg::from(r)).map_err(|e| e.into())
+                    if has_numpy_array {
+                        result.map(|r| Arg::NumpyArray(numpy::ToPyArray::to_pyarray(&r, $py))).map_err(|e| e.into())
+                    } else {
+                        result.map(|r| Arg::from(r)).map_err(|e| e.into())
+                    }
                 }
             }
         }
@@ -349,20 +354,11 @@ fn days_between(d1: core::DateLike, d2: core::DateLike, day_count: PyDayCount) -
     Ok(core::days_between(&d1, &d2, day_count.try_into()?))
 }
 
-#[pyfunction]
-fn demo(py: Python, value: Arg<bool>) -> PyObject {
-    match value {
-        Arg::Scalar(value) => (value as u8 as f64).into_py(py),
-        Arg::Array(value) => numpy::ToPyArray::to_pyarray(&value, py).into_py(py),
-    }
-}
-
 #[pymodule]
 pub fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<core::DayCount>()?;
     m.add_function(wrap_pyfunction!(year_fraction, m)?)?;
     m.add_function(wrap_pyfunction!(days_between, m)?)?;
-    m.add_function(wrap_pyfunction!(demo, m)?)?;
 
     m.add_function(wrap_pyfunction!(pmt, m)?)?;
     m.add_function(wrap_pyfunction!(ipmt, m)?)?;
