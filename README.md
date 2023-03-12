@@ -15,6 +15,7 @@ Features:
 - supports different day count conventions (e.g. ACT/360, 30E/360, etc.)
 - works with different input data types (iterators, numpy arrays, pandas DataFrames)
 - no external dependencies
+- type annotations
 - blazingly fast
 
 # Installation
@@ -126,10 +127,12 @@ array_like, performs broadcasting and returns values for each element.
 ```python
 import pyxirr
 
+# feed list
 pyxirr.fv([0.05/12, 0.06/12], 10*12, -100, -100)
 pyxirr.fv([0.05/12, 0.06/12], [10*12, 9*12], [-100, -200], -100)
 
-# import numpy as np
+# feed numpy array
+import numpy as np
 rates = np.array([0.05, 0.06, 0.07])/12
 pyxirr.fv(rates, 10*12, -100, -100)
 
@@ -140,6 +143,10 @@ pyxirr.fv(
     range(-100, -1100, -100),
     tuple(range(-100, -200, -10))
 )
+
+# 2d, 3d, 4d, and more!
+rates = [[[[[[0.01], [0.02]]]]]]
+pyxirr.fv(rates, 10*12, -100, -100)
 ```
 
 # API reference
