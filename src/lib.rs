@@ -1,11 +1,14 @@
-use conversions::PyDayCount;
+use broadcasting::Arg;
+use conversions::{fallible_float_or_none, float_or_none, PyDayCount};
 use pyo3::prelude::*;
 use pyo3::{create_exception, exceptions, wrap_pyfunction};
 
+mod broadcasting;
 mod conversions;
 mod core;
 
 create_exception!(pyxirr, InvalidPaymentsError, exceptions::PyException);
+create_exception!(pyxirr, BroadcastingError, exceptions::PyException);
 
 impl From<core::InvalidPaymentsError> for PyErr {
     fn from(value: core::InvalidPaymentsError) -> Self {
@@ -13,28 +16,35 @@ impl From<core::InvalidPaymentsError> for PyErr {
     }
 }
 
-fn float_or_none(result: f64) -> Option<f64> {
-    if result.is_nan() {
-        None
-    } else {
-        Some(result)
+impl From<broadcasting::BroadcastingError> for PyErr {
+    fn from(value: broadcasting::BroadcastingError) -> Self {
+        BroadcastingError::new_err(value.to_string())
     }
 }
 
-fn fallible_float_or_none<T>(result: Result<f64, T>, silent: bool) -> PyResult<Option<f64>>
-where
-    pyo3::PyErr: From<T>,
-{
-    match result {
-        Err(e) => {
-            if silent {
-                Ok(None)
-            } else {
-                Err(e.into())
+macro_rules! dispatch_vectorized {
+    ($py:ident, ($($vars:ident),*), $non_vec:expr, $vec:expr ) => {
+        {
+            match ($($vars,)*) {
+                ($(Arg::Scalar($vars),)*) => {
+                    let result = $py.allow_threads(move || $non_vec);
+                    Ok(Arg::Scalar(result))
+                },
+                ($($vars,)*) => {
+                    let has_numpy_array = $(matches!($vars, Arg::NumpyArray(_)) || )* false;
+                    let ($($vars,)*) = ($($vars.to_arrayd(),)*);
+                    let ($($vars,)*) = ($($vars.view(),)*);
+                    let result = $py.allow_threads(move || $vec);
+                    let result = if has_numpy_array {
+                        result.map(|r| Arg::from(numpy::ToPyArray::to_pyarray(&r, $py)))
+                    } else {
+                        result.map(|r| Arg::from(r))
+                    };
+                    result.map_err(|e| e.into())
+                }
             }
         }
-        Ok(v) => Ok(float_or_none(v)),
-    }
+    };
 }
 
 /// Internal Rate of Return for a non-periodic cash flows.
@@ -120,17 +130,22 @@ fn npv(
 
 /// Future Value.
 #[pyfunction]
-#[pyo3(signature = (rate, nper, pmt, pv, *, pmt_at_begining=false))]
-#[pyo3(text_signature = "(rate, nper, pmt, pv, *, pmt_at_begining=False)")]
-fn fv(
-    py: Python,
-    rate: f64,
-    nper: f64,
-    pmt: f64,
-    pv: f64,
-    pmt_at_begining: Option<bool>,
-) -> Option<f64> {
-    py.allow_threads(move || float_or_none(core::fv(rate, nper, pmt, pv, pmt_at_begining)))
+#[pyo3(signature = (rate, nper, pmt, pv, *, pmt_at_beginning=Arg::Scalar(false)))]
+#[pyo3(text_signature = "(rate, nper, pmt, pv, *, pmt_at_beginning=False)")]
+fn fv<'a>(
+    py: Python<'a>,
+    rate: Arg<'a, f64>,
+    nper: Arg<'a, f64>,
+    pmt: Arg<'a, f64>,
+    pv: Arg<'a, f64>,
+    pmt_at_beginning: Arg<'a, bool>,
+) -> PyResult<Arg<'a, f64>> {
+    dispatch_vectorized!(
+        py,
+        (rate, nper, pmt, pv, pmt_at_beginning),
+        core::fv(rate, nper, pmt, pv, pmt_at_beginning),
+        core::fv_vec(&rate, &nper, &pmt, &pv, &pmt_at_beginning)
+    )
 }
 
 /// Net Future Value.
@@ -191,17 +206,22 @@ fn xnfv(
 
 /// Present Value
 #[pyfunction]
-#[pyo3(signature = (rate, nper, pmt, fv=0.0, *, pmt_at_begining=false))]
-#[pyo3(text_signature = "(rate, nper, pmt, fv=0, *, pmt_at_begining=False)")]
-fn pv(
-    py: Python,
-    rate: f64,
-    nper: f64,
-    pmt: f64,
-    fv: Option<f64>,
-    pmt_at_begining: Option<bool>,
-) -> Option<f64> {
-    py.allow_threads(move || float_or_none(core::pv(rate, nper, pmt, fv, pmt_at_begining)))
+#[pyo3(signature = (rate, nper, pmt, fv=Arg::Scalar(0.0), *, pmt_at_beginning=Arg::Scalar(false)))]
+#[pyo3(text_signature = "(rate, nper, pmt, fv=0, *, pmt_at_beginning=False)")]
+fn pv<'a>(
+    py: Python<'a>,
+    rate: Arg<'a, f64>,
+    nper: Arg<'a, f64>,
+    pmt: Arg<'a, f64>,
+    fv: Arg<'a, f64>,
+    pmt_at_beginning: Arg<'a, bool>,
+) -> PyResult<Arg<'a, f64>> {
+    dispatch_vectorized!(
+        py,
+        (rate, nper, pmt, fv, pmt_at_beginning),
+        core::pv(rate, nper, pmt, fv, pmt_at_beginning),
+        core::pv_vec(&rate, &nper, &pmt, &fv, &pmt_at_beginning)
+    )
 }
 
 /// Modified Internal Rate of Return.
@@ -224,79 +244,105 @@ fn mirr(
 
 /// Compute the payment against loan principal plus interest.
 #[pyfunction]
-#[pyo3(signature = (rate, nper, pv, fv=0.0, *, pmt_at_begining=false))]
-#[pyo3(text_signature = "(rate, nper, pv, fv=0, *, pmt_at_begining=False)")]
-fn pmt(
-    py: Python,
-    rate: f64,
-    nper: f64,
-    pv: f64,
-    fv: Option<f64>,
-    pmt_at_begining: Option<bool>,
-) -> Option<f64> {
-    py.allow_threads(move || float_or_none(core::pmt(rate, nper, pv, fv, pmt_at_begining)))
+#[pyo3(signature = (rate, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_beginning=Arg::Scalar(false)))]
+#[pyo3(text_signature = "(rate, nper, pv, fv=0, *, pmt_at_beginning=False)")]
+fn pmt<'a>(
+    py: Python<'a>,
+    rate: Arg<'a, f64>,
+    nper: Arg<'a, f64>,
+    pv: Arg<'a, f64>,
+    fv: Arg<'a, f64>,
+    pmt_at_beginning: Arg<'a, bool>,
+) -> PyResult<Arg<'a, f64>> {
+    dispatch_vectorized!(
+        py,
+        (rate, nper, pv, fv, pmt_at_beginning),
+        core::pmt(rate, nper, pv, fv, pmt_at_beginning),
+        core::pmt_vec(&rate, &nper, &pv, &fv, &pmt_at_beginning)
+    )
 }
 
 /// Compute the interest portion of a payment.
 #[pyfunction]
-#[pyo3(signature = (rate, per, nper, pv, fv=0.0, *, pmt_at_begining=false))]
-#[pyo3(text_signature = "(rate, per, nper, pv, fv=0, *, pmt_at_begining=False)")]
-fn ipmt(
-    rate: f64,
-    per: f64,
-    nper: f64,
-    pv: f64,
-    fv: Option<f64>,
-    pmt_at_begining: Option<bool>,
-) -> Option<f64> {
-    float_or_none(core::ipmt(rate, per, nper, pv, fv, pmt_at_begining))
+#[pyo3(signature = (rate, per, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_beginning=Arg::Scalar(false)))]
+#[pyo3(text_signature = "(rate, per, nper, pv, fv=0, *, pmt_at_beginning=False)")]
+fn ipmt<'a>(
+    py: Python<'a>,
+    rate: Arg<'a, f64>,
+    per: Arg<'a, f64>,
+    nper: Arg<'a, f64>,
+    pv: Arg<'a, f64>,
+    fv: Arg<'a, f64>,
+    pmt_at_beginning: Arg<'a, bool>,
+) -> PyResult<Arg<'a, f64>> {
+    dispatch_vectorized!(
+        py,
+        (rate, per, nper, pv, fv, pmt_at_beginning),
+        core::ipmt(rate, per, nper, pv, fv, pmt_at_beginning),
+        core::ipmt_vec(&rate, &per, &nper, &pv, &fv, &pmt_at_beginning)
+    )
 }
 
 /// Compute the payment against loan principal.
 #[pyfunction]
-#[pyo3(signature = (rate, per, nper, pv, fv=0.0, *, pmt_at_begining=false))]
-#[pyo3(text_signature = "(rate, per, nper, pv, fv=0, *, pmt_at_begining=False)")]
-fn ppmt(
-    py: Python,
-    rate: f64,
-    per: f64,
-    nper: f64,
-    pv: f64,
-    fv: Option<f64>,
-    pmt_at_begining: Option<bool>,
-) -> Option<f64> {
-    py.allow_threads(move || float_or_none(core::ppmt(rate, per, nper, pv, fv, pmt_at_begining)))
+#[pyo3(signature = (rate, per, nper, pv, fv=Arg::Scalar(0.0), *, pmt_at_beginning=Arg::Scalar(false)))]
+#[pyo3(text_signature = "(rate, per, nper, pv, fv=0, *, pmt_at_beginning=False)")]
+fn ppmt<'a>(
+    py: Python<'a>,
+    rate: Arg<'a, f64>,
+    per: Arg<'a, f64>,
+    nper: Arg<'a, f64>,
+    pv: Arg<'a, f64>,
+    fv: Arg<'a, f64>,
+    pmt_at_beginning: Arg<'a, bool>,
+) -> PyResult<Arg<'a, f64>> {
+    dispatch_vectorized!(
+        py,
+        (rate, per, nper, pv, fv, pmt_at_beginning),
+        core::ppmt(rate, per, nper, pv, fv, pmt_at_beginning),
+        core::ppmt_vec(&rate, &per, &nper, &pv, &fv, &pmt_at_beginning)
+    )
 }
 
 /// Compute the number of periodic payments.
 #[pyfunction]
-#[pyo3(signature = (rate, pmt, pv, fv=0.0, *, pmt_at_begining=false))]
-#[pyo3(text_signature = "(rate, pmt, pv, fv=0, *, pmt_at_begining=False)")]
-fn nper(
-    py: Python,
-    rate: f64,
-    pmt: f64,
-    pv: f64,
-    fv: Option<f64>,
-    pmt_at_begining: Option<bool>,
-) -> Option<f64> {
-    py.allow_threads(move || float_or_none(core::nper(rate, pmt, pv, fv, pmt_at_begining)))
+#[pyo3(signature = (rate, pmt, pv, fv=Arg::Scalar(0.0), *, pmt_at_beginning=Arg::Scalar(false)))]
+#[pyo3(text_signature = "(rate, pmt, pv, fv=0, *, pmt_at_beginning=False)")]
+fn nper<'a>(
+    py: Python<'a>,
+    rate: Arg<'a, f64>,
+    pmt: Arg<'a, f64>,
+    pv: Arg<'a, f64>,
+    fv: Arg<'a, f64>,
+    pmt_at_beginning: Arg<'a, bool>,
+) -> PyResult<Arg<'a, f64>> {
+    dispatch_vectorized!(
+        py,
+        (rate, pmt, pv, fv, pmt_at_beginning),
+        core::nper(rate, pmt, pv, fv, pmt_at_beginning),
+        core::nper_vec(&rate, &pmt, &pv, &fv, &pmt_at_beginning)
+    )
 }
 
 /// Compute the number of periodic payments.
 #[pyfunction]
-#[pyo3(signature = (nper, pmt, pv, fv=0.0, *, pmt_at_begining=false, guess=0.1))]
-#[pyo3(text_signature = "(nper, pmt, pv, fv=0, *, pmt_at_begining=False, guess=0.1)")]
-fn rate(
-    py: Python,
-    nper: f64,
-    pmt: f64,
-    pv: f64,
-    fv: Option<f64>,
-    pmt_at_begining: Option<bool>,
+#[pyo3(signature = (nper, pmt, pv, fv=Arg::Scalar(0.0), *, pmt_at_beginning=Arg::Scalar(false), guess=0.1))]
+#[pyo3(text_signature = "(nper, pmt, pv, fv=0, *, pmt_at_beginning=False, guess=0.1)")]
+fn rate<'a>(
+    py: Python<'a>,
+    nper: Arg<'a, f64>,
+    pmt: Arg<'a, f64>,
+    pv: Arg<'a, f64>,
+    fv: Arg<'a, f64>,
+    pmt_at_beginning: Arg<'a, bool>,
     guess: Option<f64>,
-) -> Option<f64> {
-    py.allow_threads(move || float_or_none(core::rate(nper, pmt, pv, fv, pmt_at_begining, guess)))
+) -> PyResult<Arg<'a, f64>> {
+    dispatch_vectorized!(
+        py,
+        (nper, pmt, pv, fv, pmt_at_beginning),
+        core::rate(nper, pmt, pv, fv, pmt_at_beginning, guess),
+        core::rate_vec(&nper, &pmt, &pv, &fv, &pmt_at_beginning, guess)
+    )
 }
 
 #[pyfunction]
@@ -332,6 +378,7 @@ pub fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(xirr, m)?)?;
 
     m.add("InvalidPaymentsError", py.get_type::<InvalidPaymentsError>())?;
+    m.add("BroadcastingError", py.get_type::<BroadcastingError>())?;
 
     Ok(())
 }

@@ -1,3 +1,4 @@
+use numpy::{pyarray, PyArrayDyn};
 use rstest::rstest;
 
 use pyo3::{types::PyList, Python};
@@ -40,13 +41,13 @@ fn test_fv_pmt_at_end() {
 }
 
 #[rstest]
-fn test_fv_pmt_at_begining() {
+fn test_fv_pmt_at_beginning() {
     Python::with_gil(|py| {
         let result: f64 = pyxirr_call!(
             py,
             "fv",
             (0.05 / 12.0, 10 * 12, -100, -100),
-            py_dict!(py, "pmt_at_begining" => true)
+            py_dict!(py, "pmt_at_beginning" => true)
         );
         assert_almost_eq!(result, 15757.6298441047);
 
@@ -72,6 +73,80 @@ fn test_fv_zero_rate() {
     })
 }
 
+#[rstest]
+fn test_fv_vectorized() {
+    Python::with_gil(|py| {
+        let rates = [[0.05 / 12.0, 0.06 / 12.0], [0.07 / 12.0, 0.0]];
+        let result: Vec<Vec<f64>> = pyxirr_call!(py, "fv", (rates, 10 * 12, -100, -100));
+
+        assert_almost_eq!(result[0][0], 15692.928894335748);
+        assert_almost_eq!(result[0][1], 16569.874354049032);
+        assert_almost_eq!(result[1][0], 17509.446881023265);
+        assert_almost_eq!(result[1][1], 12100.0);
+    })
+}
+
+#[rstest]
+fn test_fv_vectorized_multi() {
+    Python::with_gil(|py| {
+        let rates = [0.05 / 12.0, 0.06 / 12.0, 0.07 / 12.0];
+        let nper = [5 * 12, 10 * 12, 12 * 12];
+        let pv = [-100, -150, -200];
+        let kwargs = py_dict!(py, "pmt_at_beginning" => [false, false, true]);
+
+        let result: Vec<f64> = pyxirr_call!(py, "fv", (rates, nper, -100, pv), kwargs);
+
+        assert_almost_eq!(result[0], 6928.944151934635);
+        assert_almost_eq!(result[1], 16660.844190750646);
+        assert_almost_eq!(result[2], 23062.71469294612);
+    })
+}
+
+#[rstest]
+fn test_fv_vectorized_iterable() {
+    Python::with_gil(|py| {
+        let pmt = py.eval("range(-100, -400, -100)", None, None).unwrap();
+        let actual: Vec<f64> = pyxirr_call!(py, "fv", (0.05 / 12.0, 10 * 12, pmt, -100));
+        let expected = vec![15692.92889433575, 31221.15683890247, 46749.38478346919];
+        for i in 0..actual.len() {
+            assert_almost_eq!(actual[i], expected[i]);
+        }
+    });
+}
+
+#[rstest]
+#[cfg_attr(feature = "nonumpy", ignore)]
+fn test_fv_vectorized_ndarray() {
+    // pyarray input -> pyarray output
+    // pylist input -> pylist output
+    Python::with_gil(|py| {
+        let rates = pyarray!(py, [[0.05 / 12.0, 0.06 / 12.0], [0.07 / 12.0, 0.0]]);
+
+        let actual: &PyArrayDyn<f64> =
+            pyxirr_call!(py, "fv", (rates.as_ref(), 10 * 12, -100, -100));
+
+        let expected =
+            pyarray![py, [15692.928894335748, 16569.874354049032], [17509.446881023265, 12100.0]];
+
+        actual.readonly().as_array().iter().zip(expected.readonly().as_array().iter()).for_each(
+            |(a, e)| {
+                assert_almost_eq!(a, e);
+            },
+        );
+
+        let actual: &PyList =
+            pyxirr_call!(py, "fv", (rates.to_vec().unwrap(), 10 * 12, -100, -100));
+
+        actual
+            .iter()
+            .map(|a| a.extract::<f64>().unwrap())
+            .zip(expected.readonly().as_array().iter())
+            .for_each(|(a, e)| {
+                assert_almost_eq!(a, e);
+            });
+    })
+}
+
 // ------------ PV ----------------
 
 #[rstest]
@@ -89,13 +164,13 @@ fn test_pv_pmt_at_end() {
 }
 
 #[rstest]
-fn test_pv_pmt_at_begining() {
+fn test_pv_pmt_at_beginning() {
     Python::with_gil(|py| {
         let result: f64 = pyxirr_call!(
             py,
             "pv",
             (0.05 / 12.0, 10 * 12, -100, 15692.93),
-            py_dict!(py, "pmt_at_begining" => true)
+            py_dict!(py, "pmt_at_beginning" => true)
         );
         assert_almost_eq!(result, -60.71677534615);
 
@@ -132,6 +207,19 @@ fn test_pv_default_pv() {
             let npf_result = npf_pv.call1((0.05 / 12.0, 10.0 * 12.0, -100.0));
             assert_almost_eq!(result, npf_result.unwrap().extract::<f64>().unwrap());
         }
+    })
+}
+
+#[rstest]
+fn test_pv_vectorized() {
+    Python::with_gil(|py| {
+        let rates = [[0.05 / 12.0, 0.06 / 12.0], [0.07 / 12.0, 0.0]];
+        let result: Vec<Vec<f64>> = pyxirr_call!(py, "pv", (rates, 10 * 12, -100));
+
+        assert_almost_eq!(result[0][0], 9428.135032823473);
+        assert_almost_eq!(result[0][1], 9007.345332716726);
+        assert_almost_eq!(result[1][0], 8612.635414137785);
+        assert_almost_eq!(result[1][1], 12000.0);
     })
 }
 
@@ -194,13 +282,13 @@ fn test_pmt_pmt_at_end() {
 }
 
 #[rstest]
-fn test_pmt_pmt_at_begining() {
+fn test_pmt_pmt_at_beginning() {
     Python::with_gil(|py| {
         let pmt: f64 = pyxirr_call!(
             py,
             "pmt",
             (INTEREST_RATE, PERIODS, PV),
-            py_dict!(py, "pmt_at_begining" => true)
+            py_dict!(py, "pmt_at_beginning" => true)
         );
         assert_future_value!(INTEREST_RATE, PERIODS, pmt, PV, None, Some(true));
         if cfg!(not(feature = "nonumpy")) {
@@ -238,6 +326,18 @@ fn test_pmt_zero_rate() {
     })
 }
 
+#[rstest]
+fn test_pmt_vec() {
+    Python::with_gil(|py| {
+        let rates = [[0.075 / 12., 0.01 / 12.], [0.0, 0.5 / 12.]];
+        let result: Vec<Vec<f64>> = pyxirr_call!(py, "pmt", (rates, 12 * 15, 200_000));
+        assert_almost_eq!(result[0][0], -1854.0247200054619);
+        assert_almost_eq!(result[0][1], -1196.9890290366611);
+        assert_almost_eq!(result[1][0], -1111.111111111111);
+        assert_almost_eq!(result[1][1], -8338.702667524864);
+    })
+}
+
 // ------------ IPMT ----------------
 
 #[rstest]
@@ -255,13 +355,13 @@ fn test_ipmt_works() {
 }
 
 #[rstest]
-fn test_ipmt_pmt_at_begining() {
+fn test_ipmt_pmt_at_beginning() {
     Python::with_gil(|py| {
         let result: f64 = pyxirr_call!(
             py,
             "ipmt",
             (INTEREST_RATE, 2.0, PERIODS, PAYMENT),
-            py_dict!(py, "pmt_at_begining" => true)
+            py_dict!(py, "pmt_at_beginning" => true)
         );
         assert_almost_eq!(result, 2191.6557738917);
 
@@ -280,7 +380,7 @@ fn test_ipmt_non_zero_fv() {
             py,
             "ipmt",
             (INTEREST_RATE, 2.0, PERIODS, PAYMENT, FV),
-            py_dict!(py, "pmt_at_begining" => true)
+            py_dict!(py, "pmt_at_beginning" => true)
         );
         assert_almost_eq!(result, 2608.108309425);
 
@@ -311,9 +411,41 @@ fn test_ipmt_zero_period() {
 #[rstest]
 fn test_ipmt_per_greater_than_nper() {
     Python::with_gil(|py| {
-        let result: f64 =
+        let result: Option<f64> =
             pyxirr_call!(py, "ipmt", (INTEREST_RATE, PERIODS + 2.0, PERIODS, PAYMENT));
-        assert_almost_eq!(result, -323.7614374136);
+        assert_eq!(result, None);
+    })
+}
+
+#[rstest]
+fn test_ipmt_vec() {
+    Python::with_gil(|py| {
+        let per = (0..=13).collect::<Vec<_>>();
+        let n = per.len();
+        let result: Vec<Option<f64>> = pyxirr_call!(py, "ipmt", (0.0824 / 12., per, 12, 25_000));
+        let expected = vec![
+            f64::NAN,
+            -171.66666666666666,
+            -157.89337457350777,
+            -144.0255058746426,
+            -130.06241114404526,
+            -116.00343649629737,
+            -101.84792355596869,
+            -87.59520942678299,
+            -73.2446266605768,
+            -58.79550322604296,
+            -44.24716247725825,
+            -29.598923121998908,
+            -14.850099189833006,
+            f64::NAN,
+        ];
+
+        for i in 0..n {
+            match result[i] {
+                Some(v) => assert_almost_eq!(v, expected[i]),
+                None => assert!(expected[i].is_nan()),
+            }
+        }
     })
 }
 
@@ -329,6 +461,25 @@ fn test_ppmt_works() {
             let npf_ppmt = py.import("numpy_financial").unwrap().getattr("ppmt").unwrap();
             let npf_result = npf_ppmt.call1((INTEREST_RATE, 2, PERIODS, PAYMENT));
             assert_almost_eq!(result, npf_result.unwrap().extract::<f64>().unwrap());
+        }
+    })
+}
+
+#[rstest]
+fn test_ppmt_vec() {
+    Python::with_gil(|py| {
+        let per = (1..6).collect::<Vec<_>>();
+        let result: Vec<f64> = pyxirr_call!(py, "ppmt", (0.1 / 12., per, 24, 2000));
+        let expected = vec![
+            -75.62318600836664,
+            -76.25337922510303,
+            -76.88882405197889,
+            -77.52956425241204,
+            -78.17564395451548,
+        ];
+
+        for i in 0..expected.len() {
+            assert_almost_eq!(result[i], expected[i])
         }
     })
 }
@@ -350,13 +501,13 @@ fn test_nper_pmt_at_end() {
 }
 
 #[rstest]
-fn test_nper_pmt_at_begining() {
+fn test_nper_pmt_at_beginning() {
     Python::with_gil(|py| {
         let nper: f64 = pyxirr_call!(
             py,
             "nper",
             (INTEREST_RATE, PAYMENT, PV),
-            py_dict!(py, "pmt_at_begining" => true)
+            py_dict!(py, "pmt_at_beginning" => true)
         );
         assert_future_value!(INTEREST_RATE, nper, PAYMENT, PV, None, Some(true));
 
@@ -396,6 +547,17 @@ fn test_nper_zero_rate() {
     })
 }
 
+#[rstest]
+fn test_nper_vec() {
+    Python::with_gil(|py| {
+        let rates = [[[0.0]], [[0.075]]];
+        let result: Vec<Vec<Vec<f64>>> = pyxirr_call!(py, "nper", (rates, -2000, 0, 100_000));
+
+        assert_almost_eq!(result[0][0][0], 50.0);
+        assert_almost_eq!(result[1][0][0], 21.544944197323336);
+    })
+}
+
 // ------------ RATE ----------------
 
 #[rstest]
@@ -427,13 +589,13 @@ fn test_rate_non_zero_fv() {
 }
 
 #[rstest]
-fn test_rate_pmt_at_begining() {
+fn test_rate_pmt_at_beginning() {
     Python::with_gil(|py| {
         let rate: f64 = pyxirr_call!(
             py,
             "rate",
             (PERIODS, PAYMENT, PV, FV),
-            py_dict!(py, "pmt_at_begining" => true)
+            py_dict!(py, "pmt_at_beginning" => true)
         );
         assert_future_value!(rate, PERIODS, PAYMENT, PV, Some(FV), Some(true));
 
@@ -441,6 +603,24 @@ fn test_rate_pmt_at_begining() {
             let npf_rate = py.import("numpy_financial").unwrap().getattr("rate").unwrap();
             let npf_result = npf_rate.call1((PERIODS, PAYMENT, PV, FV, "start"));
             assert_almost_eq!(rate, npf_result.unwrap().extract::<f64>().unwrap());
+        }
+    })
+}
+
+#[rstest]
+fn test_rate_vec() {
+    Python::with_gil(|py| {
+        let pv = [-593.06, -4725.38, -662.05, -428.78, -13.65];
+        let fv = [214.07, 4509.97, 224.11, 686.29, -329.67];
+
+        let actual: Vec<Option<f64>> = pyxirr_call!(py, "rate", (2, 0, pv, fv));
+        let expected = [-0.39920185, -0.02305873, -0.41818459, 0.26513414, f64::NAN];
+
+        for i in 0..actual.len() {
+            match actual[i] {
+                Some(value) => assert_almost_eq!(value, expected[i], 1e-8),
+                None => assert!(expected[i].is_nan()),
+            }
         }
     })
 }

@@ -4,18 +4,21 @@ from decimal import Decimal
 from typing import (
     Any,
     Dict,
+    Hashable,
     Iterable,
+    List,
     Optional,
+    Sequence,
     Tuple,
+    TypeVar,
     Union,
     overload,
-    Hashable,
 )
 
 if sys.version_info >= (3, 8):
-    from typing import Protocol, Literal
+    from typing import Literal, Protocol
 else:
-    from typing_extensions import Protocol, Literal
+    from typing_extensions import Literal, Protocol
 
 # We are using protocols because mypy does not support dynamic type hints for
 # optional libraries, e.g in the ideal world:
@@ -118,8 +121,26 @@ _CashFlow = Union[_CashFlowTable, _CashFlowDict, _Series]
 _DateLikeArray = Iterable[_DateLike]
 _AmountArray = Iterable[_Amount]
 
+_T = TypeVar("_T")
+_ArrayLike = Union[
+    _ndarray,
+    Sequence[_T],
+    Sequence[Sequence[_T]],
+    Sequence[Sequence[Sequence[_T]]],
+    Sequence[Sequence[Sequence[Sequence[_T]]]],
+    Sequence[Sequence[Sequence[Sequence[Sequence[_T]]]]],
+    Sequence[Sequence[Sequence[Sequence[Sequence[Sequence[_T]]]]]],
+    Sequence[Sequence[Sequence[Sequence[Sequence[Sequence[Sequence[_T]]]]]]],
+    Sequence[Sequence[Sequence[Sequence[Sequence[Sequence[Sequence[Sequence[_T]]]]]]]],
+]
+_ScalarOrArrayLike = Union[_T, _ArrayLike[_T]]
+
 
 class InvalidPaymentsError(Exception):
+    pass
+
+
+class BroadcastingError(Exception):
     pass
 
 
@@ -150,14 +171,27 @@ def days_between(d1: _DateLike, d2: _DateLike, day_count: _DayCount) -> int:
     ...
 
 
-def fv(
+@overload
+def fv(  # type: ignore[misc]
     rate: _Rate,
     nper: _Period,
     pmt: _Amount,
     pv: _Amount,
     *,
-    pmt_at_begining: bool = False,
+    pmt_at_beginning: bool = False,
 ) -> Optional[float]:
+    ...
+
+
+@overload
+def fv(
+    rate: _ScalarOrArrayLike[_Rate],
+    nper: _ScalarOrArrayLike[_Period],
+    pmt: _ScalarOrArrayLike[_Amount],
+    pv: _ScalarOrArrayLike[_Amount],
+    *,
+    pmt_at_beginning: _ScalarOrArrayLike[bool] = False,
+) -> List[Optional[float]]:
     ...
 
 
@@ -201,14 +235,27 @@ def xnfv(
     ...
 
 
-def pv(
+@overload
+def pv(  # type: ignore[misc]
     rate: _Rate,
     nper: _Period,
     pmt: _Amount,
     fv: _Amount,
     *,
-    pmt_at_begining: bool = False,
+    pmt_at_beginning: bool = False,
 ) -> Optional[float]:
+    ...
+
+
+@overload
+def pv(
+    rate: _ScalarOrArrayLike[_Rate],
+    nper: _ScalarOrArrayLike[_Period],
+    pmt: _ScalarOrArrayLike[_Amount],
+    fv: _ScalarOrArrayLike[_Amount],
+    *,
+    pmt_at_beginning: _ScalarOrArrayLike[bool] = False,
+) -> List[Optional[float]]:
     ...
 
 
@@ -244,61 +291,129 @@ def xnpv(
     ...
 
 
-def rate(
+@overload
+def rate(  # type: ignore[misc]
     nper: _Period,
     pmt: _Amount,
     pv: _Amount,
     fv: _Amount = 0,
     *,
-    pmt_at_begining: bool = False,
+    pmt_at_beginning: bool = False,
     guess: _Guess = 0.1,
-):
+) -> Optional[float]:
     ...
 
 
-def nper(
+@overload
+def rate(
+    nper: _ScalarOrArrayLike[_Period],
+    pmt: _ScalarOrArrayLike[_Amount],
+    pv: _ScalarOrArrayLike[_Amount],
+    fv: _ScalarOrArrayLike[_Amount] = 0,
+    *,
+    pmt_at_beginning: _ScalarOrArrayLike[bool] = False,
+    guess: _Guess = 0.1,
+) -> List[Optional[float]]:
+    ...
+
+
+@overload
+def nper(  # type: ignore[misc]
     rate: _Rate,
     pmt: _Amount,
     pv: _Amount,
     fv: _Amount = 0,
     *,
-    pmt_at_begining: bool = False,
+    pmt_at_beginning: bool = False,
 ) -> Optional[float]:
     ...
 
 
+@overload
+def nper(
+    rate: _ScalarOrArrayLike[_Rate],
+    pmt: _ScalarOrArrayLike[_Amount],
+    pv: _ScalarOrArrayLike[_Amount],
+    fv: _ScalarOrArrayLike[_Amount] = 0,
+    *,
+    pmt_at_beginning: _ScalarOrArrayLike[bool] = False,
+) -> List[Optional[float]]:
+    ...
+
+
+@overload
+def pmt(  # type: ignore[misc]
+    rate: _Rate,
+    nper: _Period,
+    pv: _Amount,
+    fv: _Amount = 0,
+    *,
+    pmt_at_beginning: bool = False,
+) -> Optional[float]:
+    ...
+
+
+@overload
 def pmt(
+    rate: _ScalarOrArrayLike[_Rate],
+    nper: _ScalarOrArrayLike[_Period],
+    pv: _ScalarOrArrayLike[_Amount],
+    fv: _ScalarOrArrayLike[_Amount] = 0,
+    *,
+    pmt_at_beginning: _ScalarOrArrayLike[bool] = False,
+) -> List[Optional[float]]:
+    ...
+
+
+@overload
+def ipmt(  # type: ignore[misc]
     rate: _Rate,
+    per: _Period,
     nper: _Period,
     pv: _Amount,
     fv: _Amount = 0,
     *,
-    pmt_at_begining: bool = False,
+    pmt_at_beginning: bool = False,
 ) -> Optional[float]:
     ...
 
 
+@overload
 def ipmt(
+    rate: _ScalarOrArrayLike[_Rate],
+    per: _ScalarOrArrayLike[_Period],
+    nper: _ScalarOrArrayLike[_Period],
+    pv: _ScalarOrArrayLike[_Amount],
+    fv: _ScalarOrArrayLike[_Amount] = 0,
+    *,
+    pmt_at_beginning: _ScalarOrArrayLike[bool] = False,
+) -> List[Optional[float]]:
+    ...
+
+
+@overload
+def ppmt(  # type: ignore[misc]
     rate: _Rate,
     per: _Period,
     nper: _Period,
     pv: _Amount,
     fv: _Amount = 0,
     *,
-    pmt_at_begining: bool = False,
+    pmt_at_beginning: bool = False,
 ) -> Optional[float]:
     ...
 
 
+@overload
 def ppmt(
-    rate: _Rate,
-    per: _Period,
-    nper: _Period,
-    pv: _Amount,
-    fv: _Amount = 0,
+    rate: _ScalarOrArrayLike[_Rate],
+    per: _ScalarOrArrayLike[_Period],
+    nper: _ScalarOrArrayLike[_Period],
+    pv: _ScalarOrArrayLike[_Amount],
+    fv: _ScalarOrArrayLike[_Amount] = 0,
     *,
-    pmt_at_begining: bool = False,
-) -> Optional[float]:
+    pmt_at_beginning: _ScalarOrArrayLike[bool] = False,
+) -> List[Optional[float]]:
     ...
 
 

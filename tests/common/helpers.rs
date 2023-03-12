@@ -68,9 +68,9 @@ macro_rules! assert_almost_eq {
 
 #[macro_export]
 macro_rules! assert_future_value {
-    ($rate:expr, $nper:expr, $pmt:expr, $pv:expr, $fv:expr, $pmt_at_begining:expr) => {{
-        let (rate, nper, pmt, pv, fv, pmt_at_begining) =
-            ($rate, $nper, $pmt, $pv, $fv, $pmt_at_begining);
+    ($rate:expr, $nper:expr, $pmt:expr, $pv:expr, $fv:expr, $pmt_at_beginning:expr) => {{
+        let (rate, nper, pmt, pv, fv, pmt_at_beginning) =
+            ($rate, $nper, $pmt, $pv, $fv, $pmt_at_beginning);
 
         let fv = fv.unwrap_or(0.0);
 
@@ -79,11 +79,11 @@ macro_rules! assert_future_value {
             return;
         }
 
-        let pmt_at_begining = if pmt_at_begining.unwrap_or(false) { 1.0 } else { 0.0 };
+        let pmt_at_beginning = if pmt_at_beginning.unwrap_or(false) { 1.0 } else { 0.0 };
 
         let result = fv
             + pv * f64::powf(1.0 + rate, nper)
-            + pmt * (1.0 + rate * pmt_at_begining) / rate * (f64::powf(1.0 + rate, nper) - 1.0);
+            + pmt * (1.0 + rate * pmt_at_beginning) / rate * (f64::powf(1.0 + rate, nper) - 1.0);
 
         assert_almost_eq!(result, 0.0, 1e-6);
     }};

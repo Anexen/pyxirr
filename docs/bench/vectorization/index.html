@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-light.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <title>Vectorization benchmark</title>
+    <style>
+      body {
+        margin: 0 auto;
+        width: 52em;
+        font-family: PT Sans, DejaVu Sans, Arial, sans;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Imports</h1>
+    <pre>
+        <code>
+import numpy as np
+import numpy_financial as npf
+import perfplot
+import pyxirr
+        </code>
+    </pre>
+    <h1>Case 1</h1>
+    <p>
+      Input: numpy array<br />
+      Output: numpy array<br />
+    </p>
+    <pre>
+        <code class="language-python">
+perfplot.show(
+    setup=lambda n: np.random.rand(n) / 12,
+    kernels=[
+        lambda a: pyxirr.fv(a, 120, -100, -100),
+        lambda a: npf.fv(a, 120, -100, -100),
+    ],
+    labels=["pyxirr", "npf"],
+    n_range=[2**k for k in range(1, 20)],
+    xlabel="len(a)",
+    equality_check=np.allclose,
+)
+        </code>
+    </pre>
+    <img src="./ndarray-in-ndarray-out.png" />
+    <h1>Case 2</h1>
+    <p>
+      Input: list<br />
+      Output: list<br />
+    </p>
+    <pre>
+        <code class="language-python">
+perfplot.show(
+    setup=lambda n: (np.random.rand(n) / 12).tolist(),
+    kernels=[
+        lambda a: pyxirr.fv(a, 120, -100, -100),
+        lambda a: npf.fv(a, 120, -100, -100).tolist(),
+    ],
+    labels=["pyxirr", "npf"],
+    n_range=[2**k for k in range(1, 20)],
+    xlabel="len(a)",
+    equality_check=np.allclose,
+)
+        </code>
+    </pre>
+    <img src="./list-in-list-out.png" />
+    <h1>Case 3</h1>
+    <p>
+      Input: list<br />
+      Output: list (pyxirr), numpy array (npf)<br />
+    </p>
+    <pre>
+        <code class="language-python">
+perfplot.show(
+    setup=lambda n: (np.random.rand(n) / 12).tolist(),
+    kernels=[
+        lambda a: pyxirr.fv(a, 120, -100, -100),
+        lambda a: npf.fv(a, 120, -100, -100),
+    ],
+    labels=["pyxirr", "npf"],
+    n_range=[2**k for k in range(1, 20)],
+    xlabel="len(a)",
+    equality_check=np.allclose,
+)
+        </code>
+    </pre>
+    <img src="./list-in-default-out.png" />
+    <script>
+      hljs.highlightAll();
+    </script>
+  </body>
+</html>

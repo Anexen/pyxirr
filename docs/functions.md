@@ -75,8 +75,48 @@ See also:
 ## Exceptions
 
 - `InvalidPaymentsError`. Occurs if either:
+
   - the amounts and dates arrays (`AmountArray`, `DateLikeArray`) are of different lengths
   - the given arrays do not contain at least one negative and at least one positive value
+
+- `BroadcastingError`. Occurs if function arguments could not be broadcast
+  together using numpy broadcasting rules.
+
+## numpy-like vectorization
+
+PyXIRR defines a vectorized functions which takes a nested sequence of objects
+or numpy arrays as inputs and returns a nested sequence of results of the same shape.
+
+General rules:
+
+- if all input is scalar, returns a scalar float.
+- if any input is array_like, returns values for each input element.
+- if multiple inputs are array_like, they all must have the same shape (or be
+  broadcastable into the same shape).
+
+> PyXIRR has a certain conversion cost compared to numpy-financial. See the charts [here](bench/vectorization/index.html).
+
+> PyXIRR returns a numpy array if the input was a numpy array, otherwise it returns a list.
+
+Examples:
+
+```python
+>>> from pyxirr import fv
+>>> fv([0.03/12, 0.05/12], 10*12, -100, -100)
+[14109.077242352068, 15692.92889433575]
+>>> fv(0.05/12, 10*12, [-100, -150], [-100, -50])
+[15692.92889433575, 23374.692391734596]
+>>> fv([[[0.01]], [[0.02]]], 12, -100, -100)
+[[[1380.9328043328946]], [[1468.0331522689821]]]
+```
+
+Return numpy array if the input was a numpy array:
+
+```python
+>>> import numpy
+>>> fv(numpy.array([0.03/12, 0.05/12]), 10*12, -100, -100)
+array([14109.07724235, 15692.92889434])
+```
 
 ## FV
 
@@ -84,23 +124,24 @@ Compute the future value.
 
 ```python
 def fv(
-    rate: Rate, # Rate of interest per period
-    nper: Period, # Number of compounding periods
-    pmt: Amount, # Payment
-    pv: Amount, # Present value
+    rate: Rate,  # Rate of interest per period; scalar or array-like
+    nper: Period,  # Number of compounding periods; scalar or array-like
+    pmt: Amount,  # Payment; scalar or array-like
+    pv: Amount,  # Present value; scalar or array-like
     *,
-    pmt_at_begining: bool = False  # When payments are due
-) -> Optional[float]:
+    pmt_at_beginning: bool = False  # When payments are due; scalar or array-like
+) -> Optional[float]:  # returns an array if any input parameter is an array
     ...
 ```
 
-> Changed in 0.7.0: make pmt_at_begining keyword-only argument
+> Changed in 0.7.0: make pmt_at_beginning keyword-only argument
+> Added in 0.9.0: vectorization
 
 The future value is computed by solving the equation:
 
 $$fv + pv \times (1+rate)^{nper}+pmt \times \frac{(1+rate \times when)}{rate} \times ((1+rate)^{nper}-1)=0$$
 
-$$when=\begin{cases}0,&\text{pmt_at_begining is False}\\1,&\text{pmt_at_begining is True}\end{cases}$$
+$$when=\begin{cases}0,&\text{pmt_at_beginning is False}\\1,&\text{pmt_at_beginning is True}\end{cases}$$
 
 in case of `rate == 0`:
 
@@ -228,13 +269,13 @@ Compute the payment against loan principal plus interest.
 
 ```python
 def pmt(
-    rate: Rate, # Rate of interest per period
-    nper: Period, # Number of compounding periods
-    pv: Amount, # Present value
-    fv: Amount = 0, # Future value
+    rate: Rate,  # Rate of interest per period; scalar or array-like
+    nper: Period,  # Number of compounding periods; scalar or array-like
+    pv: Amount,  # Present value; scalar or array-like
+    fv: Amount = 0,  # Future value; scalar or array-like
     *,
-    pmt_at_begining: bool = False  # When payments are due
-) -> Optional[float]:
+    pmt_at_beginning: bool = False  # When payments are due; scalar or array-like
+) -> Optional[float]:  # returns an array if any input parameter is an array
     ...
 ```
 
@@ -242,7 +283,8 @@ def pmt(
 pmt = ipmt + ppmt
 ```
 
-> Changed in 0.7.0: make pmt_at_begining keyword-only argument
+> Changed in 0.7.0: make pmt_at_beginning keyword-only argument
+> Added in 0.9.0: vectorization
 
 See also: [FV](functions.md#fv), [PV](functions.md#pv), [NPER](functions.md#nper)
 
@@ -252,18 +294,19 @@ Compute the interest portion of a payment.
 
 ```python
 def ipmt(
-    rate: Rate, # Rate of interest per period
-    per: Period, # The payment period to calculate the interest amount.
-    nper: Period, # Number of compounding periods
-    pv: Amount, # Present value
-    fv: Amount = 0, # Future value
+    rate: Rate,  # Rate of interest per period; scalar or array-like
+    per: Period,  # The payment period to calculate the interest amount; scalar or array-like
+    nper: Period,  # Number of compounding periods; scalar or array-like
+    pv: Amount,  # Present value; scalar or array-like
+    fv: Amount = 0,  # Future value; scalar or array-like
     *,
-    pmt_at_begining: bool = False  # When payments are due
-) -> Optional[float]:
+    pmt_at_beginning: bool = False  # When payments are due; scalar or array-like
+) -> Optional[float]:  # returns an array if any input parameter is an array
     ...
 ```
 
-> Changed in 0.7.0: make pmt_at_begining keyword-only argument
+> Changed in 0.7.0: make pmt_at_beginning keyword-only argument
+> Added in 0.9.0: vectorization
 
 See also: [PMT](functions.md#pmt)
 
@@ -273,18 +316,19 @@ Compute the payment against loan principal.
 
 ```python
 def ppmt(
-    rate: Rate, # Rate of interest per period
-    per: Period, # The payment period to calculate the interest amount.
-    nper: Period, # Number of compounding periods
-    pv: Amount, # Present value
-    fv: Amount = 0, # Future value
+    rate: Rate,  # Rate of interest per period; scalar or array-like
+    per: Period,  # The payment period to calculate the interest amount; scalar or array-like
+    nper: Period,  # Number of compounding periods; scalar or array-like
+    pv: Amount,  # Present value; scalar or array-like
+    fv: Amount = 0,  # Future value; scalar or array-like
     *,
-    pmt_at_begining: bool = False  # When payments are due
-) -> Optional[float]:
+    pmt_at_beginning: bool = False  # When payments are due; scalar or array-like
+) -> Optional[float]:  # returns an array if any input parameter is an array
     ...
 ```
 
-> Changed in 0.7.0: make pmt_at_begining keyword-only argument
+> Changed in 0.7.0: make pmt_at_beginning keyword-only argument
+> Added in 0.9.0: vectorization
 
 See also: [PMT](functions.md#pmt)
 
@@ -294,17 +338,18 @@ Compute the payment against loan principal plus interest.
 
 ```python
 def nper(
-    rate: Rate, # Rate of interest per period
-    pmt: Amount, # Payment
-    pv: Amount, # Present value
-    fv: Amount = 0, # Future value
+    rate: Rate,  # Rate of interest per period; scalar or array-like
+    pmt: Amount,  # Payment; scalar or array-like
+    pv: Amount,  # Present value; scalar or array-like
+    fv: Amount = 0,  # Future value; scalar or array-like
     *,
-    pmt_at_begining: bool = False  # When payments are due
-) -> Optional[float]:
+    pmt_at_beginning: bool = False  # When payments are due; scalar or array-like
+) -> Optional[float]:  # returns an array if any input parameter is an array
     ...
 ```
 
-> Changed in 0.7.0: make pmt_at_begining keyword-only argument
+> Changed in 0.7.0: make pmt_at_beginning keyword-only argument
+> Added in 0.9.0: vectorization
 
 See also: [FV](functions.md#fv), [PV](functions.md#pv), [PMT](functions.md#pmt)
 
@@ -314,18 +359,19 @@ Compute the payment against loan principal plus interest.
 
 ```python
 def rate(
-    nper: Period, # Number of compounding periods
-    pmt: Amount, # Payment
-    pv: Amount, # Present value
-    fv: Amount = 0, # Future value
+    nper: Period, # Number of compounding periods; scalar or array-like
+    pmt: Amount, # Payment; scalar or array-like
+    pv: Amount, # Present value; scalar or array-like
+    fv: Amount = 0, # Future value; scalar or array-like
     *,
-    pmt_at_begining: bool = False  # When payments are due
+    pmt_at_beginning: bool = False  # When payments are due; scalar or array-like
     guess: Guess = 0.1
-) -> Optional[float]:
+) -> Optional[float]:  # returns an array if any input parameter is an array
     ...
 ```
 
-> Changed in 0.7.0: make pmt_at_begining and guess keyword-only arguments
+> Changed in 0.7.0: make pmt_at_beginning and guess keyword-only arguments
+> Added in 0.9.0: vectorization
 
 See also: [FV](functions.md#fv), [PV](functions.md#pv), [PMT](functions.md#pmt)
 
@@ -335,23 +381,24 @@ Compute the present value.
 
 ```python
 def pv(
-    rate: Rate, # Rate of interest per period
-    nper: Period, # Number of compounding periods
-    pmt: Amount, # Payment
-    fv: Amount = 0, # Future value
+    rate: Rate,  # Rate of interest per period; scalar or array-like
+    nper: Period,  # Number of compounding periods; scalar or array-like
+    pmt: Amount,  # Payment; scalar or array-like
+    fv: Amount = 0,  # Future value; scalar or array-like
     *,
-    pmt_at_begining: bool = False  # When payments are due
-) -> Optional[float]:
+    pmt_at_beginning: bool = False  # When payments are due; scalar or array-like
+) -> Optional[float]:  # returns an array if any input parameter is an array
     ...
 ```
 
-> Changed in 0.7.0: make pmt_at_begining keyword-only argument
+> Changed in 0.7.0: make pmt_at_beginning keyword-only argument
+> Added in 0.9.0: vectorization
 
 The present value is computed by solving the same equation as for future value:
 
 $$fv+pv \times (1+rate)^{nper}+pmt \times \frac{(1+rate \times when)}{rate} \times ((1+rate)^{nper}-1)=0$$
 
-$$when=\begin{cases}0,&\text{pmt_at_begining is False}\\1,&\text{pmt_at_begining is True}\end{cases}$$
+$$when=\begin{cases}0,&\text{pmt_at_beginning is False}\\1,&\text{pmt_at_beginning is True}\end{cases}$$
 
 in case of `rate == 0`:
 

@@ -15,6 +15,7 @@ Features:
 - supports different day count conventions (e.g. ACT/360, 30E/360, etc.)
 - works with different input data types (iterators, numpy arrays, pandas DataFrames)
 - no external dependencies
+- type annotations
 - blazingly fast
 
 # Installation
@@ -104,7 +105,7 @@ xirr(dates, amounts, day_count="30E/360")
 import pyxirr
 
 # Future Value
-pyxirr.fv(0.05 / 12, 10 * 12, -100, -100)
+pyxirr.fv(0.05/12, 10*12, -100, -100)
 
 # Net Present Value
 pyxirr.npv(0, [-40_000, 5_000, 8_000, 12_000, 30_000])
@@ -113,6 +114,39 @@ pyxirr.npv(0, [-40_000, 5_000, 8_000, 12_000, 30_000])
 pyxirr.irr([-100, 39, 59, 55, 20])
 
 # ... and more! Check out the docs.
+```
+
+### Vectorization
+
+PyXIRR supports numpy-like vectorization.
+
+If all input is scalar, returns a scalar float. If any input is array_like,
+returns values for each input element. If multiple inputs are
+array_like, performs broadcasting and returns values for each element.
+
+```python
+import pyxirr
+
+# feed list
+pyxirr.fv([0.05/12, 0.06/12], 10*12, -100, -100)
+pyxirr.fv([0.05/12, 0.06/12], [10*12, 9*12], [-100, -200], -100)
+
+# feed numpy array
+import numpy as np
+rates = np.array([0.05, 0.06, 0.07])/12
+pyxirr.fv(rates, 10*12, -100, -100)
+
+# feed any iterable!
+pyxirr.fv(
+    np.linspace(0.01, 0.2, 10),
+    (x + 1 for x in range(10)),
+    range(-100, -1100, -100),
+    tuple(range(-100, -200, -10))
+)
+
+# 2d, 3d, 4d, and more!
+rates = [[[[[[0.01], [0.02]]]]]]
+pyxirr.fv(rates, 10*12, -100, -100)
 ```
 
 # API reference
@@ -124,7 +158,7 @@ See the [docs](https://anexen.github.io/pyxirr)
 - [x] Implement all functions from [numpy-financial](https://numpy.org/numpy-financial/latest/index.html)
 - [x] Improve docs, add more tests
 - [x] Type hints
-- [ ] Vectorized versions of numpy-financial functions.
+- [x] Vectorized versions of numpy-financial functions.
 - [ ] Compile library for rust/javascript/python
 
 # Development

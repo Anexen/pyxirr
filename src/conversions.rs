@@ -13,6 +13,30 @@ use time::Date;
 // time::Date::from_ordinal_date(1970, 1).unwrap().to_julian_day();
 static UNIX_EPOCH_JULIAN_DAY: i32 = 2440588;
 
+pub fn float_or_none(result: f64) -> Option<f64> {
+    if result.is_nan() {
+        None
+    } else {
+        Some(result)
+    }
+}
+
+pub fn fallible_float_or_none<T>(result: Result<f64, T>, silent: bool) -> PyResult<Option<f64>>
+where
+    pyo3::PyErr: From<T>,
+{
+    match result {
+        Err(e) => {
+            if silent {
+                Ok(None)
+            } else {
+                Err(e.into())
+            }
+        }
+        Ok(v) => Ok(float_or_none(v)),
+    }
+}
+
 #[derive(FromPyObject)]
 pub enum PyDayCount {
     String(String),
