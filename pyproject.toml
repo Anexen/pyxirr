@@ -20,5 +20,5 @@ requires = ["maturin>=0.14,<0.15"]
 build-backend = "maturin"
 
 [tool.maturin]
-sdist-include = ["Cargo.lock"]
+include = ["Cargo.lock"]
 strip = true

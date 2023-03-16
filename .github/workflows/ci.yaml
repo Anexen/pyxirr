@@ -80,7 +80,7 @@ jobs:
         with:
           maturin-version: v0.14.13
           manylinux: auto
-          args: -i python${{ matrix.python.version }} --release --strip
+          args: -i python${{ matrix.python.version }} --release --strip --sdist
 
       - name: Build Wheels - MacOS [aarch64]
         if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch == 'aarch64' }}
