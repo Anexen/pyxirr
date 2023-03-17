@@ -8,8 +8,10 @@ use time::{
 #[pyo3(frozen)]
 #[derive(Debug, Clone, Copy)]
 #[allow(non_camel_case_types)]
+#[derive(Default)]
 pub enum DayCount {
     ACT_ACT_ISDA,
+    #[default]
     ACT_365F,
     ACT_365_25,
     ACT_364,
@@ -23,11 +25,7 @@ pub enum DayCount {
     NL_360,
 }
 
-impl Default for DayCount {
-    fn default() -> Self {
-        DayCount::ACT_365F
-    }
-}
+
 
 impl fmt::Display for DayCount {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -302,7 +300,7 @@ mod tests {
 
     // https://westclintech.com/SQL-Server-Financial-Functions/SQL-Server-DAYS360-function
     // Start Date, End Date, 30/360 US, 30E/360, 30E360 ISDA, Actual
-    static XLERATOR_DB_DATA: [(&'static str, &'static str, i32, i32, i32, i32); 22] = [
+    static XLERATOR_DB_DATA: [(&str, &str, i32, i32, i32, i32); 22] = [
         ("2007-01-15", "2007-01-30", 15, 15, 15, 15),
         ("2007-01-15", "2007-02-15", 30, 30, 30, 31),
         ("2007-01-15", "2007-07-15", 180, 180, 180, 181),
@@ -330,8 +328,8 @@ mod tests {
     #[rstest]
     fn test_from_xleratordb() {
         for row in XLERATOR_DB_DATA {
-            let ref d1 = row.0.parse::<DateLike>().unwrap();
-            let ref d2 = row.1.parse::<DateLike>().unwrap();
+            let d1 = &row.0.parse::<DateLike>().unwrap();
+            let d2 = &row.1.parse::<DateLike>().unwrap();
             assert_eq!(days_between(d1, d2, DayCount::THIRTY_U_360), row.2);
             assert_eq!(days_between(d1, d2, DayCount::THIRTY_E_360), row.3);
             assert_eq!(days_between(d1, d2, DayCount::ACT_365F), row.5);

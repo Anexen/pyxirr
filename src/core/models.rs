@@ -5,9 +5,9 @@ use time::{macros::format_description, Date};
 #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Copy)]
 pub struct DateLike(Date);
 
-impl Into<Date> for DateLike {
-    fn into(self) -> Date {
-        self.0
+impl From<DateLike> for Date {
+    fn from(val: DateLike) -> Self {
+        val.0
     }
 }
 

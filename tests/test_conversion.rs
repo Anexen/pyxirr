@@ -5,7 +5,7 @@ use rstest::*;
 mod common;
 use common::{pd_read_csv, xirr_expected_result, PaymentsLoader};
 
-use pyxirr;
+
 
 type Payments = (Py<PyAny>, Py<PyAny>);
 const INPUT: &str = "tests/samples/unordered.csv";
@@ -25,7 +25,7 @@ fn get_locals<'p>(py: Python<'p>, extra_imports: Option<&[&str]>) -> &'p PyDict 
     let locals = py_dict_merge!(py, locals, builtins.dict());
 
     for &name in extra_imports.unwrap_or_default() {
-        let module = py.import(name).expect(&format!("{:?} is not installed", name));
+        let module = py.import(name).unwrap_or_else(|_| panic!("{:?} is not installed", name));
         locals.set_item(name, module).unwrap();
     }
 

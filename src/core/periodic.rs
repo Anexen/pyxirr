@@ -341,7 +341,7 @@ fn _g_div_gp(
         + nper * pmt * &t2 * (rate * when + 1.) / rate
         + pmt * (&t1 - 1.0) * when / rate;
 
-    return g / gp;
+    g / gp
 }
 
 // http://westclintech.com/SQL-Server-Financial-Functions/SQL-Server-NFV-function

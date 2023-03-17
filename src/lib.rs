@@ -32,7 +32,7 @@ macro_rules! dispatch_vectorized {
                 },
                 ($($vars,)*) => {
                     let has_numpy_array = $(matches!($vars, Arg::NumpyArray(_)) || )* false;
-                    let ($($vars,)*) = ($($vars.to_arrayd(),)*);
+                    let ($($vars,)*) = ($($vars.into_arrayd(),)*);
                     let ($($vars,)*) = ($($vars.view(),)*);
                     let result = $py.allow_threads(move || $vec);
                     let result = if has_numpy_array {
@@ -163,6 +163,7 @@ fn nfv(py: Python, rate: f64, nper: f64, amounts: &PyAny) -> PyResult<Option<f64
     signature = (start_date, cash_flow_date, end_date, cash_flow_rate, end_rate, cash_flow, *, day_count=None),
     text_signature = "(start_date, cash_flow_date, end_date, cash_flow_rate, end_rate, cash_flow, * day_count=None)"
 )]
+#[allow(clippy::too_many_arguments)]
 fn xfv(
     py: Python,
     start_date: core::DateLike,

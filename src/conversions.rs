@@ -58,7 +58,7 @@ impl TryInto<DayCount> for PyDayCount {
 impl DayCount {
     #[staticmethod]
     fn of(value: &str) -> PyResult<Self> {
-        DayCount::from_str(value).map_err(|e| PyValueError::new_err(e))
+        DayCount::from_str(value).map_err(PyValueError::new_err)
     }
 
     fn __str__(&self) -> String {

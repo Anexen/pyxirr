@@ -122,18 +122,16 @@ where
         fpre = fcur;
         if scur.abs() > delta {
             xcur += scur;
+        } else if sbis > 0. {
+            xcur += delta
         } else {
-            if sbis > 0. {
-                xcur = xcur + delta
-            } else {
-                xcur = xcur - delta
-            };
+            xcur -= delta
         }
 
         fcur = f(xcur);
     }
 
-    return f64::NAN;
+    f64::NAN
 }
 
 pub fn find_root<Func, Deriv>(start: f64, ranges: &[(f64, f64, f64)], f: Func, d: Deriv) -> f64
@@ -155,7 +153,7 @@ where
         return rate;
     }
 
-    for (min, max, step) in ranges.into_iter() {
+    for (min, max, step) in ranges.iter() {
         let mut guess = *min;
         while guess < *max {
             let rate = newton_raphson(guess, &f, &d);

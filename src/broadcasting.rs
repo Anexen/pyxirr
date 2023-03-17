@@ -34,8 +34,8 @@ pub fn broadcast_shapes(shapes: &[&[usize]]) -> Option<Vec<usize>> {
     let mut result = vec![0; ndim];
 
     /* Discover the broadcast shape in each dimension */
-    for i in 0..ndim {
-        result[i] = 1;
+    for (i, cur) in result.iter_mut().enumerate() {
+        *cur = 1;
         for s in shapes.iter() {
             /* This prepends 1 to shapes not already equal to ndim */
             if i + s.len() >= ndim {
@@ -44,9 +44,9 @@ pub fn broadcast_shapes(shapes: &[&[usize]]) -> Option<Vec<usize>> {
                 if tmp == 1 {
                     continue;
                 }
-                if result[i] == 1 {
-                    result[i] = tmp;
-                } else if result[i] != tmp {
+                if cur == &1 {
+                    *cur = tmp;
+                } else if cur != &tmp {
                     return None;
                 }
             }
@@ -62,7 +62,7 @@ macro_rules! broadcast_together {
         {
             let _a = &[$($a.shape(),)*];
 
-            match crate::broadcasting::broadcast_shapes(_a) {
+            match $crate::broadcasting::broadcast_shapes(_a) {
                 Some(shape) => Ok(( $($a.broadcast(shape.clone()).unwrap(),)*)),
                 None => Err(BroadcastingError::new(_a))
             }
@@ -113,7 +113,7 @@ where
             Ok(val) => flat_list.push(val),
             Err(_) => {
                 let sublist = item.iter()?;
-                flatten_pyiter(&sublist, shape, flat_list, depth + 1)?;
+                flatten_pyiter(sublist, shape, flat_list, depth + 1)?;
             }
         }
     }
@@ -138,7 +138,7 @@ impl<'p, T> Arg<'p, T>
 where
     T: Clone + numpy::Element,
 {
-    pub fn to_arrayd(self) -> CowArray<'p, T, IxDyn> {
+    pub fn into_arrayd(self) -> CowArray<'p, T, IxDyn> {
         self.into()
     }
 }
@@ -147,7 +147,7 @@ fn is_numpy_available() -> bool {
     Python::with_gil(|py| py.import("numpy").is_ok())
 }
 
-fn pyarray_cast<'p, U: Element>(ob: &'p PyAny) -> PyResult<&'p PyArrayDyn<U>> {
+fn pyarray_cast<U: Element>(ob: &PyAny) -> PyResult<&PyArrayDyn<U>> {
     let ptr = unsafe {
         PY_ARRAY_API.PyArray_CastToType(
             ob.py(),

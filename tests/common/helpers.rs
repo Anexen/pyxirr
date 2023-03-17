@@ -95,7 +95,7 @@ pub fn get_pyxirr_module(py: Python) -> &PyModule {
     PYXIRR
         .get_or_init(py, || {
             let module = PyModule::new(py, "pyxirr").unwrap();
-            pyxirr::pyxirr(py, &module).unwrap();
+            pyxirr::pyxirr(py, module).unwrap();
             module.into()
         })
         .as_ref(py)

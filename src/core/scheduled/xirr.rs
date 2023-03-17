@@ -10,7 +10,7 @@ pub fn xirr(
 ) -> Result<f64, InvalidPaymentsError> {
     validate(amounts, Some(dates))?;
 
-    let ref deltas = day_count_factor(&dates, day_count);
+    let deltas = &day_count_factor(dates, day_count);
 
     Ok(find_root(
         guess.unwrap_or(0.1),
@@ -29,8 +29,8 @@ pub fn xnpv(
 ) -> Result<f64, InvalidPaymentsError> {
     validate(amounts, Some(dates))?;
 
-    let ref deltas = day_count_factor(&dates, day_count);
-    Ok(xnpv_result(amounts, &deltas, rate))
+    let deltas = &day_count_factor(dates, day_count);
+    Ok(xnpv_result(amounts, deltas, rate))
 }
 
 // fn smart_guess(amounts: &[f64]) -> f64 {
