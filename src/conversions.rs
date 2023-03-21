@@ -1,14 +1,17 @@
 use std::str::FromStr;
 
-use crate::core::{DateLike, DayCount};
-use numpy::datetime::{units, Datetime as datetime64};
-use numpy::PyArray1;
+use numpy::{
+    datetime::{units, Datetime as datetime64},
+    PyArray1,
+};
 use pyo3::{
     exceptions::{PyTypeError, PyValueError},
     prelude::*,
     types::*,
 };
 use time::Date;
+
+use crate::core::{DateLike, DayCount};
 
 // time::Date::from_ordinal_date(1970, 1).unwrap().to_julian_day();
 static UNIX_EPOCH_JULIAN_DAY: i32 = 2440588;
@@ -172,12 +175,22 @@ fn extract_amount_series_from_numpy(series: &PyAny) -> PyResult<Vec<f64>> {
 }
 
 fn extract_records(data: &PyAny) -> PyResult<(Vec<DateLike>, Vec<f64>)> {
-    let capacity = if let Ok(capacity) = data.len() { capacity } else { 0 };
+    let capacity = if let Ok(capacity) = data.len() {
+        capacity
+    } else {
+        0
+    };
 
-    let mut _dates: Vec<DateLike> =
-        if capacity > 0 { Vec::with_capacity(capacity) } else { Vec::new() };
-    let mut _amounts: Vec<f64> =
-        if capacity > 0 { Vec::with_capacity(capacity) } else { Vec::new() };
+    let mut _dates: Vec<DateLike> = if capacity > 0 {
+        Vec::with_capacity(capacity)
+    } else {
+        Vec::new()
+    };
+    let mut _amounts: Vec<f64> = if capacity > 0 {
+        Vec::with_capacity(capacity)
+    } else {
+        Vec::new()
+    };
 
     for obj in data.iter()? {
         let obj = obj?;

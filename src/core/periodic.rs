@@ -1,16 +1,20 @@
+use std::{iter::successors, mem::MaybeUninit};
+
 use ndarray::{ArrayD, ArrayViewD};
-use std::iter::successors;
-use std::mem::MaybeUninit;
 
-use crate::broadcast_together;
-use crate::broadcasting::BroadcastingError;
-
-use super::models::{validate, InvalidPaymentsError};
-use super::optimize::{brentq, find_root, newton_raphson_with_default_deriv};
+use super::{
+    models::{validate, InvalidPaymentsError},
+    optimize::{brentq, find_root, newton_raphson_with_default_deriv},
+};
+use crate::{broadcast_together, broadcasting::BroadcastingError};
 
 // pre calculating powers for performance
 pub fn powers(base: f64, n: usize, start_from_zero: bool) -> Vec<f64> {
-    let (start, n) = if start_from_zero { (1.0, n + 1) } else { (base, n) };
+    let (start, n) = if start_from_zero {
+        (1.0, n + 1)
+    } else {
+        (base, n)
+    };
     successors(Some(start), |x| Some(x * base)).take(n).collect()
 }
 
@@ -210,8 +214,31 @@ pub fn ipmt_vec(
 }
 
 pub fn ppmt(rate: f64, per: f64, nper: f64, pv: f64, fv: f64, pmt_at_beginning: bool) -> f64 {
-    self::pmt(rate, nper, pv, fv, pmt_at_beginning)
-        - self::ipmt(rate, per, nper, pv, fv, pmt_at_beginning)
+    // assuming type = 1 if pmt_at_beginning else 0
+    // assuming P=pv;F=fv;r=rate;n=nper;p=per;t=type, type in {1;0}
+    // ppmt = fv(r,p-1,pmt(r,n,P,F,t),P,t) - fv(r,p,pmt(r,n,P,F,t),P,t)
+    // after substitution:
+    // simplify (-P*(1+r)^(p-1)-(-(F+P*(1+r)^n)*r/((1+r)^n-1)/(1+r*t))*(1+r*t)/r*((1+r)^(p-1)-1)) - (-P*(1+r)^p-(-(F+P*(1+r)^n)*r/((1+r)^n-1)/(1+r*t))*(1+r*t)/r*((1+r)^p-1))
+    // shorter formula: -r*(F+P)*(r+1)^(per-1)/((r+1)^n - 1)
+    // type correction: result /= r + 1 if type = 1
+    // denominator => 1/((r+1)^p-1) => 1/(((r+1)^p-1)*(r+1)) =>
+    // => 1/((r+1)^(p+1) - (r+1)) => 1/((r+1)^(p+t) -r*t + 1)
+    //
+    // if rate == 0:
+    // simplify (-P-(-(F+P)/n) *(p-1) - (-P-(-(F+P)/n)*p))
+    // shorter: -(F + P) / n;
+
+    if per < 1.0 || per > nper {
+        return f64::NAN;
+    }
+
+    if rate == 0.0 {
+        return -(fv + pv) / nper;
+    }
+
+    let when = convert_pmt_at_beginning(pmt_at_beginning);
+    -rate * (fv + pv) * (rate + 1.).powf(per - 1.)
+        / ((rate + 1.).powf(nper + when) - rate * when - 1.)
 }
 
 pub fn ppmt_vec(
@@ -222,9 +249,30 @@ pub fn ppmt_vec(
     fv: &ArrayViewD<f64>,
     pmt_at_beginning: &ArrayViewD<bool>,
 ) -> Result<ArrayD<f64>, BroadcastingError> {
-    let pmt = self::pmt_vec(rate, nper, pv, fv, pmt_at_beginning)?;
-    let ipmt = self::ipmt_vec(rate, per, nper, pv, fv, pmt_at_beginning)?;
-    Ok(pmt - ipmt)
+    let (rate, per, nper, pv, fv, pmt_at_beginning) =
+        broadcast_together!(rate, per, nper, pv, fv, pmt_at_beginning)?;
+
+    let when = pmt_at_beginning.mapv(convert_pmt_at_beginning);
+
+    let f1 =
+        ndarray::Zip::from(&rate).and(&per).map_collect(|rate, per| (rate + 1.).powf(per - 1.0));
+
+    let f2 = ndarray::Zip::from(&rate)
+        .and(&nper)
+        .and(&when)
+        .map_collect(|rate, nper, when| (rate + 1.0).powf(nper + when));
+
+    let mut result = -&rate * (&fv + &pv) * &f1 / (&f2 - &rate * &when - 1.0);
+
+    for (idx, _) in rate.indexed_iter().filter(|(_, &r)| r == 0.0) {
+        result[&idx] = -(fv[&idx] + pv[&idx]) / nper[&idx];
+    }
+
+    for (idx, _) in per.indexed_iter().filter(|(idx, &p)| p < 1.0 || p > nper[idx]) {
+        result[&idx] = f64::NAN;
+    }
+
+    Ok(result)
 }
 
 pub fn nper(rate: f64, pmt: f64, pv: f64, fv: f64, pmt_at_beginning: bool) -> f64 {

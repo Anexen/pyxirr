@@ -1,7 +1,8 @@
+use pyo3::{
+    types::{PyDate, PyList},
+    Python,
+};
 use rstest::rstest;
-
-use pyo3::types::{PyDate, PyList};
-use pyo3::Python;
 
 mod common;
 use common::{xirr_expected_result, xnpv_expected_result, PaymentsLoader};

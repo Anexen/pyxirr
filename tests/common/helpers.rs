@@ -1,7 +1,5 @@
 #![allow(dead_code)]
-use pyo3::once_cell::GILOnceCell;
-use pyo3::prelude::*;
-use pyo3::types::*;
+use pyo3::{once_cell::GILOnceCell, prelude::*, types::*};
 
 #[macro_export]
 macro_rules! py_dict {
@@ -79,7 +77,11 @@ macro_rules! assert_future_value {
             return;
         }
 
-        let pmt_at_beginning = if pmt_at_beginning.unwrap_or(false) { 1.0 } else { 0.0 };
+        let pmt_at_beginning = if pmt_at_beginning.unwrap_or(false) {
+            1.0
+        } else {
+            0.0
+        };
 
         let result = fv
             + pv * f64::powf(1.0 + rate, nper)
@@ -122,7 +124,10 @@ pub struct PaymentsLoader<'p> {
 impl<'p> PaymentsLoader<'p> {
     pub fn from_csv(py: Python<'p>, input_file: &str) -> Self {
         let data = Self::from_py_csv(py, input_file).unwrap();
-        Self { py, data }
+        Self {
+            py,
+            data,
+        }
     }
 
     fn from_py_csv(py: Python<'p>, input_file: &str) -> PyResult<Vec<&'p PyTuple>> {

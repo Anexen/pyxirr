@@ -1,6 +1,5 @@
 use std::{error::Error, fmt};
 
-use crate::conversions::float_or_none;
 use ndarray::{ArrayD, ArrayViewD, Axis, CowArray, IxDyn};
 use numpy::{npyffi, Element, PyArrayDyn, PY_ARRAY_API};
 use pyo3::{
@@ -9,6 +8,8 @@ use pyo3::{
     types::{PyIterator, PyList, PySequence, PyTuple},
     AsPyPointer,
 };
+
+use crate::conversions::float_or_none;
 
 /// An error returned when the payments do not contain both negative and positive payments.
 #[derive(Debug)]

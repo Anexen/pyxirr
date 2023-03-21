@@ -20,5 +20,10 @@ requires = ["maturin>=0.14,<0.15"]
 build-backend = "maturin"
 
 [tool.maturin]
-include = ["Cargo.lock"]
+include = [
+    "pyproject.toml",
+    { path = "Cargo.toml", format = "sdist" },
+    { path = "Cargo.lock", format = "sdist" },
+    { path = ".cargo/*", format = "sdist" },
+]
 strip = true

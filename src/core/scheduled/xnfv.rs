@@ -1,6 +1,8 @@
 use super::{year_fraction, DayCount};
-use crate::core::models::{validate, DateLike, InvalidPaymentsError};
-use crate::core::periodic::fv;
+use crate::core::{
+    models::{validate, DateLike, InvalidPaymentsError},
+    periodic::fv,
+};
 
 // http://westclintech.com/SQL-Server-Financial-Functions/SQL-Server-XFV-function
 pub fn xfv(

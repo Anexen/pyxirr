@@ -1,5 +1,5 @@
-use std::error::Error;
-use std::{fmt, str::FromStr};
+use std::{error::Error, fmt, str::FromStr};
+
 use time::{macros::format_description, Date};
 
 #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Copy)]
@@ -29,7 +29,11 @@ impl FromStr for DateLike {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // get only date part: yyyy-mm-dd
         // this allows to parse datetime strings
-        let s = if s.len() > 10 { &s[0..10] } else { s };
+        let s = if s.len() > 10 {
+            &s[0..10]
+        } else {
+            s
+        };
 
         // try %Y-%m-%d
         if let Ok(d) = Date::parse(s, &format_description!("[year]-[month]-[day]")) {

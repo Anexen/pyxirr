@@ -1,7 +1,6 @@
 use broadcasting::Arg;
 use conversions::{fallible_float_or_none, float_or_none, PyDayCount};
-use pyo3::prelude::*;
-use pyo3::{create_exception, exceptions, wrap_pyfunction};
+use pyo3::{create_exception, exceptions, prelude::*, wrap_pyfunction};
 
 mod broadcasting;
 mod conversions;

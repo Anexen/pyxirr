@@ -1,11 +1,8 @@
-use pyo3::prelude::*;
-use pyo3::{exceptions, types::*};
+use pyo3::{exceptions, prelude::*, types::*};
 use rstest::*;
 
 mod common;
 use common::{pd_read_csv, xirr_expected_result, PaymentsLoader};
-
-
 
 type Payments = (Py<PyAny>, Py<PyAny>);
 const INPUT: &str = "tests/samples/unordered.csv";

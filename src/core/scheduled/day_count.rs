@@ -1,4 +1,5 @@
 use std::{cmp::min, fmt, str::FromStr};
+
 use time::{
     util::{days_in_year_month, is_leap_year},
     Date, Month,
@@ -24,8 +25,6 @@ pub enum DayCount {
     NL_365,
     NL_360,
 }
-
-
 
 impl fmt::Display for DayCount {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -166,7 +165,11 @@ fn leap_days_between(d1: &Date, d2: &Date) -> i32 {
 
 fn days_between_30_360_isda(d1: &Date, d2: &Date) -> i32 {
     let d1_day = min(d1.day(), 30);
-    let d2_day = if d1_day >= 30 { min(d2.day(), 30) } else { d2.day() };
+    let d2_day = if d1_day >= 30 {
+        min(d2.day(), 30)
+    } else {
+        d2.day()
+    };
     days_between_30_360(d1, d2, d1_day, d2_day)
 }
 
@@ -177,8 +180,16 @@ fn days_between_30_e_360(d1: &Date, d2: &Date) -> i32 {
 }
 
 fn days_between_30_e_360_isda(d1: &Date, d2: &Date) -> i32 {
-    let d1_day = if is_last_day_of_feb(d1) { 30 } else { min(d1.day(), 30) };
-    let d2_day = if is_last_day_of_feb(d2) { 30 } else { min(d2.day(), 30) };
+    let d1_day = if is_last_day_of_feb(d1) {
+        30
+    } else {
+        min(d1.day(), 30)
+    };
+    let d2_day = if is_last_day_of_feb(d2) {
+        30
+    } else {
+        min(d2.day(), 30)
+    };
     days_between_30_360(d1, d2, d1_day, d2_day)
 }
 
@@ -193,7 +204,11 @@ fn days_between_30_e_plus_360(d1: &Date, d2: &Date) -> i32 {
 }
 
 fn days_between_30_u_360(d1: &Date, d2: &Date) -> i32 {
-    let d1_day = if is_last_day_of_feb(d1) { 30 } else { min(d1.day(), 30) };
+    let d1_day = if is_last_day_of_feb(d1) {
+        30
+    } else {
+        min(d1.day(), 30)
+    };
     let d2_day = if is_last_day_of_feb(d1) && is_last_day_of_feb(d2) {
         30
     } else if d1_day >= 30 {
@@ -221,9 +236,10 @@ pub fn is_last_day_of_feb(date: &Date) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
+
     use super::*;
     use crate::core::DateLike;
-    use rstest::rstest;
 
     // test cases from http://www.deltaquants.com/day-count-conventions
     #[rstest]

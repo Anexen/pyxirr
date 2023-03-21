@@ -6,6 +6,7 @@ edition = "2021"
 description = "Rust-powered collection of financial functions for Python."
 readme = "README.md"
 homepage = "https://github.com/Anexen/pyxirr"
+license = "Unlicense"
 keywords = [
     "python",
     "fast",
@@ -14,7 +15,12 @@ keywords = [
     "cashflow",
     "day count convention"
 ]
-license = "Unlicense"
+include = [
+    "src/**",
+    "Cargo.toml",
+    "pyproject.toml",
+    "LICENSE",
+]
 
 [lib]
 name = "pyxirr"

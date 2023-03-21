@@ -2,9 +2,8 @@
 
 extern crate test;
 
-use test::{black_box, Bencher};
-
 use pyo3::{types::PyModule, Python};
+use test::{black_box, Bencher};
 
 #[path = "../tests/common/mod.rs"]
 mod common;

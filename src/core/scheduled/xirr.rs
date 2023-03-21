@@ -1,6 +1,8 @@
 use super::{year_fraction, DayCount};
-use crate::core::models::{validate, DateLike, InvalidPaymentsError};
-use crate::core::optimize::find_root;
+use crate::core::{
+    models::{validate, DateLike, InvalidPaymentsError},
+    optimize::find_root,
+};
 
 pub fn xirr(
     dates: &[DateLike],
