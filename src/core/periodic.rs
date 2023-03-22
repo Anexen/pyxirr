@@ -160,6 +160,11 @@ pub fn pmt_vec(
 }
 
 pub fn ipmt(rate: f64, per: f64, nper: f64, pv: f64, fv: f64, pmt_at_beginning: bool) -> f64 {
+    // let total_pmt = self::pmt(rate, nper, pv, fv, pmt_at_beginning);
+    // let result = rate * self::fv(rate, per - 1.0, total_pmt, pv, pmt_at_beginning);
+    //
+    // simplify r*(-P*(1+r)**(p-1)-(-(F+P*(1+r)**n)*r/((1+r*t)*((1+r)**n-1)))*(1+r*t)/r*((1+r)**(p-1)-1))
+
     // payments before first period don't make any sense.
     if per < 1.0 || per > nper {
         return f64::NAN;
@@ -171,8 +176,16 @@ pub fn ipmt(rate: f64, per: f64, nper: f64, pv: f64, fv: f64, pmt_at_beginning: 
         return 0.0;
     }
 
-    let total_pmt = self::pmt(rate, nper, pv, fv, pmt_at_beginning);
-    let result = rate * self::fv(rate, per - 1.0, total_pmt, pv, pmt_at_beginning);
+    // no interest if rate == 0
+    if rate == 0.0 {
+        return 0.0;
+    }
+
+    let f1 = (rate + 1.0).powf(per);
+    let f2 = (rate + 1.0).powf(nper);
+
+    let result = (rate * (pv + fv) * f1 - rate * (rate + 1.0) * (fv + pv * f2))
+        / ((rate + 1.0) * (f2 - 1.0));
 
     if pmt_at_beginning {
         // if paying at the beginning we need to discount by one period.
@@ -193,22 +206,24 @@ pub fn ipmt_vec(
     let (rate, per, nper, pv, fv, pmt_at_beginning) =
         broadcast_together!(rate, per, nper, pv, fv, pmt_at_beginning)?;
 
-    let total_pmt = self::pmt_vec(&rate, &nper, &pv, &fv, &pmt_at_beginning)?;
-    let per_prev = &per - 1.0;
-    let mut result = &rate
-        * self::fv_vec(&rate, &per_prev.view(), &total_pmt.view(), &pv, &pmt_at_beginning.view())?;
+    let f1 = ndarray::Zip::from(&rate).and(&per).map_collect(|rate, &per| (rate + 1.).powf(per));
+    let f2 =
+        ndarray::Zip::from(&rate).and(&nper).map_collect(|rate, &nper| (rate + 1.0).powf(nper));
 
-    ndarray::Zip::from(&mut result).and(rate).and(per).and(nper).and(pmt_at_beginning).for_each(
-        |r, rate, per, nper, &pmt_at_beginning| {
-            if per < &1.0 || per > nper {
-                *r = f64::NAN
-            } else if per == &1.0 && pmt_at_beginning {
-                *r = 0.0
-            } else if pmt_at_beginning {
-                *r /= 1.0 + rate
-            }
-        },
-    );
+    let mut result = (&rate * (&pv + &fv) * &f1 - &rate * (&rate + 1.0) * (&fv + &pv * &f2))
+        / ((&rate + 1.0) * (&f2 - 1.0));
+
+    for (ref idx, r) in result.indexed_iter_mut() {
+        if rate[idx] == 0.0 {
+            *r = 0.0;
+        } else if per[idx] < 1.0 || per[idx] > nper[idx] {
+            *r = f64::NAN;
+        } else if per[idx] == 1.0 && pmt_at_beginning[idx] {
+            *r = 0.0;
+        } else if pmt_at_beginning[idx] {
+            *r /= rate[idx] + 1.0;
+        }
+    }
 
     Ok(result)
 }
@@ -264,12 +279,12 @@ pub fn ppmt_vec(
 
     let mut result = -&rate * (&fv + &pv) * &f1 / (&f2 - &rate * &when - 1.0);
 
-    for (idx, _) in rate.indexed_iter().filter(|(_, &r)| r == 0.0) {
-        result[&idx] = -(fv[&idx] + pv[&idx]) / nper[&idx];
-    }
-
-    for (idx, _) in per.indexed_iter().filter(|(idx, &p)| p < 1.0 || p > nper[idx]) {
-        result[&idx] = f64::NAN;
+    for (ref idx, r) in result.indexed_iter_mut() {
+        if rate[idx] == 0.0 {
+            *r = -(fv[idx] + pv[idx]) / nper[idx];
+        } else if per[idx] < 1.0 || per[idx] > nper[idx] {
+            *r = f64::NAN;
+        }
     }
 
     Ok(result)

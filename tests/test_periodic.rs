@@ -322,6 +322,25 @@ fn test_ipmt_per_greater_than_nper() {
 }
 
 #[rstest]
+fn test_ipmt_large_power() {
+    Python::with_gil(|py| {
+        let result: f64 = pyxirr_call!(py, "ipmt", (0.1479, 297, 300, -270.51));
+        assert_almost_eq!(result, 16.9656277018672);
+
+        let result: f64 = pyxirr_call!(py, "ipmt", (0.1479, 297, 300, -270.51, -100));
+        assert_almost_eq!(result, 8.447346936597);
+
+        let kwargs = py_dict!(py, "pmt_at_beginning" => true);
+
+        let result: f64 = pyxirr_call!(py, "ipmt", (0.1479, 297, 300, -270.51), kwargs);
+        assert_almost_eq!(result, 14.779708774167800);
+
+        let result: f64 = pyxirr_call!(py, "ipmt", (0.1479, 297, 300, -270.51, -100), kwargs);
+        assert_almost_eq!(result, 7.358957171005);
+    })
+}
+
+#[rstest]
 fn test_ipmt_vec() {
     Python::with_gil(|py| {
         let per = (0..=13).collect::<Vec<_>>();
@@ -349,6 +368,26 @@ fn test_ipmt_vec() {
                 Some(v) => assert_almost_eq!(v, expected[i]),
                 None => assert!(expected[i].is_nan()),
             }
+        }
+    })
+}
+
+#[rstest]
+fn test_ipmt_vec_large_power() {
+    Python::with_gil(|py| {
+        let result: Vec<f64> = pyxirr_call!(
+            py,
+            "ipmt",
+            ([0.0, 0.1479, 0.1479, 0.1479], 297, 300, -270.51, [0.0, 0.0, -100.0, 0.0]),
+            py_dict!(py, "pmt_at_beginning" =>
+                [false, false, false, true]
+            )
+        );
+
+        let expected = vec![0.0, 16.9656277018672, 8.447346936597, 14.779708774167800];
+
+        for i in 0..expected.len() {
+            assert_almost_eq!(result[i], expected[i]);
         }
     })
 }
@@ -386,7 +425,7 @@ fn test_ppmt_zero_rate() {
 }
 
 #[rstest]
-fn test_ppmt_high_power() {
+fn test_ppmt_large_power() {
     // https://github.com/numpy/numpy-financial/issues/35
     Python::with_gil(|py| {
         let result: f64 = pyxirr_call!(py, "ppmt", (0.1479, 297, 300, -270.51));
