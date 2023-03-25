@@ -660,3 +660,29 @@ fn test_mirr_same_sign() {
         assert!(result.is_none());
     });
 }
+
+// ------------ CUMPRINC ----------------
+
+#[rstest]
+fn test_cumprinc_works() {
+    Python::with_gil(|py| {
+        let result: f64 = pyxirr_call!(py, "cumprinc", (0.09 / 12.0, 30 * 12, 125_000, 13, 24));
+        assert_almost_eq!(result, -934.1071234, 1e-7);
+
+        let result: f64 = pyxirr_call!(py, "cumprinc", (0.09 / 12.0, 30 * 12, 125_000, 1, 1));
+        assert_almost_eq!(result, -68.27827118, 1e-7);
+    });
+}
+
+// ------------ CUMIPMT ----------------
+
+#[rstest]
+fn test_cumipmt_works() {
+    Python::with_gil(|py| {
+        let result: f64 = pyxirr_call!(py, "cumipmt", (0.09 / 12.0, 30 * 12, 125_000, 13, 24));
+        assert_almost_eq!(result, -11135.23213075);
+
+        let result: f64 = pyxirr_call!(py, "cumipmt", (0.09 / 12.0, 30 * 12, 125_000, 1, 1));
+        assert_almost_eq!(result, -937.5, 1e-7);
+    });
+}

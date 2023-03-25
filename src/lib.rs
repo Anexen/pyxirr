@@ -346,6 +346,46 @@ fn rate<'a>(
 }
 
 #[pyfunction]
+#[pyo3(signature = (rate, nper, pv, start_period, end_period, *, pmt_at_beginning=false))]
+fn cumprinc(
+    py: Python,
+    rate: f64,
+    nper: usize,
+    pv: f64,
+    start_period: usize,
+    end_period: usize,
+    pmt_at_beginning: bool,
+) -> Option<f64> {
+    let result = py.allow_threads(move || {
+        (start_period..=end_period)
+            .map(|x| core::ppmt(rate, x as f64, nper as f64, pv, 0.0, pmt_at_beginning))
+            .sum()
+    });
+
+    float_or_none(result)
+}
+
+#[pyfunction]
+#[pyo3(signature = (rate, nper, pv, start_period, end_period, *, pmt_at_beginning=false))]
+fn cumipmt(
+    py: Python,
+    rate: f64,
+    nper: usize,
+    pv: f64,
+    start_period: usize,
+    end_period: usize,
+    pmt_at_beginning: bool,
+) -> Option<f64> {
+    let result = py.allow_threads(move || {
+        (start_period..=end_period)
+            .map(|x| core::ipmt(rate, x as f64, nper as f64, pv, 0.0, pmt_at_beginning))
+            .sum()
+    });
+
+    float_or_none(result)
+}
+
+#[pyfunction]
 fn year_fraction(d1: core::DateLike, d2: core::DateLike, day_count: PyDayCount) -> PyResult<f64> {
     Ok(core::year_fraction(&d1, &d2, day_count.try_into()?))
 }
@@ -363,7 +403,9 @@ pub fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
 
     m.add_function(wrap_pyfunction!(pmt, m)?)?;
     m.add_function(wrap_pyfunction!(ipmt, m)?)?;
+    m.add_function(wrap_pyfunction!(cumipmt, m)?)?;
     m.add_function(wrap_pyfunction!(ppmt, m)?)?;
+    m.add_function(wrap_pyfunction!(cumprinc, m)?)?;
     m.add_function(wrap_pyfunction!(nper, m)?)?;
     m.add_function(wrap_pyfunction!(rate, m)?)?;
     m.add_function(wrap_pyfunction!(fv, m)?)?;

@@ -391,6 +391,18 @@ def ipmt(
     ...
 
 
+def cumipmt(
+    rate: _Rate,
+    nper: _Period,
+    pv: _Amount,
+    start_period: _Period,
+    end_period: _Period,
+    *,
+    pmt_at_beginning: bool = False,
+) -> Optional[float]:
+    ...
+
+
 @overload
 def ppmt(  # type: ignore[misc]
     rate: _Rate,
@@ -414,6 +426,18 @@ def ppmt(
     *,
     pmt_at_beginning: _ScalarOrArrayLike[bool] = False,
 ) -> List[Optional[float]]:
+    ...
+
+
+def cumprinc(
+    rate: _Rate,
+    nper: _Period,
+    pv: _Amount,
+    start_period: _Period,
+    end_period: _Period,
+    *,
+    pmt_at_beginning: bool = False,
+) -> Optional[float]:
     ...
 
 

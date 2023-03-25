@@ -310,6 +310,25 @@ def ipmt(
 
 See also: [PMT](functions.md#pmt)
 
+## CUMIPMT
+
+Returns the cumulative interest paid on a loan between `start_period` and `end_period`.
+
+```python
+def cumipmt(
+    rate: Rate,
+    nper: Period,
+    pv: Amount,
+    start_period: Period,
+    end_period: Period,
+    *,
+    pmt_at_beginning: bool = False,
+) -> Optional[float]:
+    ...
+```
+
+Equivalent of `sum(ipmt(rate, range(start_period, end_period + 1), nper, pv))`
+
 ## PPMT
 
 Compute the payment against loan principal.
@@ -331,6 +350,25 @@ def ppmt(
 > Added in 0.9.0: vectorization
 
 See also: [PMT](functions.md#pmt)
+
+## CUMPRINC
+
+Returns the cumulative principal paid on a loan between `start_period` and `end_period`.
+
+```python
+def cumprinc(
+    rate: Rate,
+    nper: Period,
+    pv: Amount,
+    start_period: Period,
+    end_period: Period,
+    *,
+    pmt_at_beginning: bool = False,
+) -> Optional[float]:
+    ...
+```
+
+Equivalent of `sum(ppmt(rate, range(start_period, end_period + 1), nper, pv))`
 
 ## NPER
 
