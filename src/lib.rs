@@ -350,15 +350,16 @@ fn rate<'a>(
 fn cumprinc(
     py: Python,
     rate: f64,
-    nper: usize,
+    nper: f64,
     pv: f64,
-    start_period: usize,
-    end_period: usize,
+    start_period: f64,
+    end_period: f64,
     pmt_at_beginning: bool,
 ) -> Option<f64> {
+    // https://wiki.documentfoundation.org/Documentation/Calc_Functions/CUMPRINC
     let result = py.allow_threads(move || {
-        (start_period..=end_period)
-            .map(|x| core::ppmt(rate, x as f64, nper as f64, pv, 0.0, pmt_at_beginning))
+        (start_period.trunc() as u64..=end_period.trunc() as u64)
+            .map(|per| core::ppmt(rate, per as f64, nper, pv, 0.0, pmt_at_beginning))
             .sum()
     });
 
@@ -370,15 +371,16 @@ fn cumprinc(
 fn cumipmt(
     py: Python,
     rate: f64,
-    nper: usize,
+    nper: f64,
     pv: f64,
-    start_period: usize,
-    end_period: usize,
+    start_period: f64,
+    end_period: f64,
     pmt_at_beginning: bool,
 ) -> Option<f64> {
+    // https://wiki.documentfoundation.org/Documentation/Calc_Functions/CUMIPMT
     let result = py.allow_threads(move || {
-        (start_period..=end_period)
-            .map(|x| core::ipmt(rate, x as f64, nper as f64, pv, 0.0, pmt_at_beginning))
+        (start_period.trunc() as u64..=end_period.trunc() as u64)
+            .map(|per| core::ipmt(rate, per as f64, nper, pv, 0.0, pmt_at_beginning))
             .sum()
     });
 
