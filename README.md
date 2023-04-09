@@ -77,7 +77,7 @@ xirr(pd.Series(amounts, index=pd.to_datetime(dates)))
 
 # bonus: apply xirr to a DataFrame with DatetimeIndex:
 df = pd.DataFrame(
-    index=pd.date_range("2021", "2022", freq="MS", closed="left"),
+    index=pd.date_range("2021", "2022", freq="MS", inclusive="left"),
     data={
         "one": [-100] + [20] * 11,
         "two": [-80] + [19] * 11,
