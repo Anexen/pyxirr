@@ -338,7 +338,7 @@ dependencies = [
 
 [[package]]
 name = "pyxirr"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "ndarray",
  "numpy",

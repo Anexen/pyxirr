@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.9.1] - 2023-06-03
+
+- CUMPRINC, CUMIPMT functions
+- Upgrade maturin to v1
+
 ## [0.9.0] - 2023-03-12
 
 - Vectorized versions of numpy-financial functions
