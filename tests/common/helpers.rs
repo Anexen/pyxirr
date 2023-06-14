@@ -3,6 +3,9 @@ use pyo3::{once_cell::GILOnceCell, prelude::*, types::*};
 
 #[macro_export]
 macro_rules! py_dict {
+    ($py:expr) => {
+        ::pyo3::types::PyDict::new($py)
+    };
     ($py:expr, $($key:expr => $value:expr), *) => {
         {
             let _dict = ::pyo3::types::PyDict::new($py);

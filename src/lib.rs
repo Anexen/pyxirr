@@ -190,18 +190,22 @@ fn xfv(
 
 /// Net future value of a series of irregular cash flows
 #[pyfunction]
-#[pyo3(signature = (rate, dates, amounts=None, *, day_count=None))]
-#[pyo3(text_signature = "(rate, dates, *, amounts=None, day_count=None)")]
+#[pyo3(signature = (rate, dates, amounts=None, *, silent=false, day_count=None))]
+#[pyo3(text_signature = "(rate, dates, amounts=None, *, silent=False, day_count=None)")]
 fn xnfv(
     py: Python,
     rate: f64,
     dates: &PyAny,
     amounts: Option<&PyAny>,
+    silent: Option<bool>,
     day_count: Option<PyDayCount>,
 ) -> PyResult<Option<f64>> {
     let (dates, amounts) = conversions::extract_payments(dates, amounts)?;
     let day_count = day_count.map(|x| x.try_into()).transpose()?;
-    py.allow_threads(move || Ok(float_or_none(core::xnfv(rate, &dates, &amounts, day_count)?)))
+    py.allow_threads(move || {
+        let result = core::xnfv(rate, &dates, &amounts, day_count);
+        fallible_float_or_none(result, silent.unwrap_or(false))
+    })
 }
 
 /// Present Value

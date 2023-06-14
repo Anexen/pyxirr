@@ -219,6 +219,7 @@ def xnfv(
     rate: _Rate,  # annual rate
     dates: _CashFlow,
     *,
+    silent: bool = False,
     day_count: _DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
     ...
@@ -230,6 +231,7 @@ def xnfv(
     dates: _DateLikeArray,
     amounts: _AmountArray,
     *,
+    silent: bool = False,
     day_count: _DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
     ...

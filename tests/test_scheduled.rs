@@ -1,6 +1,6 @@
 use pyo3::{
     types::{PyDate, PyList},
-    Python,
+    IntoPy, PyResult, Python,
 };
 use rstest::rstest;
 
@@ -133,6 +133,22 @@ fn test_xnfv() {
         let payments = PaymentsLoader::from_csv(py, "tests/samples/xnfv.csv").to_records();
         let result: f64 = pyxirr_call!(py, "xnfv", (0.0250, payments));
         assert_almost_eq!(result, 57238.1249299303);
+    });
+}
+
+#[rstest]
+fn test_xnfv_silent() {
+    Python::with_gil(|py| {
+        let dates = vec!["2021-01-01", "2022-01-01"].into_py(py);
+        let amounts = vec![1000, 100].into_py(py);
+        let args = (0.0250, dates, amounts);
+        let kwargs = py_dict!(py);
+        let result: PyResult<_> = pyxirr_call_impl!(py, "xnfv", args.clone(), kwargs);
+
+        assert!(result.is_err());
+        let kwargs = py_dict!(py, "silent" => true);
+        let result: Option<f64> = pyxirr_call!(py, "xnfv", args, kwargs);
+        assert!(result.is_none());
     });
 }
 
