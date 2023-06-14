@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.9.2] - 2023-06-14
+
+- XNFV: suppress `InvalidPaymentsError` by passing `silent=True` flag ([#40](https://github.com/Anexen/pyxirr/issues/40))
+
 ## [0.9.1] - 2023-06-03
 
 - CUMPRINC, CUMIPMT functions
@@ -36,7 +40,7 @@
 
 ## [0.7.0] - 2021-12-02
 
-- Add an ability to suppress InvalidPaymentsError by passing `silent=True` flag ([#22](https://github.com/Anexen/pyxirr/issues/22))
+- Add an ability to suppress `InvalidPaymentsError` by passing `silent=True` flag ([#22](https://github.com/Anexen/pyxirr/issues/22))
 - Release the GIL for rust-only code
 - Type hints
 - Refactor tests (use `PyCFunction` interface instead of calling functions directly)

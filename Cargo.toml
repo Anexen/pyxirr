@@ -1,6 +1,6 @@
 [package]
 name = "pyxirr"
-version = "0.9.1"
+version = "0.9.2"
 authors = ["Anexen"]
 edition = "2021"
 description = "Rust-powered collection of financial functions for Python."
@@ -27,13 +27,13 @@ name = "pyxirr"
 crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-pyo3 = "0.18"
-numpy = "0.18"
+pyo3 = "0.19"
+numpy = "0.19"
 time = { version = "0.3", features = ["parsing", "macros"] }
 ndarray = "0.15"
 
 [dev-dependencies]
-rstest = "0.16"
+rstest = "0.17"
 
 [features]
 default = ["pyo3/extension-module"]
