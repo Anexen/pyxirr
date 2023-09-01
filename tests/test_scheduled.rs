@@ -92,7 +92,7 @@ fn test_xirr_samples(#[case] input: &str) {
     let expected = xirr_expected_result(input);
 
     if result.is_nan() {
-        assert!(expected.is_nan());
+        assert!(expected.is_nan(), "assertion failed: expected {expected}, found NaN");
     } else {
         assert_almost_eq!(result, expected);
     }

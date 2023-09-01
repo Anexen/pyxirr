@@ -27,3 +27,4 @@ include = [
     { path = ".cargo/*", format = "sdist" },
 ]
 strip = true
+features = ["pyo3/extension-module"]

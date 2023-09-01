@@ -57,8 +57,8 @@ where
     let mut fpre = f(xpre);
     let mut fcur = f(xcur);
 
-    if fpre * fcur > 0. {
-        return 0.;
+    if fpre.signum() == fcur.signum() {
+        return f64::NAN; // sign error
     }
     if fpre == 0. {
         return xpre;
@@ -67,8 +67,8 @@ where
         return xcur;
     }
 
-    for _i in 0..iter {
-        if fpre != 0. && fcur != 0. && fpre.is_sign_negative() != fcur.is_sign_negative() {
+    for _ in 0..iter {
+        if fpre != 0. && fcur != 0. && fpre.signum() != fcur.signum() {
             xblk = xpre;
             fblk = fpre;
             spre = xcur - xpre;
@@ -122,46 +122,15 @@ where
         fpre = fcur;
         if scur.abs() > delta {
             xcur += scur;
-        } else if sbis > 0. {
-            xcur += delta
         } else {
-            xcur -= delta
+            xcur += if sbis > 0. {
+                delta
+            } else {
+                -delta
+            }
         }
 
         fcur = f(xcur);
-    }
-
-    f64::NAN
-}
-
-pub fn find_root<Func, Deriv>(start: f64, ranges: &[(f64, f64, f64)], f: Func, d: Deriv) -> f64
-where
-    Func: Fn(f64) -> f64,
-    Deriv: Fn(f64) -> f64,
-{
-    let is_good_rate = |rate: f64| rate.is_finite() && f(rate).abs() < 1e-3;
-
-    let rate = newton_raphson(start, &f, &d);
-
-    if is_good_rate(rate) {
-        return rate;
-    }
-
-    let rate = brentq(&f, -0.999999999999999, 1e9, 1000);
-
-    if is_good_rate(rate) {
-        return rate;
-    }
-
-    for (min, max, step) in ranges.iter() {
-        let mut guess = *min;
-        while guess < *max {
-            let rate = newton_raphson(guess, &f, &d);
-            if is_good_rate(rate) {
-                return rate;
-            }
-            guess += step;
-        }
     }
 
     f64::NAN

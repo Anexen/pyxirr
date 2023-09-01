@@ -187,14 +187,14 @@ $ maturin develop
 ### Testing
 
 ```bash
-$ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/3.10.8/lib cargo test --no-default-features --features tests
+$ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/3.10.8/lib cargo test
 ```
 
 ### Benchmarks
 
 ```bash
 $ pip install -r bench-requirements.txt
-$ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/3.10.8/lib cargo +nightly bench --no-default-features --features tests
+$ LD_LIBRARY_PATH=${PYENV_ROOT}/versions/3.10.8/lib cargo +nightly bench
 ```
 
 # Building and distribution

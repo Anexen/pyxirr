@@ -33,9 +33,8 @@ time = { version = "0.3", features = ["parsing", "macros"] }
 ndarray = "0.15"
 
 [dev-dependencies]
-rstest = "0.17"
+rstest = "0.18"
+pyo3 = { version = "0.19", features = ["auto-initialize"] }
 
 [features]
-default = ["pyo3/extension-module"]
-tests = ["pyo3/auto-initialize"]
 nonumpy = []

@@ -1,7 +1,7 @@
 use super::{year_fraction, DayCount};
 use crate::core::{
     models::{validate, DateLike, InvalidPaymentsError},
-    optimize::find_root,
+    optimize::{brentq, newton_raphson},
 };
 
 pub fn xirr(
@@ -14,12 +14,33 @@ pub fn xirr(
 
     let deltas = &day_count_factor(dates, day_count);
 
-    Ok(find_root(
-        guess.unwrap_or(0.1),
-        &[(-0.99, 1.0, 0.01)],
-        |rate| xnpv_result(amounts, deltas, rate),
-        |rate| xnpv_result_deriv(amounts, deltas, rate),
-    ))
+    let f = |rate| xnpv_result(amounts, deltas, rate);
+    let df = |rate| xnpv_result_deriv(amounts, deltas, rate);
+    let is_a_good_rate = |rate: f64| rate.is_finite() && f(rate).abs() < 1e-3;
+
+    let rate = newton_raphson(guess.unwrap_or(0.1), &f, &df);
+
+    if is_a_good_rate(rate) {
+        return Ok(rate);
+    }
+
+    let rate = brentq(&f, -0.999999999999999, 1e9, 1000);
+
+    if is_a_good_rate(rate) {
+        return Ok(rate);
+    }
+
+    let (min, max, step) = (-0.99, 1.0, 0.01);
+    let mut guess = min;
+    while guess < max {
+        let rate = newton_raphson(guess, &f, &df);
+        if is_a_good_rate(rate) {
+            return Ok(rate);
+        }
+        guess += step;
+    }
+
+    Ok(f64::NAN)
 }
 
 /// Calculate the net present value of a series of payments at irregular intervals.
