@@ -433,27 +433,36 @@ pub fn irr(values: &[f64], guess: Option<f64>) -> Result<f64, InvalidPaymentsErr
     // must contain at least one positive and one negative value
     validate(values, None)?;
 
-    let f = |rate| self::npv(rate, values, Some(true));
+    let f = |rate| {
+        if rate <= -1.0 {
+            // bound newton_raphson
+            return f64::INFINITY;
+        }
+        self::npv(rate, values, Some(true))
+    };
     let df = |rate| self::npv_deriv(rate, values);
-    let is_a_good_rate = |rate: f64| rate.is_finite() && f(rate).abs() < 1e-3;
-
-    // positive IRR is preferred
-    let rate = brentq(f, 0.0, 1e6, 100);
-
-    if is_a_good_rate(rate) {
-        return Ok(rate);
-    }
+    let is_good_rate = |rate: f64| rate.is_finite() && f(rate).abs() < 1e-3;
 
     let rate = newton_raphson(guess.unwrap_or(0.1), &f, &df);
 
-    if is_a_good_rate(rate) {
+    if is_good_rate(rate) {
         return Ok(rate);
     }
 
-    let rate = brentq(&f, -0.999999999999999, 0.0, 100);
+    #[rustfmt::skip]
+    let breakpoint_list = [
+        &[0.0, 0.1, 0.3, 0.7, 1.0, 1e6],
+        &[0.0, -0.1, -0.3, -0.7, -0.9, -0.99999999999999]
+    ];
 
-    if is_a_good_rate(rate) {
-        return Ok(rate);
+    for breakpoints in breakpoint_list {
+        for pair in breakpoints.windows(2) {
+            let rate = brentq(f, pair[0], pair[1], 100);
+
+            if is_good_rate(rate) {
+                return Ok(rate);
+            }
+        }
     }
 
     Ok(f64::NAN)

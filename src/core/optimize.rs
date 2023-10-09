@@ -46,7 +46,7 @@ pub fn brentq<Func>(f: Func, xa: f64, xb: f64, iter: usize) -> f64
 where
     Func: Fn(f64) -> f64,
 {
-    let xtol = 2e-12;
+    let xtol = 2e-14;
     let rtol = 8.881784197001252e-16;
 
     let mut xpre = xa;
