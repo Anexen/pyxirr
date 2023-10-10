@@ -451,8 +451,8 @@ pub fn irr(values: &[f64], guess: Option<f64>) -> Result<f64, InvalidPaymentsErr
 
     #[rustfmt::skip]
     let breakpoint_list = [
-        &[0.0, 0.1, 0.3, 0.7, 1.0, 1e6],
-        &[0.0, -0.1, -0.3, -0.7, -0.9, -0.99999999999999]
+        &[0.0, 0.5, 1.0, 1e9],
+        &[0.0, -0.5, -0.9, -0.99999999999999]
     ];
 
     for breakpoints in breakpoint_list {
