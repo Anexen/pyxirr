@@ -27,11 +27,11 @@ jobs:
             target
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
       - name: Test
-        run: cargo test --no-default-features --features tests --release
+        run: cargo test --release
       - name: Test no numpy installed works
         run: |
           pip uninstall numpy -y
-          cargo test --release --no-default-features --features tests,nonumpy
+          cargo test --release --features nonumpy
 
 
   build:
