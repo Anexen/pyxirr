@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.9.3] - 2023-10-11
+
+- IRR improvements ([#47](https://github.com/Anexen/pyxirr/pull/47))
+- Python 3.12 support
+
 ## [0.9.2] - 2023-06-14
 
 - XNFV: suppress `InvalidPaymentsError` by passing `silent=True` flag ([#40](https://github.com/Anexen/pyxirr/issues/40))
