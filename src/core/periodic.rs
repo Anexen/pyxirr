@@ -4,7 +4,7 @@ use ndarray::{ArrayD, ArrayViewD};
 
 use super::{
     models::{validate, InvalidPaymentsError},
-    optimize::{brentq, find_root, newton_raphson_with_default_deriv},
+    optimize::{brentq, newton_raphson, newton_raphson_with_default_deriv},
 };
 use crate::{broadcast_together, broadcasting::BroadcastingError};
 
@@ -433,17 +433,39 @@ pub fn irr(values: &[f64], guess: Option<f64>) -> Result<f64, InvalidPaymentsErr
     // must contain at least one positive and one negative value
     validate(values, None)?;
 
-    let f = |rate| self::npv(rate, values, Some(true));
+    let f = |rate| {
+        if rate <= -1.0 {
+            // bound newton_raphson
+            return f64::INFINITY;
+        }
+        self::npv(rate, values, Some(true))
+    };
     let df = |rate| self::npv_deriv(rate, values);
+    let is_good_rate = |rate: f64| rate.is_finite() && f(rate).abs() < 1e-3;
 
-    // IRR > 0 is preferred
-    let rate = brentq(f, 0.0, 1e9, 1000);
+    let rate = newton_raphson(guess.unwrap_or(0.1), &f, &df);
 
-    if rate.is_finite() && f(rate).abs() < 1e-3 {
+    if is_good_rate(rate) {
         return Ok(rate);
     }
 
-    Ok(find_root(guess.unwrap_or(0.1), &[(-0.99, 1.0, 0.01)], f, df))
+    #[rustfmt::skip]
+    let breakpoint_list = [
+        &[0.0, 0.5, 1.0, 1e9],
+        &[0.0, -0.5, -0.9, -0.99999999999999]
+    ];
+
+    for breakpoints in breakpoint_list {
+        for pair in breakpoints.windows(2) {
+            let rate = brentq(f, pair[0], pair[1], 100);
+
+            if is_good_rate(rate) {
+                return Ok(rate);
+            }
+        }
+    }
+
+    Ok(f64::NAN)
 }
 
 pub fn mirr(

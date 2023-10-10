@@ -21,8 +21,10 @@ requires = ["maturin>=1,<2"]
 build-backend = "maturin"
 
 [tool.maturin]
+features = ["pyo3/extension-module"]
 include = [
     "pyproject.toml",
+    "pyxirr.pyi",
     { path = "Cargo.toml", format = "sdist" },
     { path = "Cargo.lock", format = "sdist" },
     { path = ".cargo/*", format = "sdist" },

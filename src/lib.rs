@@ -403,6 +403,8 @@ fn days_between(d1: core::DateLike, d2: core::DateLike, day_count: PyDayCount) -
 
 #[pymodule]
 pub fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
+    m.add("__version__", env!("CARGO_PKG_VERSION"))?;
+
     m.add_class::<core::DayCount>()?;
     m.add_function(wrap_pyfunction!(year_fraction, m)?)?;
     m.add_function(wrap_pyfunction!(days_between, m)?)?;
