@@ -399,7 +399,10 @@ fn days_between(d1: core::DateLike, d2: core::DateLike, day_count: PyDayCount) -
 }
 
 mod pe {
-    use crate::{conversions::AmountArray, core::private_equity};
+    use crate::{
+        conversions::{fallible_float_or_none, AmountArray},
+        core::private_equity,
+    };
     use pyo3::prelude::*;
 
     pub fn module(_py: Python, m: &PyModule) -> PyResult<()> {
@@ -431,25 +434,25 @@ mod pe {
     #[pyfunction]
     #[doc = include_str!("../docs/_inline/pe/dpi.md")]
     fn dpi(py: Python, amounts: AmountArray) -> PyResult<f64> {
-        py.allow_threads(move || Ok(private_equity::dpi(&amounts)))
+        py.allow_threads(move || Ok(private_equity::dpi(&amounts)?))
     }
 
     #[pyfunction]
     #[doc = include_str!("../docs/_inline/pe/dpi.md")]
     fn dpi_2(py: Python, contributions: AmountArray, distributions: AmountArray) -> PyResult<f64> {
-        py.allow_threads(move || Ok(private_equity::dpi_2(&contributions, &distributions)))
+        py.allow_threads(move || Ok(private_equity::dpi_2(&contributions, &distributions)?))
     }
 
     #[pyfunction]
     #[doc = include_str!("../docs/_inline/pe/rvpi.md")]
     fn rvpi(py: Python, contributions: AmountArray, nav: f64) -> PyResult<f64> {
-        py.allow_threads(move || Ok(private_equity::rvpi(&contributions, nav)))
+        py.allow_threads(move || Ok(private_equity::rvpi(&contributions, nav)?))
     }
 
     #[pyfunction]
     #[doc = include_str!("../docs/_inline/pe/tvpi.md")]
-    pub fn tvpi(py: Python, amounts: AmountArray, nav: f64) -> f64 {
-        py.allow_threads(move || private_equity::tvpi(&amounts, nav))
+    pub fn tvpi(py: Python, amounts: AmountArray, nav: f64) -> PyResult<f64> {
+        py.allow_threads(move || Ok(private_equity::tvpi(&amounts, nav)?))
     }
 
     #[pyfunction]
@@ -459,13 +462,13 @@ mod pe {
         contributions: AmountArray,
         distributions: AmountArray,
         nav: f64,
-    ) -> f64 {
-        py.allow_threads(move || private_equity::tvpi_2(&contributions, &distributions, nav))
+    ) -> PyResult<f64> {
+        py.allow_threads(move || Ok(private_equity::tvpi_2(&contributions, &distributions, nav)?))
     }
 
     #[pyfunction]
-    pub fn moic(py: Python, amounts: AmountArray, nav: f64) -> f64 {
-        py.allow_threads(move || private_equity::moic(&amounts, nav))
+    pub fn moic(py: Python, amounts: AmountArray, nav: f64) -> PyResult<f64> {
+        py.allow_threads(move || Ok(private_equity::moic(&amounts, nav)?))
     }
 
     #[pyfunction]
@@ -474,8 +477,8 @@ mod pe {
         contributions: AmountArray,
         distributions: AmountArray,
         nav: f64,
-    ) -> f64 {
-        py.allow_threads(move || private_equity::moic_2(&contributions, &distributions, nav))
+    ) -> PyResult<f64> {
+        py.allow_threads(move || Ok(private_equity::moic_2(&contributions, &distributions, nav)?))
     }
 
     #[pyfunction]
@@ -516,8 +519,15 @@ mod pe {
     }
 
     #[pyfunction]
-    fn pme_plus(py: Python, amounts: AmountArray, nav: f64, index: AmountArray) -> PyResult<f64> {
-        py.allow_threads(move || Ok(private_equity::pme_plus(&amounts, nav, &index)?))
+    fn pme_plus(
+        py: Python,
+        amounts: AmountArray,
+        nav: f64,
+        index: AmountArray,
+    ) -> PyResult<Option<f64>> {
+        py.allow_threads(move || {
+            fallible_float_or_none(private_equity::pme_plus(&amounts, nav, &index), false)
+        })
     }
 
     #[pyfunction]
@@ -527,9 +537,12 @@ mod pe {
         distributions: AmountArray,
         nav: f64,
         index: AmountArray,
-    ) -> PyResult<f64> {
+    ) -> PyResult<Option<f64>> {
         py.allow_threads(move || {
-            Ok(private_equity::pme_plus_2(&contributions, &distributions, nav, &index)?)
+            fallible_float_or_none(
+                private_equity::pme_plus_2(&contributions, &distributions, nav, &index),
+                false,
+            )
         })
     }
 
@@ -552,9 +565,12 @@ mod pe {
         distributions: AmountArray,
         nav: f64,
         index: AmountArray,
-    ) -> PyResult<Vec<f64>> {
+    ) -> PyResult<(Vec<f64>, Vec<f64>)> {
         py.allow_threads(move || {
-            Ok(private_equity::pme_plus_flows_2(&contributions, &distributions, nav, &index)?)
+            let adj_distributions =
+                private_equity::pme_plus_flows_2(&contributions, &distributions, nav, &index)?;
+
+            Ok((contributions.to_vec(), adj_distributions))
         })
     }
 
@@ -601,8 +617,10 @@ mod pe {
     }
 
     #[pyfunction]
-    fn ln_pme(py: Python, amounts: AmountArray, index: AmountArray) -> PyResult<f64> {
-        py.allow_threads(move || Ok(private_equity::ln_pme(&amounts, &index)?))
+    fn ln_pme(py: Python, amounts: AmountArray, index: AmountArray) -> PyResult<Option<f64>> {
+        py.allow_threads(move || {
+            fallible_float_or_none(private_equity::ln_pme(&amounts, &index), false)
+        })
     }
 
     #[pyfunction]
@@ -611,9 +629,12 @@ mod pe {
         contributions: AmountArray,
         distributions: AmountArray,
         index: AmountArray,
-    ) -> PyResult<f64> {
+    ) -> PyResult<Option<f64>> {
         py.allow_threads(move || {
-            Ok(private_equity::ln_pme_2(&contributions, &distributions, &index)?)
+            fallible_float_or_none(
+                private_equity::ln_pme_2(&contributions, &distributions, &index),
+                false,
+            )
         })
     }
 }
@@ -630,6 +651,7 @@ where
 }
 
 #[pymodule]
+#[pyo3(name = "_pyxirr")]
 pub fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
 

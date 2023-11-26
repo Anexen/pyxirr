@@ -1,14 +1,13 @@
 import sys
 from datetime import date, datetime
 from decimal import Decimal
+from collections.abc import Iterable, Sequence
 from typing import (
     Any,
     Dict,
     Hashable,
-    Iterable,
     List,
     Optional,
-    Sequence,
     Tuple,
     TypeVar,
     Union,

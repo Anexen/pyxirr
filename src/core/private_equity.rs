@@ -2,51 +2,48 @@
 
 use super::InvalidPaymentsError;
 
+type Result<T> = std::result::Result<T, InvalidPaymentsError>;
+
 #[doc = include_str!("../../docs/_inline/pe/dpi.md")]
-pub fn dpi(amounts: &[f64]) -> f64 {
-    let cs: f64 = amounts.iter().filter(|x| x.is_sign_negative()).sum();
-    let ds: f64 = amounts.iter().filter(|x| x.is_sign_positive()).sum();
-    // TODO: check for zero
-    ds / -cs
+pub fn dpi(amounts: &[f64]) -> Result<f64> {
+    let (cs, ds) = sum_negatives_positives(amounts);
+    check_zero_contributions(cs)?;
+    Ok(ds / -cs)
 }
 
 #[doc = include_str!("../../docs/_inline/pe/dpi.md")]
-pub fn dpi_2(contributions: &[f64], distributions: &[f64]) -> f64 {
+pub fn dpi_2(contributions: &[f64], distributions: &[f64]) -> Result<f64> {
     let cs: f64 = contributions.iter().sum();
+    check_zero_contributions(cs)?;
     let ds: f64 = distributions.iter().sum();
-    // TODO: check for zero
-    ds / cs
+    Ok(ds / cs)
 }
 
 #[doc = include_str!("../../docs/_inline/pe/rvpi.md")]
-pub fn rvpi(contributions: &[f64], nav: f64) -> f64 {
-    #[rustfmt::skip]
-    let sign = contributions.iter()
-        .any(|x| x.is_sign_negative())
-        .then_some(-1.0)
-        .unwrap_or(1.0);
-
+pub fn rvpi(contributions: &[f64], nav: f64) -> Result<f64> {
     let cs: f64 = contributions.iter().sum();
-    // TODO: check for zero
-    nav / (sign * cs)
+    check_zero_contributions(cs)?;
+    let sign = series_signum(contributions);
+    Ok(nav / (sign * cs))
 }
 
 #[doc = include_str!("../../docs/_inline/pe/tvpi.md")]
-pub fn tvpi(amounts: &[f64], nav: f64) -> f64 {
-    let cs: f64 = amounts.iter().filter(|x| x.is_sign_negative()).sum();
-    let ds: f64 = amounts.iter().filter(|x| x.is_sign_positive()).sum();
-    (ds + nav) / -cs
+pub fn tvpi(amounts: &[f64], nav: f64) -> Result<f64> {
+    let (cs, ds) = sum_negatives_positives(amounts);
+    check_zero_contributions(cs)?;
+    Ok((ds + nav) / -cs)
 }
 
 #[doc = include_str!("../../docs/_inline/pe/tvpi.md")]
-pub fn tvpi_2(contributions: &[f64], distributions: &[f64], nav: f64) -> f64 {
+pub fn tvpi_2(contributions: &[f64], distributions: &[f64], nav: f64) -> Result<f64> {
     // this is basically dpi_2(contributions, distributions) + rvpi(&contributions, nav)
     let cs: f64 = contributions.iter().sum();
+    check_zero_contributions(cs)?;
     let ds: f64 = distributions.iter().sum();
-    (ds + nav) / cs
+    Ok((ds + nav) / cs)
 }
 
-pub fn moic(amounts: &[f64], nav: f64) -> f64 {
+pub fn moic(amounts: &[f64], nav: f64) -> Result<f64> {
     // MOIC divides the total value of the investment or fund by the total invested capital,
     // whereas TVPI divides it by the paid-in capital (meaning, the capital that investors have
     // actually transferred to the fund).
@@ -55,15 +52,15 @@ pub fn moic(amounts: &[f64], nav: f64) -> f64 {
     tvpi(amounts, nav)
 }
 
-pub fn moic_2(contributions: &[f64], distributions: &[f64], nav: f64) -> f64 {
+pub fn moic_2(contributions: &[f64], distributions: &[f64], nav: f64) -> Result<f64> {
     tvpi_2(contributions, distributions, nav)
 }
 
 #[doc = include_str!("../../docs/_inline/pe/ks_pme_flows.md")]
-pub fn ks_pme_flows(amounts: &[f64], index: &[f64]) -> Result<Vec<f64>, InvalidPaymentsError> {
+pub fn ks_pme_flows(amounts: &[f64], index: &[f64]) -> Result<Vec<f64>> {
     check_input_len(amounts, index)?;
 
-    Ok(pairwise_mul(amounts, &px_series(index)))
+    Ok(pairwise_mul(amounts, &index_performance(index)))
 }
 
 #[doc = include_str!("../../docs/_inline/pe/ks_pme_flows.md")]
@@ -71,19 +68,19 @@ pub fn ks_pme_flows_2(
     contributions: &[f64],
     distributions: &[f64],
     index: &[f64],
-) -> Result<(Vec<f64>, Vec<f64>), InvalidPaymentsError> {
+) -> Result<(Vec<f64>, Vec<f64>)> {
     check_input_len(contributions, index)?;
     check_input_len(distributions, index)?;
 
-    let px = px_series(index);
+    let px = index_performance(index);
     let c = pairwise_mul(contributions, &px);
     let d = pairwise_mul(distributions, &px);
 
     Ok((c, d))
 }
 
-pub fn ks_pme(amounts: &[f64], nav: f64, index: &[f64]) -> Result<f64, InvalidPaymentsError> {
-    ks_pme_flows(amounts, index).map(|a| tvpi(&a, nav))
+pub fn ks_pme(amounts: &[f64], nav: f64, index: &[f64]) -> Result<f64> {
+    ks_pme_flows(amounts, index).and_then(|a| tvpi(&a, nav))
 }
 
 pub fn ks_pme_2(
@@ -91,16 +88,12 @@ pub fn ks_pme_2(
     distributions: &[f64],
     nav: f64,
     index: &[f64],
-) -> Result<f64, InvalidPaymentsError> {
-    ks_pme_flows_2(contributions, distributions, index).map(|(c, d)| tvpi_2(&c, &d, nav))
+) -> Result<f64> {
+    ks_pme_flows_2(contributions, distributions, index).and_then(|(c, d)| tvpi_2(&c, &d, nav))
 }
 
 #[doc = include_str!("../../docs/_inline/pe/pme_plus_flows.md")]
-pub fn pme_plus_flows(
-    amounts: &[f64],
-    nav: f64,
-    index: &[f64],
-) -> Result<Vec<f64>, InvalidPaymentsError> {
+pub fn pme_plus_flows(amounts: &[f64], nav: f64, index: &[f64]) -> Result<Vec<f64>> {
     check_input_len(amounts, index)?;
 
     let (contributions, distributions) = split_amounts(amounts);
@@ -116,16 +109,12 @@ pub fn pme_plus_flows_2(
     distributions: &[f64],
     nav: f64,
     index: &[f64],
-) -> Result<Vec<f64>, InvalidPaymentsError> {
+) -> Result<Vec<f64>> {
     let lambda = pme_plus_lambda_2(contributions, distributions, nav, index)?;
     Ok(scale(distributions, lambda))
 }
 
-pub fn pme_plus_lambda(
-    amounts: &[f64],
-    nav: f64,
-    index: &[f64],
-) -> Result<f64, InvalidPaymentsError> {
+pub fn pme_plus_lambda(amounts: &[f64], nav: f64, index: &[f64]) -> Result<f64> {
     check_input_len(amounts, index)?;
 
     let (contributions, distributions) = split_amounts(amounts);
@@ -137,18 +126,18 @@ pub fn pme_plus_lambda_2(
     distributions: &[f64],
     nav: f64,
     index: &[f64],
-) -> Result<f64, InvalidPaymentsError> {
+) -> Result<f64> {
     check_input_len(contributions, index)?;
     check_input_len(distributions, index)?;
 
-    let px = px_series(index);
+    let px = index_performance(index);
     let ds = sum_pairwise_mul(distributions, &px);
     let cs = sum_pairwise_mul(contributions, &px);
 
     Ok((cs - nav) / ds)
 }
 
-pub fn pme_plus(amounts: &[f64], nav: f64, index: &[f64]) -> Result<f64, InvalidPaymentsError> {
+pub fn pme_plus(amounts: &[f64], nav: f64, index: &[f64]) -> Result<f64> {
     let mut cf = pme_plus_flows(amounts, nav, index)?;
 
     if let Some(last) = cf.last_mut() {
@@ -163,7 +152,7 @@ pub fn pme_plus_2(
     distributions: &[f64],
     nav: f64,
     index: &[f64],
-) -> Result<f64, InvalidPaymentsError> {
+) -> Result<f64> {
     let scaled_distributions = pme_plus_flows_2(contributions, distributions, nav, index)?;
     let mut cf = combine_amounts(contributions, &scaled_distributions);
 
@@ -174,17 +163,13 @@ pub fn pme_plus_2(
     super::irr(&cf, None)
 }
 #[doc = include_str!("../../docs/_inline/pe/ln_pme_nav.md")]
-pub fn ln_pme_nav(amounts: &[f64], index: &[f64]) -> Result<f64, InvalidPaymentsError> {
+pub fn ln_pme_nav(amounts: &[f64], index: &[f64]) -> Result<f64> {
     check_input_len(amounts, index)?;
-    Ok(-sum_pairwise_mul(amounts, &px_series(index)))
+    Ok(-sum_pairwise_mul(amounts, &index_performance(index)))
 }
 
 #[doc = include_str!("../../docs/_inline/pe/ln_pme_nav.md")]
-pub fn ln_pme_nav_2(
-    contributions: &[f64],
-    distributions: &[f64],
-    index: &[f64],
-) -> Result<f64, InvalidPaymentsError> {
+pub fn ln_pme_nav_2(contributions: &[f64], distributions: &[f64], index: &[f64]) -> Result<f64> {
     check_input_len(contributions, index)?;
     check_input_len(distributions, index)?;
 
@@ -192,7 +177,7 @@ pub fn ln_pme_nav_2(
     ln_pme_nav(&amounts, index)
 }
 
-pub fn ln_pme(amounts: &[f64], index: &[f64]) -> Result<f64, InvalidPaymentsError> {
+pub fn ln_pme(amounts: &[f64], index: &[f64]) -> Result<f64> {
     let pme_nav = ln_pme_nav(amounts, index)?;
     let mut cf = amounts.to_owned();
     if let Some(last) = cf.last_mut() {
@@ -201,11 +186,7 @@ pub fn ln_pme(amounts: &[f64], index: &[f64]) -> Result<f64, InvalidPaymentsErro
     super::irr(&cf, None)
 }
 
-pub fn ln_pme_2(
-    contributions: &[f64],
-    distributions: &[f64],
-    index: &[f64],
-) -> Result<f64, InvalidPaymentsError> {
+pub fn ln_pme_2(contributions: &[f64], distributions: &[f64], index: &[f64]) -> Result<f64> {
     let mut amounts = combine_amounts(contributions, distributions);
     let pme_nav = ln_pme_nav(&amounts, index)?;
     if let Some(last) = amounts.last_mut() {
@@ -214,7 +195,15 @@ pub fn ln_pme_2(
     super::irr(&amounts, None)
 }
 
-fn check_input_len(amounts: &[f64], index: &[f64]) -> Result<(), InvalidPaymentsError> {
+fn check_zero_contributions(contributions: f64) -> Result<()> {
+    if contributions == 0.0 {
+        Err(InvalidPaymentsError::new("Contributions are zero"))
+    } else {
+        Ok(())
+    }
+}
+
+fn check_input_len(amounts: &[f64], index: &[f64]) -> Result<()> {
     if amounts.len() != index.len() {
         Err(InvalidPaymentsError::new("Amounts must be the same length as index."))
     } else if index.len() == 0 {
@@ -234,10 +223,12 @@ fn split_amounts(amounts: &[f64]) -> (Vec<f64>, Vec<f64>) {
 }
 
 fn combine_amounts(contributions: &[f64], distributions: &[f64]) -> Vec<f64> {
+    // assume both contributions and distributions are positive
+    // inverse operation of split_amounts
     contributions.iter().zip(distributions).map(|(c, d)| d - c).collect()
 }
 
-fn px_series(index: &[f64]) -> Vec<f64> {
+fn index_performance(index: &[f64]) -> Vec<f64> {
     let last = index.last().unwrap();
     index.iter().map(|p| last / p).collect()
 }
@@ -252,6 +243,21 @@ fn sum_pairwise_mul(a: &[f64], b: &[f64]) -> f64 {
 
 fn pairwise_mul(a: &[f64], b: &[f64]) -> Vec<f64> {
     a.iter().zip(b).map(|(x, y)| x * y).collect()
+}
+
+fn series_signum(a: &[f64]) -> f64 {
+    // returns -1.0 if any item is negative, otherwise +1.0
+    a.iter().any(|x| x.is_sign_negative()).then_some(-1.0).unwrap_or(1.0)
+}
+
+fn sum_negatives_positives(values: &[f64]) -> (f64, f64) {
+    values.iter().fold((0.0, 0.0), |acc, x| {
+        if x.is_sign_negative() {
+            (acc.0 + x, acc.1)
+        } else {
+            (acc.0, acc.1 + x)
+        }
+    })
 }
 
 #[cfg(test)]
@@ -285,25 +291,25 @@ mod tests {
         let amounts = &[-10.0, -20.0, 15.0, 30.0];
         let (contributions, distributions) = split_amounts(amounts);
 
-        assert_approx_eq!(dpi(amounts), 1.5);
-        assert_approx_eq!(dpi_2(&contributions, &distributions), 1.5);
+        assert_approx_eq!(dpi(amounts).unwrap(), 1.5);
+        assert_approx_eq!(dpi_2(&contributions, &distributions).unwrap(), 1.5);
     }
 
     #[rstest]
     fn test_rvpi() {
         let amounts = &[10.0, 20.0, 15.0, 30.0];
-        assert_approx_eq!(rvpi(amounts, 15.0), 0.2);
+        assert_approx_eq!(rvpi(amounts, 15.0).unwrap(), 0.2);
     }
 
     #[rstest]
     #[case(&[-10.0, -20.0, 15.0, 30.0], 15.0, 2.0)]
     #[case(&[-25.0, 15.0, 0.0], 20.0, 1.4)]
     fn test_tvpi(#[case] amounts: &[f64], #[case] nav: f64, #[case] expected: f64) {
-        let result = tvpi(amounts, nav);
+        let result = tvpi(amounts, nav).unwrap();
         assert_approx_eq!(result, expected);
 
         let (contributions, distributions) = split_amounts(amounts);
-        let result = tvpi_2(&contributions, &distributions, nav);
+        let result = tvpi_2(&contributions, &distributions, nav).unwrap();
         assert_approx_eq!(result, expected);
     }
 

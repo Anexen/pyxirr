@@ -213,6 +213,12 @@ fn extract_records(data: &PyAny) -> PyResult<(Vec<DateLike>, Vec<f64>)> {
 
 pub struct AmountArray(Vec<f64>);
 
+impl AmountArray {
+    pub fn to_vec(self) -> Vec<f64> {
+        self.0
+    }
+}
+
 impl<'s> FromPyObject<'s> for AmountArray {
     fn extract(obj: &'s PyAny) -> PyResult<Self> {
         extract_amount_series(obj).map(|v| AmountArray(v))

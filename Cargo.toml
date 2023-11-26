@@ -13,7 +13,8 @@ keywords = [
     "financial",
     "xirr",
     "cashflow",
-    "day count convention"
+    "day count convention",
+    "PME",
 ]
 include = [
     "src/**",
