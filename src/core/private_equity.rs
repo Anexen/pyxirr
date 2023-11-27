@@ -79,47 +79,29 @@ pub fn ks_pme_flows_2(
     Ok((c, d))
 }
 
-pub fn ks_pme(amounts: &[f64], nav: f64, index: &[f64]) -> Result<f64> {
+pub fn ks_pme(amounts: &[f64], index: &[f64], nav: f64) -> Result<f64> {
     ks_pme_flows(amounts, index).and_then(|a| tvpi(&a, nav))
 }
 
 pub fn ks_pme_2(
     contributions: &[f64],
     distributions: &[f64],
-    nav: f64,
     index: &[f64],
+    nav: f64,
 ) -> Result<f64> {
     ks_pme_flows_2(contributions, distributions, index).and_then(|(c, d)| tvpi_2(&c, &d, nav))
 }
 
-pub fn direct_alpha(amounts: &[f64], nav: f64, index: &[f64]) -> Result<f64> {
-    let mut cf = ks_pme_flows(amounts, index)?;
-    if let Some(last) = cf.last_mut() {
-        *last += nav;
-    };
-    super::irr(&cf, None)
-}
-
-pub fn direct_alpha_2(
-    contributions: &[f64],
-    distributions: &[f64],
-    nav: f64,
-    index: &[f64],
-) -> Result<f64> {
-    let amounts = &combine_amounts(contributions, distributions);
-    direct_alpha(&amounts, nav, index)
-}
-
-pub fn m_pme(amounts: &[f64], nav: &[f64], index: &[f64]) -> Result<f64> {
+pub fn m_pme(amounts: &[f64], index: &[f64], nav: &[f64]) -> Result<f64> {
     let (contributions, distributions) = split_amounts(amounts);
-    m_pme_2(&contributions, &distributions, nav, index)
+    m_pme_2(&contributions, &distributions, index, nav)
 }
 
 pub fn m_pme_2(
     contributions: &[f64],
     distributions: &[f64],
-    nav: &[f64],
     index: &[f64],
+    nav: &[f64],
 ) -> Result<f64> {
     check_input_len(contributions, index)?;
     check_input_len(distributions, index)?;
@@ -139,7 +121,7 @@ pub fn m_pme_2(
         d_adj[t] = d_weight[t] * (nav_pme[t - 1] * index[t] / index[t - 1] + contributions[t]);
     }
 
-    let mut cf: Vec<_> = combine_amounts(contributions, &d_adj);
+    let mut cf = combine_amounts(contributions, &d_adj);
     if let Some(last) = cf.last_mut() {
         *last = *nav_pme.last().unwrap();
     };
@@ -148,11 +130,11 @@ pub fn m_pme_2(
 }
 
 #[doc = include_str!("../../docs/_inline/pe/pme_plus_flows.md")]
-pub fn pme_plus_flows(amounts: &[f64], nav: f64, index: &[f64]) -> Result<Vec<f64>> {
+pub fn pme_plus_flows(amounts: &[f64], index: &[f64], nav: f64) -> Result<Vec<f64>> {
     check_input_len(amounts, index)?;
 
     let (contributions, distributions) = split_amounts(amounts);
-    let scaled_distributions = pme_plus_flows_2(&contributions, &distributions, nav, index)?;
+    let scaled_distributions = pme_plus_flows_2(&contributions, &distributions, index, nav)?;
     let scaled_amounts = combine_amounts(&contributions, &scaled_distributions);
 
     Ok(scaled_amounts)
@@ -162,25 +144,25 @@ pub fn pme_plus_flows(amounts: &[f64], nav: f64, index: &[f64]) -> Result<Vec<f6
 pub fn pme_plus_flows_2(
     contributions: &[f64],
     distributions: &[f64],
-    nav: f64,
     index: &[f64],
+    nav: f64,
 ) -> Result<Vec<f64>> {
-    let lambda = pme_plus_lambda_2(contributions, distributions, nav, index)?;
+    let lambda = pme_plus_lambda_2(contributions, distributions, index, nav)?;
     Ok(scale(distributions, lambda))
 }
 
-pub fn pme_plus_lambda(amounts: &[f64], nav: f64, index: &[f64]) -> Result<f64> {
+pub fn pme_plus_lambda(amounts: &[f64], index: &[f64], nav: f64) -> Result<f64> {
     check_input_len(amounts, index)?;
 
     let (contributions, distributions) = split_amounts(amounts);
-    pme_plus_lambda_2(&contributions, &distributions, nav, index)
+    pme_plus_lambda_2(&contributions, &distributions, index, nav)
 }
 
 pub fn pme_plus_lambda_2(
     contributions: &[f64],
     distributions: &[f64],
-    nav: f64,
     index: &[f64],
+    nav: f64,
 ) -> Result<f64> {
     check_input_len(contributions, index)?;
     check_input_len(distributions, index)?;
@@ -192,8 +174,8 @@ pub fn pme_plus_lambda_2(
     Ok((cs - nav) / ds)
 }
 
-pub fn pme_plus(amounts: &[f64], nav: f64, index: &[f64]) -> Result<f64> {
-    let mut cf = pme_plus_flows(amounts, nav, index)?;
+pub fn pme_plus(amounts: &[f64], index: &[f64], nav: f64) -> Result<f64> {
+    let mut cf = pme_plus_flows(amounts, index, nav)?;
 
     if let Some(last) = cf.last_mut() {
         *last = nav
@@ -205,10 +187,10 @@ pub fn pme_plus(amounts: &[f64], nav: f64, index: &[f64]) -> Result<f64> {
 pub fn pme_plus_2(
     contributions: &[f64],
     distributions: &[f64],
-    nav: f64,
     index: &[f64],
+    nav: f64,
 ) -> Result<f64> {
-    let scaled_distributions = pme_plus_flows_2(contributions, distributions, nav, index)?;
+    let scaled_distributions = pme_plus_flows_2(contributions, distributions, index, nav)?;
     let mut cf = combine_amounts(contributions, &scaled_distributions);
 
     if let Some(last) = cf.last_mut() {
@@ -248,6 +230,24 @@ pub fn ln_pme_2(contributions: &[f64], distributions: &[f64], index: &[f64]) -> 
         *last = pme_nav
     };
     super::irr(&amounts, None)
+}
+
+pub fn direct_alpha(amounts: &[f64], index: &[f64], nav: f64) -> Result<f64> {
+    let mut cf = ks_pme_flows(amounts, index)?;
+    if let Some(last) = cf.last_mut() {
+        *last += nav;
+    };
+    super::irr(&cf, None)
+}
+
+pub fn direct_alpha_2(
+    contributions: &[f64],
+    distributions: &[f64],
+    index: &[f64],
+    nav: f64,
+) -> Result<f64> {
+    let amounts = &combine_amounts(contributions, distributions);
+    direct_alpha(&amounts, index, nav)
 }
 
 fn check_zero_contributions(contributions: f64) -> Result<()> {
@@ -369,18 +369,19 @@ mod tests {
     }
 
     #[rstest]
-    #[case(&[-25., 15., 0.], 20., &[100., 115., 130.], 1.14)]
+    #[case(&[-25., 15., 0.], &[100., 115., 130.], 20., 1.14)]
+    #[case(&[-25., 15., 20.], &[100., 115., 130.], 0., 1.14)]
     fn test_ks_pme(
         #[case] amounts: &[f64],
-        #[case] nav: f64,
         #[case] index: &[f64],
+        #[case] nav: f64,
         #[case] expected: f64,
     ) {
-        let result = ks_pme(amounts, nav, index).unwrap();
+        let result = ks_pme(amounts, index, nav).unwrap();
         assert_approx_eq!(result, expected, 0.01);
 
         let (contributions, distributions) = split_amounts(amounts);
-        let result = ks_pme_2(&contributions, &distributions, nav, index).unwrap();
+        let result = ks_pme_2(&contributions, &distributions, index, nav).unwrap();
         assert_approx_eq!(result, expected, 0.01);
     }
 
@@ -411,76 +412,78 @@ mod tests {
     }
 
     #[rstest]
-    #[case(&[-25., 15., 0.], 20., &[100., 115., 130.], 0.7)]
+    #[case(&[-25., 15., 0.], &[100., 115., 130.], 20., 0.7)]
     // example from https://en.wikipedia.org/wiki/Public_Market_Equivalent#PME+_Formula
-    #[case(&[-100., -50., 60., 100., 0.], 20., &[100., 105., 115., 110., 120.], 0.86)]
+    #[case(&[-100., -50., 60., 100., 0.], &[100., 105., 115., 110., 120.], 20., 0.86)]
+    #[case(&[-100., -50., 60., 100., 20.], &[100., 105., 115., 110., 120.], 0., 0.86)]
     fn test_pme_plus_lambda(
         #[case] amounts: &[f64],
-        #[case] nav: f64,
         #[case] index: &[f64],
+        #[case] nav: f64,
         #[case] expected: f64,
     ) {
-        let result = pme_plus_lambda(amounts, nav, index).unwrap();
+        let result = pme_plus_lambda(amounts, index, nav).unwrap();
         assert_approx_eq!(result, expected, 0.1);
 
         let (contributions, distributions) = split_amounts(amounts);
-        let result = pme_plus_lambda_2(&contributions, &distributions, nav, index).unwrap();
+        let result = pme_plus_lambda_2(&contributions, &distributions, index, nav).unwrap();
         assert_approx_eq!(result, expected, 0.1);
     }
 
     #[rstest]
-    #[case(&[-25., 15., 0.], 20., &[100., 115., 130.], 0.143)]
+    #[case(&[-25., 15., 0.], &[100., 115., 130.], 20., 0.143)]
     // example from https://en.wikipedia.org/wiki/Public_Market_Equivalent#PME+_Formula
-    #[case(&[-100., -50., 60., 100., 0.], 20., &[100., 105., 115., 110., 120.], 0.0205)]
+    #[case(&[-100., -50., 60., 100., 0.], &[100., 105., 115., 110., 120.], 20., 0.0205)]
     fn test_pme_plus(
         #[case] amounts: &[f64],
-        #[case] nav: f64,
         #[case] index: &[f64],
+        #[case] nav: f64,
         #[case] expected: f64,
     ) {
-        let result = pme_plus(amounts, nav, index).unwrap();
+        let result = pme_plus(amounts, index, nav).unwrap();
         assert_approx_eq!(result, expected, 0.1);
 
         let (contributions, distributions) = split_amounts(amounts);
-        let result = pme_plus_2(&contributions, &distributions, nav, index).unwrap();
+        let result = pme_plus_2(&contributions, &distributions, index, nav).unwrap();
         assert_approx_eq!(result, expected, 0.1);
     }
 
     #[rstest]
-    #[case(&[-100., -50., 60., 100., 0.], &[100., 165., 125., 15., 20.], &[100., 105., 115., 100., 120.], 0.0202)]
+    #[case(&[-100., -50., 60., 100., 0.], &[100., 105., 115., 100., 120.], &[100., 165., 125., 15., 20.], 0.0202)]
     fn test_mpme(
         #[case] amounts: &[f64],
-        #[case] nav: &[f64],
         #[case] index: &[f64],
+        #[case] nav: &[f64],
         #[case] expected: f64,
     ) {
-        let result = m_pme(amounts, nav, index).unwrap();
+        let result = m_pme(amounts, index, nav).unwrap();
         assert_approx_eq!(result, expected, 1e-4);
 
         let (contributions, distributions) = split_amounts(amounts);
-        let result = m_pme_2(&contributions, &distributions, nav, index).unwrap();
+        let result = m_pme_2(&contributions, &distributions, index, nav).unwrap();
         assert_approx_eq!(result, expected, 1e-4);
     }
 
     #[rstest]
-    #[case(&[-25., 15., 0.], 20., &[100., 115., 130.], 0.0875)]
+    #[case(&[-25., 15., 0.], &[100., 115., 130.], 20., 0.0875)]
     // example from https://en.wikipedia.org/wiki/Public_Market_Equivalent#Direct_Alpha
-    #[case(&[-100., -50., 60., 10., 0.], 110., &[100., 105., 115., 117., 120.], 0.0108)]
+    #[case(&[-100., -50., 60., 10., 0.], &[100., 105., 115., 117., 120.], 110., 0.0108)]
     // example from https://blog.edda.co/advanced-fund-performance-methods-pme-direct-alpha/
-    #[case(&[-80., -140., 0., 70., 140., 85.], 70., &[890.35, 1144.98, 1271.5, 1289.09,1466.47, 1842.37], 0.028)]
+    #[case(&[-80., -140., 0., 70., 140., 85.], &[890.35, 1144.98, 1271.5, 1289.09,1466.47, 1842.37], 70., 0.028)]
     // example from https://directalphamethod.info/
-    #[case(&[-100., 0., -75., 0., 100., 0., 150., 0., 100., 0.], 75., &[100., 77.9, 100.24, 111.15, 116.61, 135.03, 142.45, 89.75, 113.50, 130.59], 0.1257)]
+    #[case(&[-100., 0., -75., 0., 100., 0., 150., 0., 100., 0.], &[100., 77.9, 100.24, 111.15, 116.61, 135.03, 142.45, 89.75, 113.50, 130.59], 75., 0.1257)]
+    #[case(&[-100., 0., -75., 0., 100., 0., 150., 0., 100., 75.], &[100., 77.9, 100.24, 111.15, 116.61, 135.03, 142.45, 89.75, 113.50, 130.59], 0., 0.1257)]
     fn test_direct_alpha(
         #[case] amounts: &[f64],
-        #[case] nav: f64,
         #[case] index: &[f64],
+        #[case] nav: f64,
         #[case] expected: f64,
     ) {
-        let result = direct_alpha(amounts, nav, index).unwrap();
+        let result = direct_alpha(amounts, index, nav).unwrap();
         assert_approx_eq!(result, expected, 1e-4);
 
         let (contributions, distributions) = split_amounts(amounts);
-        let result = direct_alpha_2(&contributions, &distributions, nav, index).unwrap();
+        let result = direct_alpha_2(&contributions, &distributions, index, nav).unwrap();
         assert_approx_eq!(result, expected, 1e-4);
     }
 
@@ -489,10 +492,10 @@ mod tests {
         // example from https://blog.edda.co/advanced-fund-performance-methods-pme-direct-alpha/
         let contributions = &[80., 140., 0., 90., 50., 0.];
         let distributions = &[0., 0., 0., 160., 190., 85.];
-        let nav = 70.;
         let index = &[890.35, 1144.98, 1271.5, 1289.09, 1466.47, 1842.37];
+        let nav = 70.;
 
-        let result = direct_alpha_2(contributions, distributions, nav, index).unwrap();
+        let result = direct_alpha_2(contributions, distributions, index, nav).unwrap();
         assert_approx_eq!(result, 0.028, 1e-3);
     }
 }

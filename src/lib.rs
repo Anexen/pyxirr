@@ -455,8 +455,8 @@ mod pe {
 
     #[pyfunction]
     #[doc = include_str!("../docs/_inline/pe/tvpi.md")]
-    pub fn tvpi(py: Python, amounts: AmountArray, nav: f64) -> PyResult<f64> {
-        py.allow_threads(move || Ok(private_equity::tvpi(&amounts, nav)?))
+    pub fn tvpi(py: Python, amounts: AmountArray, nav: Option<f64>) -> PyResult<f64> {
+        py.allow_threads(move || Ok(private_equity::tvpi(&amounts, nav.unwrap_or(0.0))?))
     }
 
     #[pyfunction]
@@ -465,14 +465,16 @@ mod pe {
         py: Python,
         contributions: AmountArray,
         distributions: AmountArray,
-        nav: f64,
+        nav: Option<f64>,
     ) -> PyResult<f64> {
-        py.allow_threads(move || Ok(private_equity::tvpi_2(&contributions, &distributions, nav)?))
+        py.allow_threads(move || {
+            Ok(private_equity::tvpi_2(&contributions, &distributions, nav.unwrap_or(0.0))?)
+        })
     }
 
     #[pyfunction]
-    pub fn moic(py: Python, amounts: AmountArray, nav: f64) -> PyResult<f64> {
-        py.allow_threads(move || Ok(private_equity::moic(&amounts, nav)?))
+    pub fn moic(py: Python, amounts: AmountArray, nav: Option<f64>) -> PyResult<f64> {
+        py.allow_threads(move || Ok(private_equity::moic(&amounts, nav.unwrap_or(0.0))?))
     }
 
     #[pyfunction]
@@ -480,14 +482,21 @@ mod pe {
         py: Python,
         contributions: AmountArray,
         distributions: AmountArray,
-        nav: f64,
+        nav: Option<f64>,
     ) -> PyResult<f64> {
-        py.allow_threads(move || Ok(private_equity::moic_2(&contributions, &distributions, nav)?))
+        py.allow_threads(move || {
+            Ok(private_equity::moic_2(&contributions, &distributions, nav.unwrap_or(0.0))?)
+        })
     }
 
     #[pyfunction]
-    fn ks_pme(py: Python, amounts: AmountArray, nav: f64, index: AmountArray) -> PyResult<f64> {
-        py.allow_threads(move || Ok(private_equity::ks_pme(&amounts, nav, &index)?))
+    fn ks_pme(
+        py: Python,
+        amounts: AmountArray,
+        index: AmountArray,
+        nav: Option<f64>,
+    ) -> PyResult<f64> {
+        py.allow_threads(move || Ok(private_equity::ks_pme(&amounts, &index, nav.unwrap_or(0.0))?))
     }
 
     #[pyfunction]
@@ -495,11 +504,16 @@ mod pe {
         py: Python,
         contributions: AmountArray,
         distributions: AmountArray,
-        nav: f64,
         index: AmountArray,
+        nav: Option<f64>,
     ) -> PyResult<f64> {
         py.allow_threads(move || {
-            Ok(private_equity::ks_pme_2(&contributions, &distributions, nav, &index)?)
+            Ok(private_equity::ks_pme_2(
+                &contributions,
+                &distributions,
+                &index,
+                nav.unwrap_or(0.0),
+            )?)
         })
     }
 
@@ -526,10 +540,10 @@ mod pe {
     fn m_pme(
         py: Python,
         amounts: AmountArray,
-        nav: AmountArray,
         index: AmountArray,
+        nav: AmountArray,
     ) -> PyResult<f64> {
-        py.allow_threads(move || Ok(private_equity::m_pme(&amounts, &nav, &index)?))
+        py.allow_threads(move || Ok(private_equity::m_pme(&amounts, &index, &nav)?))
     }
 
     #[pyfunction]
@@ -537,11 +551,11 @@ mod pe {
         py: Python,
         contributions: AmountArray,
         distributions: AmountArray,
-        nav: AmountArray,
         index: AmountArray,
+        nav: AmountArray,
     ) -> PyResult<f64> {
         py.allow_threads(move || {
-            Ok(private_equity::m_pme_2(&contributions, &distributions, &nav, &index)?)
+            Ok(private_equity::m_pme_2(&contributions, &distributions, &index, &nav)?)
         })
     }
 
@@ -549,11 +563,14 @@ mod pe {
     fn pme_plus(
         py: Python,
         amounts: AmountArray,
-        nav: f64,
         index: AmountArray,
+        nav: Option<f64>,
     ) -> PyResult<Option<f64>> {
         py.allow_threads(move || {
-            fallible_float_or_none(private_equity::pme_plus(&amounts, nav, &index), false)
+            fallible_float_or_none(
+                private_equity::pme_plus(&amounts, &index, nav.unwrap_or(0.0)),
+                false,
+            )
         })
     }
 
@@ -562,12 +579,17 @@ mod pe {
         py: Python,
         contributions: AmountArray,
         distributions: AmountArray,
-        nav: f64,
         index: AmountArray,
+        nav: Option<f64>,
     ) -> PyResult<Option<f64>> {
         py.allow_threads(move || {
             fallible_float_or_none(
-                private_equity::pme_plus_2(&contributions, &distributions, nav, &index),
+                private_equity::pme_plus_2(
+                    &contributions,
+                    &distributions,
+                    &index,
+                    nav.unwrap_or(0.0),
+                ),
                 false,
             )
         })
@@ -578,10 +600,12 @@ mod pe {
     fn pme_plus_flows(
         py: Python,
         amounts: AmountArray,
-        nav: f64,
         index: AmountArray,
+        nav: Option<f64>,
     ) -> PyResult<Vec<f64>> {
-        py.allow_threads(move || Ok(private_equity::pme_plus_flows(&amounts, nav, &index)?))
+        py.allow_threads(move || {
+            Ok(private_equity::pme_plus_flows(&amounts, &index, nav.unwrap_or(0.0))?)
+        })
     }
 
     #[pyfunction]
@@ -590,12 +614,16 @@ mod pe {
         py: Python,
         contributions: AmountArray,
         distributions: AmountArray,
-        nav: f64,
         index: AmountArray,
+        nav: Option<f64>,
     ) -> PyResult<(Vec<f64>, Vec<f64>)> {
         py.allow_threads(move || {
-            let adj_distributions =
-                private_equity::pme_plus_flows_2(&contributions, &distributions, nav, &index)?;
+            let adj_distributions = private_equity::pme_plus_flows_2(
+                &contributions,
+                &distributions,
+                &index,
+                nav.unwrap_or(0.0),
+            )?;
 
             Ok((contributions.to_vec(), adj_distributions))
         })
@@ -605,10 +633,12 @@ mod pe {
     fn pme_plus_lambda(
         py: Python,
         amounts: AmountArray,
-        nav: f64,
         index: AmountArray,
+        nav: Option<f64>,
     ) -> PyResult<f64> {
-        py.allow_threads(move || Ok(private_equity::pme_plus_lambda(&amounts, nav, &index)?))
+        py.allow_threads(move || {
+            Ok(private_equity::pme_plus_lambda(&amounts, &index, nav.unwrap_or(0.0))?)
+        })
     }
 
     #[pyfunction]
@@ -616,11 +646,16 @@ mod pe {
         py: Python,
         contributions: AmountArray,
         distributions: AmountArray,
-        nav: f64,
         index: AmountArray,
+        nav: Option<f64>,
     ) -> PyResult<f64> {
         py.allow_threads(move || {
-            Ok(private_equity::pme_plus_lambda_2(&contributions, &distributions, nav, &index)?)
+            Ok(private_equity::pme_plus_lambda_2(
+                &contributions,
+                &distributions,
+                &index,
+                nav.unwrap_or(0.0),
+            )?)
         })
     }
 
@@ -669,11 +704,14 @@ mod pe {
     fn direct_alpha(
         py: Python,
         amounts: AmountArray,
-        nav: f64,
         index: AmountArray,
+        nav: Option<f64>,
     ) -> PyResult<Option<f64>> {
         py.allow_threads(move || {
-            fallible_float_or_none(private_equity::direct_alpha(&amounts, nav, &index), false)
+            fallible_float_or_none(
+                private_equity::direct_alpha(&amounts, &index, nav.unwrap_or(0.0)),
+                false,
+            )
         })
     }
 
@@ -682,12 +720,17 @@ mod pe {
         py: Python,
         contributions: AmountArray,
         distributions: AmountArray,
-        nav: f64,
         index: AmountArray,
+        nav: Option<f64>,
     ) -> PyResult<Option<f64>> {
         py.allow_threads(move || {
             fallible_float_or_none(
-                private_equity::direct_alpha_2(&contributions, &distributions, nav, &index),
+                private_equity::direct_alpha_2(
+                    &contributions,
+                    &distributions,
+                    &index,
+                    nav.unwrap_or(0.0),
+                ),
                 false,
             )
         })

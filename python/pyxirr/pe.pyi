@@ -26,7 +26,7 @@ def rvpi(
 
 def tvpi(
     amounts: _AmountArray,
-    nav: _Amount,
+    nav: _Amount = 0,
 ) -> float:
     ...
 
@@ -34,14 +34,14 @@ def tvpi(
 def tvpi_2(
     contributions: _AmountArray,
     distributions: _AmountArray,
-    nav: _Amount,
+    nav: _Amount = 0,
 ) -> float:
     ...
 
 
 def moic(
     amounts: _AmountArray,
-    nav: _Amount,
+    nav: _Amount = 0,
 ) -> float:
     ...
 
@@ -49,15 +49,15 @@ def moic(
 def moic_2(
     contributions: _AmountArray,
     distributions: _AmountArray,
-    nav: _Amount,
+    nav: _Amount = 0,
 ) -> float:
     ...
 
 
 def ks_pme(
     amounts: _AmountArray,
-    nav: _Amount,
     index: _AmountArray,
+    nav: _Amount = 0,
 ) -> Optional[float]:
     ...
 
@@ -65,8 +65,8 @@ def ks_pme(
 def ks_pme_2(
     contributions: _AmountArray,
     distributions: _AmountArray,
-    nav: _Amount,
     index: _AmountArray,
+    nav: _Amount = 0,
 ) -> Optional[float]:
     ...
 
@@ -88,8 +88,8 @@ def ks_pme_flows_2(
 
 def m_pme(
     amounts: _AmountArray,
-    nav: _AmountArray,
     index: _AmountArray,
+    nav: _AmountArray,
 ) -> float:
     ...
 
@@ -97,16 +97,16 @@ def m_pme(
 def m_pme_2(
     contributions: _AmountArray,
     distributions: _AmountArray,
-    nav: _AmountArray,
     index: _AmountArray,
+    nav: _AmountArray,
 ) -> float:
     ...
 
 
 def pme_plus(
     amounts: _AmountArray,
-    nav: _Amount,
     index: _AmountArray,
+    nav: _Amount = 0,
 ) -> Optional[float]:
     ...
 
@@ -114,16 +114,16 @@ def pme_plus(
 def pme_plus_2(
     contributions: _AmountArray,
     distributions: _AmountArray,
-    nav: _Amount,
     index: _AmountArray,
+    nav: _Amount = 0,
 ) -> Optional[float]:
     ...
 
 
 def pme_plus_flows(
     amounts: _AmountArray,
-    nav: _Amount,
     index: _AmountArray,
+    nav: _Amount = 0,
 ) -> List[float]:
     ...
 
@@ -131,16 +131,16 @@ def pme_plus_flows(
 def pme_plus_flows_2(
     contributions: _AmountArray,
     distributions: _AmountArray,
-    nav: _Amount,
     index: _AmountArray,
+    nav: _Amount = 0,
 ) -> Tuple[List[float], List[float]]:
     ...
 
 
 def pme_plus_lambda(
     amounts: _AmountArray,
-    nav: _Amount,
     index: _AmountArray,
+    nav: _Amount = 0,
 ) -> float:
     ...
 
@@ -148,8 +148,8 @@ def pme_plus_lambda(
 def pme_plus_lambda_2(
     contributions: _AmountArray,
     distributions: _AmountArray,
-    nav: _Amount,
     index: _AmountArray,
+    nav: _Amount = 0,
 ) -> float:
     ...
 
@@ -186,8 +186,8 @@ def ln_pme_2(
 
 def direct_alpha(
     amounts: _AmountArray,
-    nav: float,
     index: _AmountArray,
+    nav: _Amount = 0,
 ) -> Optional[float]:
     ...
 
@@ -195,7 +195,7 @@ def direct_alpha(
 def direct_alpha_2(
     contributions: _AmountArray,
     distributions: _AmountArray,
-    nav: float,
     index: _AmountArray,
+    nav: _Amount = 0,
 ) -> Optional[float]:
     ...
