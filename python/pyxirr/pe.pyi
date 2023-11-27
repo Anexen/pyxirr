@@ -86,6 +86,23 @@ def ks_pme_flows_2(
     ...
 
 
+def m_pme(
+    amounts: _AmountArray,
+    nav: _AmountArray,
+    index: _AmountArray,
+) -> float:
+    ...
+
+
+def m_pme_2(
+    contributions: _AmountArray,
+    distributions: _AmountArray,
+    nav: _AmountArray,
+    index: _AmountArray,
+) -> float:
+    ...
+
+
 def pme_plus(
     amounts: _AmountArray,
     nav: _Amount,
@@ -162,6 +179,23 @@ def ln_pme(
 def ln_pme_2(
     contributions: _AmountArray,
     distributions: _AmountArray,
+    index: _AmountArray,
+) -> Optional[float]:
+    ...
+
+
+def direct_alpha(
+    amounts: _AmountArray,
+    nav: float,
+    index: _AmountArray,
+) -> Optional[float]:
+    ...
+
+
+def direct_alpha_2(
+    contributions: _AmountArray,
+    distributions: _AmountArray,
+    nav: float,
     index: _AmountArray,
 ) -> Optional[float]:
     ...

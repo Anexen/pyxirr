@@ -417,6 +417,8 @@ mod pe {
         m.add_function(wrap_pyfunction!(ks_pme_2, m)?)?;
         m.add_function(wrap_pyfunction!(ks_pme_flows, m)?)?;
         m.add_function(wrap_pyfunction!(ks_pme_flows_2, m)?)?;
+        m.add_function(wrap_pyfunction!(m_pme, m)?)?;
+        m.add_function(wrap_pyfunction!(m_pme_2, m)?)?;
         m.add_function(wrap_pyfunction!(pme_plus, m)?)?;
         m.add_function(wrap_pyfunction!(pme_plus_2, m)?)?;
         m.add_function(wrap_pyfunction!(pme_plus_flows, m)?)?;
@@ -427,6 +429,8 @@ mod pe {
         m.add_function(wrap_pyfunction!(ln_pme_nav_2, m)?)?;
         m.add_function(wrap_pyfunction!(ln_pme, m)?)?;
         m.add_function(wrap_pyfunction!(ln_pme_2, m)?)?;
+        m.add_function(wrap_pyfunction!(direct_alpha, m)?)?;
+        m.add_function(wrap_pyfunction!(direct_alpha_2, m)?)?;
 
         Ok(())
     }
@@ -515,6 +519,29 @@ mod pe {
     ) -> PyResult<(Vec<f64>, Vec<f64>)> {
         py.allow_threads(move || {
             Ok(private_equity::ks_pme_flows_2(&contributions, &distributions, &index)?)
+        })
+    }
+
+    #[pyfunction]
+    fn m_pme(
+        py: Python,
+        amounts: AmountArray,
+        nav: AmountArray,
+        index: AmountArray,
+    ) -> PyResult<f64> {
+        py.allow_threads(move || Ok(private_equity::m_pme(&amounts, &nav, &index)?))
+    }
+
+    #[pyfunction]
+    fn m_pme_2(
+        py: Python,
+        contributions: AmountArray,
+        distributions: AmountArray,
+        nav: AmountArray,
+        index: AmountArray,
+    ) -> PyResult<f64> {
+        py.allow_threads(move || {
+            Ok(private_equity::m_pme_2(&contributions, &distributions, &nav, &index)?)
         })
     }
 
@@ -633,6 +660,34 @@ mod pe {
         py.allow_threads(move || {
             fallible_float_or_none(
                 private_equity::ln_pme_2(&contributions, &distributions, &index),
+                false,
+            )
+        })
+    }
+
+    #[pyfunction]
+    fn direct_alpha(
+        py: Python,
+        amounts: AmountArray,
+        nav: f64,
+        index: AmountArray,
+    ) -> PyResult<Option<f64>> {
+        py.allow_threads(move || {
+            fallible_float_or_none(private_equity::direct_alpha(&amounts, nav, &index), false)
+        })
+    }
+
+    #[pyfunction]
+    fn direct_alpha_2(
+        py: Python,
+        contributions: AmountArray,
+        distributions: AmountArray,
+        nav: f64,
+        index: AmountArray,
+    ) -> PyResult<Option<f64>> {
+        py.allow_threads(move || {
+            fallible_float_or_none(
+                private_equity::direct_alpha_2(&contributions, &distributions, nav, &index),
                 false,
             )
         })

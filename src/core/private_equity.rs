@@ -92,6 +92,61 @@ pub fn ks_pme_2(
     ks_pme_flows_2(contributions, distributions, index).and_then(|(c, d)| tvpi_2(&c, &d, nav))
 }
 
+pub fn direct_alpha(amounts: &[f64], nav: f64, index: &[f64]) -> Result<f64> {
+    let mut cf = ks_pme_flows(amounts, index)?;
+    if let Some(last) = cf.last_mut() {
+        *last += nav;
+    };
+    super::irr(&cf, None)
+}
+
+pub fn direct_alpha_2(
+    contributions: &[f64],
+    distributions: &[f64],
+    nav: f64,
+    index: &[f64],
+) -> Result<f64> {
+    let amounts = &combine_amounts(contributions, distributions);
+    direct_alpha(&amounts, nav, index)
+}
+
+pub fn m_pme(amounts: &[f64], nav: &[f64], index: &[f64]) -> Result<f64> {
+    let (contributions, distributions) = split_amounts(amounts);
+    m_pme_2(&contributions, &distributions, nav, index)
+}
+
+pub fn m_pme_2(
+    contributions: &[f64],
+    distributions: &[f64],
+    nav: &[f64],
+    index: &[f64],
+) -> Result<f64> {
+    check_input_len(contributions, index)?;
+    check_input_len(distributions, index)?;
+    check_input_len(nav, index)?;
+
+    let d_weight: Vec<_> = distributions.iter().zip(nav).map(|(d, n)| d / (d + n)).collect();
+
+    let mut nav_pme = vec![0.; nav.len()];
+    nav_pme[0] = (1. - d_weight[0]) * contributions[0];
+    for t in 1..nav_pme.len() {
+        nav_pme[t] =
+            (1. - d_weight[t]) * (nav_pme[t - 1] * index[t] / index[t - 1] + contributions[t]);
+    }
+
+    let mut d_adj = vec![0.; distributions.len()];
+    for t in 1..d_adj.len() {
+        d_adj[t] = d_weight[t] * (nav_pme[t - 1] * index[t] / index[t - 1] + contributions[t]);
+    }
+
+    let mut cf: Vec<_> = combine_amounts(contributions, &d_adj);
+    if let Some(last) = cf.last_mut() {
+        *last = *nav_pme.last().unwrap();
+    };
+
+    super::irr(&cf, None)
+}
+
 #[doc = include_str!("../../docs/_inline/pe/pme_plus_flows.md")]
 pub fn pme_plus_flows(amounts: &[f64], nav: f64, index: &[f64]) -> Result<Vec<f64>> {
     check_input_len(amounts, index)?;
@@ -196,7 +251,7 @@ pub fn ln_pme_2(contributions: &[f64], distributions: &[f64], index: &[f64]) -> 
 }
 
 fn check_zero_contributions(contributions: f64) -> Result<()> {
-    if contributions == 0.0 {
+    if contributions == 0. {
         Err(InvalidPaymentsError::new("Contributions are zero"))
     } else {
         Ok(())
@@ -216,8 +271,8 @@ fn check_input_len(amounts: &[f64], index: &[f64]) -> Result<()> {
 fn split_amounts(amounts: &[f64]) -> (Vec<f64>, Vec<f64>) {
     // split amounts into contributions and distributions.
     // make contributions positive
-    let contributions: Vec<_> = amounts.iter().map(|x| x.clamp(f64::MIN, 0.0).abs()).collect();
-    let distributions: Vec<_> = amounts.iter().map(|x| x.clamp(0.0, f64::MAX)).collect();
+    let contributions: Vec<_> = amounts.iter().map(|x| x.clamp(f64::MIN, 0.).abs()).collect();
+    let distributions: Vec<_> = amounts.iter().map(|x| x.clamp(0., f64::MAX)).collect();
 
     (contributions, distributions)
 }
@@ -246,12 +301,12 @@ fn pairwise_mul(a: &[f64], b: &[f64]) -> Vec<f64> {
 }
 
 fn series_signum(a: &[f64]) -> f64 {
-    // returns -1.0 if any item is negative, otherwise +1.0
-    a.iter().any(|x| x.is_sign_negative()).then_some(-1.0).unwrap_or(1.0)
+    // returns -1. if any item is negative, otherwise +1.
+    a.iter().any(|x| x.is_sign_negative()).then_some(-1.).unwrap_or(1.)
 }
 
 fn sum_negatives_positives(values: &[f64]) -> (f64, f64) {
-    values.iter().fold((0.0, 0.0), |acc, x| {
+    values.iter().fold((0., 0.), |acc, x| {
         if x.is_sign_negative() {
             (acc.0 + x, acc.1)
         } else {
@@ -270,8 +325,8 @@ mod tests {
     // https://www.insead.edu/sites/default/files/assets/dept/centres/gpei/docs/Measuring_PE_Fund-Performance-2019.pdf
 
     #[rstest]
-    #[case(&[-12.0, 0.0, 0.0, 40.0], 0.494)]
-    #[case(&[-12.0, -10.0, -4.0, 40.0, 0.0, 15.0, 5.0], 0.324)]
+    #[case(&[-12., 0., 0., 40.], 0.494)]
+    #[case(&[-12., -10., -4., 40., 0., 15., 5.], 0.324)]
     fn test_irr(#[case] amounts: &[f64], #[case] expected: f64) {
         let result = crate::core::irr(amounts, None).unwrap();
         assert_approx_eq!(result, expected, 1e-3);
@@ -288,7 +343,7 @@ mod tests {
 
     #[rstest]
     fn test_dpi() {
-        let amounts = &[-10.0, -20.0, 15.0, 30.0];
+        let amounts = &[-10., -20., 15., 30.];
         let (contributions, distributions) = split_amounts(amounts);
 
         assert_approx_eq!(dpi(amounts).unwrap(), 1.5);
@@ -297,13 +352,13 @@ mod tests {
 
     #[rstest]
     fn test_rvpi() {
-        let amounts = &[10.0, 20.0, 15.0, 30.0];
-        assert_approx_eq!(rvpi(amounts, 15.0).unwrap(), 0.2);
+        let amounts = &[10., 20., 15., 30.];
+        assert_approx_eq!(rvpi(amounts, 15.).unwrap(), 0.2);
     }
 
     #[rstest]
-    #[case(&[-10.0, -20.0, 15.0, 30.0], 15.0, 2.0)]
-    #[case(&[-25.0, 15.0, 0.0], 20.0, 1.4)]
+    #[case(&[-10., -20., 15., 30.], 15., 2.)]
+    #[case(&[-25., 15., 0.], 20., 1.4)]
     fn test_tvpi(#[case] amounts: &[f64], #[case] nav: f64, #[case] expected: f64) {
         let result = tvpi(amounts, nav).unwrap();
         assert_approx_eq!(result, expected);
@@ -314,7 +369,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case(&[-25.0, 15.0, 0.0], 20.0, &[100.0, 115.0, 130.0], 1.14)]
+    #[case(&[-25., 15., 0.], 20., &[100., 115., 130.], 1.14)]
     fn test_ks_pme(
         #[case] amounts: &[f64],
         #[case] nav: f64,
@@ -330,9 +385,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case(&[-25.0, 15.0, 0.0], &[100.0, 115.0, 130.0], 15.5)]
+    #[case(&[-25., 15., 0.], &[100., 115., 130.], 15.5)]
     // example from https://en.wikipedia.org/wiki/Public_Market_Equivalent#Long-Nickels_PME
-    #[case(&[-100.0, -50.0, 60.0, 10.0, 0.0], &[100.0, 105.0, 115.0, 117.0, 120.0], 104.28)]
+    #[case(&[-100., -50., 60., 10., 0.], &[100., 105., 115., 117., 120.], 104.28)]
     fn test_ln_pme_nav(#[case] amounts: &[f64], #[case] index: &[f64], #[case] expected: f64) {
         let result = ln_pme_nav(amounts, index).unwrap();
         assert_approx_eq!(result, expected, 0.1);
@@ -343,9 +398,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case(&[-25.0, 15.0, 0.0], &[100.0, 115.0, 130.0], 0.144)]
+    #[case(&[-25., 15., 0.], &[100., 115., 130.], 0.144)]
     // example from https://en.wikipedia.org/wiki/Public_Market_Equivalent#Long-Nickels_PME
-    #[case(&[-100.0, -50.0, 60.0, 10.0, 0.0], &[100.0, 105.0, 115.0, 117.0, 120.0], 0.053)]
+    #[case(&[-100., -50., 60., 10., 0.], &[100., 105., 115., 117., 120.], 0.053)]
     fn test_ln_pme(#[case] amounts: &[f64], #[case] index: &[f64], #[case] expected: f64) {
         let result = ln_pme(amounts, index).unwrap();
         assert_approx_eq!(result, expected, 1e-3);
@@ -356,9 +411,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case(&[-25.0, 15.0, 0.0], 20.0, &[100.0, 115.0, 130.0], 0.7)]
+    #[case(&[-25., 15., 0.], 20., &[100., 115., 130.], 0.7)]
     // example from https://en.wikipedia.org/wiki/Public_Market_Equivalent#PME+_Formula
-    #[case(&[-100.0, -50.0, 60.0, 100.0, 0.0], 20.0, &[100.0, 105.0, 115.0, 110.0, 120.0], 0.86)]
+    #[case(&[-100., -50., 60., 100., 0.], 20., &[100., 105., 115., 110., 120.], 0.86)]
     fn test_pme_plus_lambda(
         #[case] amounts: &[f64],
         #[case] nav: f64,
@@ -374,9 +429,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case(&[-25.0, 15.0, 0.0], 20.0, &[100.0, 115.0, 130.0], 0.143)]
+    #[case(&[-25., 15., 0.], 20., &[100., 115., 130.], 0.143)]
     // example from https://en.wikipedia.org/wiki/Public_Market_Equivalent#PME+_Formula
-    #[case(&[-100.0, -50.0, 60.0, 100.0, 0.0], 20.0, &[100.0, 105.0, 115.0, 110.0, 120.0], 0.0205)]
+    #[case(&[-100., -50., 60., 100., 0.], 20., &[100., 105., 115., 110., 120.], 0.0205)]
     fn test_pme_plus(
         #[case] amounts: &[f64],
         #[case] nav: f64,
@@ -389,5 +444,55 @@ mod tests {
         let (contributions, distributions) = split_amounts(amounts);
         let result = pme_plus_2(&contributions, &distributions, nav, index).unwrap();
         assert_approx_eq!(result, expected, 0.1);
+    }
+
+    #[rstest]
+    #[case(&[-100., -50., 60., 100., 0.], &[100., 165., 125., 15., 20.], &[100., 105., 115., 100., 120.], 0.0202)]
+    fn test_mpme(
+        #[case] amounts: &[f64],
+        #[case] nav: &[f64],
+        #[case] index: &[f64],
+        #[case] expected: f64,
+    ) {
+        let result = m_pme(amounts, nav, index).unwrap();
+        assert_approx_eq!(result, expected, 1e-4);
+
+        let (contributions, distributions) = split_amounts(amounts);
+        let result = m_pme_2(&contributions, &distributions, nav, index).unwrap();
+        assert_approx_eq!(result, expected, 1e-4);
+    }
+
+    #[rstest]
+    #[case(&[-25., 15., 0.], 20., &[100., 115., 130.], 0.0875)]
+    // example from https://en.wikipedia.org/wiki/Public_Market_Equivalent#Direct_Alpha
+    #[case(&[-100., -50., 60., 10., 0.], 110., &[100., 105., 115., 117., 120.], 0.0108)]
+    // example from https://blog.edda.co/advanced-fund-performance-methods-pme-direct-alpha/
+    #[case(&[-80., -140., 0., 70., 140., 85.], 70., &[890.35, 1144.98, 1271.5, 1289.09,1466.47, 1842.37], 0.028)]
+    // example from https://directalphamethod.info/
+    #[case(&[-100., 0., -75., 0., 100., 0., 150., 0., 100., 0.], 75., &[100., 77.9, 100.24, 111.15, 116.61, 135.03, 142.45, 89.75, 113.50, 130.59], 0.1257)]
+    fn test_direct_alpha(
+        #[case] amounts: &[f64],
+        #[case] nav: f64,
+        #[case] index: &[f64],
+        #[case] expected: f64,
+    ) {
+        let result = direct_alpha(amounts, nav, index).unwrap();
+        assert_approx_eq!(result, expected, 1e-4);
+
+        let (contributions, distributions) = split_amounts(amounts);
+        let result = direct_alpha_2(&contributions, &distributions, nav, index).unwrap();
+        assert_approx_eq!(result, expected, 1e-4);
+    }
+
+    #[rstest]
+    fn test_direct_alpha_2() {
+        // example from https://blog.edda.co/advanced-fund-performance-methods-pme-direct-alpha/
+        let contributions = &[80., 140., 0., 90., 50., 0.];
+        let distributions = &[0., 0., 0., 160., 190., 85.];
+        let nav = 70.;
+        let index = &[890.35, 1144.98, 1271.5, 1289.09, 1466.47, 1842.37];
+
+        let result = direct_alpha_2(contributions, distributions, nav, index).unwrap();
+        assert_approx_eq!(result, 0.028, 1e-3);
     }
 }
