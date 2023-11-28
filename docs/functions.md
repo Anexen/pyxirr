@@ -26,7 +26,7 @@ CashFlow = Union[CashFlowSeries, CashFlowTable, CashFlowDict]
 
 ## Day Count Conventions
 
-{% include_relative ./_inline/day_count_conventions.md %}
+{% include_relative _inline/day_count_conventions.md %}
 
 Definition:
 
