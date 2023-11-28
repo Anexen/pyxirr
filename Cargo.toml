@@ -26,6 +26,7 @@ include = [
 [lib]
 name = "pyxirr"
 crate-type = ["rlib", "cdylib"]
+doctest = false
 
 [dependencies]
 pyo3 = "0.20"

@@ -473,11 +473,13 @@ mod pe {
     }
 
     #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/moic.md")]
     pub fn moic(py: Python, amounts: AmountArray, nav: Option<f64>) -> PyResult<f64> {
         py.allow_threads(move || Ok(private_equity::moic(&amounts, nav.unwrap_or(0.0))?))
     }
 
     #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/moic.md")]
     pub fn moic_2(
         py: Python,
         contributions: AmountArray,
@@ -490,6 +492,7 @@ mod pe {
     }
 
     #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/ks_pme.md")]
     fn ks_pme(
         py: Python,
         amounts: AmountArray,
@@ -500,6 +503,7 @@ mod pe {
     }
 
     #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/ks_pme.md")]
     fn ks_pme_2(
         py: Python,
         contributions: AmountArray,
@@ -537,6 +541,7 @@ mod pe {
     }
 
     #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/m_pme.md")]
     fn m_pme(
         py: Python,
         amounts: AmountArray,
@@ -547,6 +552,7 @@ mod pe {
     }
 
     #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/m_pme.md")]
     fn m_pme_2(
         py: Python,
         contributions: AmountArray,
@@ -560,6 +566,7 @@ mod pe {
     }
 
     #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/pme_plus.md")]
     fn pme_plus(
         py: Python,
         amounts: AmountArray,
@@ -575,6 +582,7 @@ mod pe {
     }
 
     #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/pme_plus.md")]
     fn pme_plus_2(
         py: Python,
         contributions: AmountArray,
@@ -630,6 +638,7 @@ mod pe {
     }
 
     #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/pme_plus_lambda.md")]
     fn pme_plus_lambda(
         py: Python,
         amounts: AmountArray,
@@ -642,6 +651,7 @@ mod pe {
     }
 
     #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/pme_plus_lambda.md")]
     fn pme_plus_lambda_2(
         py: Python,
         contributions: AmountArray,
@@ -679,6 +689,7 @@ mod pe {
     }
 
     #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/ln_pme.md")]
     fn ln_pme(py: Python, amounts: AmountArray, index: AmountArray) -> PyResult<Option<f64>> {
         py.allow_threads(move || {
             fallible_float_or_none(private_equity::ln_pme(&amounts, &index), false)
@@ -686,6 +697,7 @@ mod pe {
     }
 
     #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/ln_pme.md")]
     fn ln_pme_2(
         py: Python,
         contributions: AmountArray,
@@ -701,6 +713,7 @@ mod pe {
     }
 
     #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/direct_alpha.md")]
     fn direct_alpha(
         py: Python,
         amounts: AmountArray,
@@ -716,6 +729,7 @@ mod pe {
     }
 
     #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/direct_alpha.md")]
     fn direct_alpha_2(
         py: Python,
         contributions: AmountArray,

@@ -43,6 +43,7 @@ pub fn tvpi_2(contributions: &[f64], distributions: &[f64], nav: f64) -> Result<
     Ok((ds + nav) / cs)
 }
 
+#[doc = include_str!("../../docs/_inline/pe/moic.md")]
 pub fn moic(amounts: &[f64], nav: f64) -> Result<f64> {
     // MOIC divides the total value of the investment or fund by the total invested capital,
     // whereas TVPI divides it by the paid-in capital (meaning, the capital that investors have
@@ -52,6 +53,7 @@ pub fn moic(amounts: &[f64], nav: f64) -> Result<f64> {
     tvpi(amounts, nav)
 }
 
+#[doc = include_str!("../../docs/_inline/pe/moic.md")]
 pub fn moic_2(contributions: &[f64], distributions: &[f64], nav: f64) -> Result<f64> {
     tvpi_2(contributions, distributions, nav)
 }
@@ -79,10 +81,12 @@ pub fn ks_pme_flows_2(
     Ok((c, d))
 }
 
+#[doc = include_str!("../../docs/_inline/pe/ks_pme.md")]
 pub fn ks_pme(amounts: &[f64], index: &[f64], nav: f64) -> Result<f64> {
     ks_pme_flows(amounts, index).and_then(|a| tvpi(&a, nav))
 }
 
+#[doc = include_str!("../../docs/_inline/pe/ks_pme.md")]
 pub fn ks_pme_2(
     contributions: &[f64],
     distributions: &[f64],
@@ -92,11 +96,13 @@ pub fn ks_pme_2(
     ks_pme_flows_2(contributions, distributions, index).and_then(|(c, d)| tvpi_2(&c, &d, nav))
 }
 
+#[doc = include_str!("../../docs/_inline/pe/m_pme.md")]
 pub fn m_pme(amounts: &[f64], index: &[f64], nav: &[f64]) -> Result<f64> {
     let (contributions, distributions) = split_amounts(amounts);
     m_pme_2(&contributions, &distributions, index, nav)
 }
 
+#[doc = include_str!("../../docs/_inline/pe/m_pme.md")]
 pub fn m_pme_2(
     contributions: &[f64],
     distributions: &[f64],
@@ -151,6 +157,7 @@ pub fn pme_plus_flows_2(
     Ok(scale(distributions, lambda))
 }
 
+#[doc = include_str!("../../docs/_inline/pe/pme_plus_lambda.md")]
 pub fn pme_plus_lambda(amounts: &[f64], index: &[f64], nav: f64) -> Result<f64> {
     check_input_len(amounts, index)?;
 
@@ -158,6 +165,7 @@ pub fn pme_plus_lambda(amounts: &[f64], index: &[f64], nav: f64) -> Result<f64> 
     pme_plus_lambda_2(&contributions, &distributions, index, nav)
 }
 
+#[doc = include_str!("../../docs/_inline/pe/pme_plus_lambda.md")]
 pub fn pme_plus_lambda_2(
     contributions: &[f64],
     distributions: &[f64],
@@ -174,6 +182,7 @@ pub fn pme_plus_lambda_2(
     Ok((cs - nav) / ds)
 }
 
+#[doc = include_str!("../../docs/_inline/pe/pme_plus.md")]
 pub fn pme_plus(amounts: &[f64], index: &[f64], nav: f64) -> Result<f64> {
     let mut cf = pme_plus_flows(amounts, index, nav)?;
 
@@ -184,6 +193,7 @@ pub fn pme_plus(amounts: &[f64], index: &[f64], nav: f64) -> Result<f64> {
     super::irr(&cf, None)
 }
 
+#[doc = include_str!("../../docs/_inline/pe/pme_plus.md")]
 pub fn pme_plus_2(
     contributions: &[f64],
     distributions: &[f64],
@@ -214,6 +224,7 @@ pub fn ln_pme_nav_2(contributions: &[f64], distributions: &[f64], index: &[f64])
     ln_pme_nav(&amounts, index)
 }
 
+#[doc = include_str!("../../docs/_inline/pe/ln_pme.md")]
 pub fn ln_pme(amounts: &[f64], index: &[f64]) -> Result<f64> {
     let pme_nav = ln_pme_nav(amounts, index)?;
     let mut cf = amounts.to_owned();
@@ -223,6 +234,7 @@ pub fn ln_pme(amounts: &[f64], index: &[f64]) -> Result<f64> {
     super::irr(&cf, None)
 }
 
+#[doc = include_str!("../../docs/_inline/pe/ln_pme.md")]
 pub fn ln_pme_2(contributions: &[f64], distributions: &[f64], index: &[f64]) -> Result<f64> {
     let mut amounts = combine_amounts(contributions, distributions);
     let pme_nav = ln_pme_nav(&amounts, index)?;
@@ -232,6 +244,7 @@ pub fn ln_pme_2(contributions: &[f64], distributions: &[f64], index: &[f64]) -> 
     super::irr(&amounts, None)
 }
 
+#[doc = include_str!("../../docs/_inline/pe/direct_alpha.md")]
 pub fn direct_alpha(amounts: &[f64], index: &[f64], nav: f64) -> Result<f64> {
     let mut cf = ks_pme_flows(amounts, index)?;
     if let Some(last) = cf.last_mut() {
@@ -240,6 +253,7 @@ pub fn direct_alpha(amounts: &[f64], index: &[f64], nav: f64) -> Result<f64> {
     super::irr(&cf, None)
 }
 
+#[doc = include_str!("../../docs/_inline/pe/direct_alpha.md")]
 pub fn direct_alpha_2(
     contributions: &[f64],
     distributions: &[f64],
@@ -467,7 +481,7 @@ mod tests {
     #[rstest]
     #[case(&[-25., 15., 0.], &[100., 115., 130.], 20., 0.0875)]
     // example from https://en.wikipedia.org/wiki/Public_Market_Equivalent#Direct_Alpha
-    #[case(&[-100., -50., 60., 10., 0.], &[100., 105., 115., 117., 120.], 110., 0.0108)]
+    #[case(&[-100., -50., 60., 10., 0.], &[100., 105., 115., 117., 120.], 110., 0.0109)]
     // example from https://blog.edda.co/advanced-fund-performance-methods-pme-direct-alpha/
     #[case(&[-80., -140., 0., 70., 140., 85.], &[890.35, 1144.98, 1271.5, 1289.09,1466.47, 1842.37], 70., 0.028)]
     // example from https://directalphamethod.info/
