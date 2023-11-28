@@ -13,7 +13,8 @@ keywords = [
     "financial",
     "xirr",
     "cashflow",
-    "day count convention"
+    "day count convention",
+    "PME",
 ]
 include = [
     "src/**",
@@ -25,16 +26,18 @@ include = [
 [lib]
 name = "pyxirr"
 crate-type = ["rlib", "cdylib"]
+doctest = false
 
 [dependencies]
-pyo3 = "0.19"
-numpy = "0.19"
+pyo3 = "0.20"
+numpy = "0.20"
 time = { version = "0.3", features = ["parsing", "macros"] }
 ndarray = "0.15"
 
 [dev-dependencies]
+assert_approx_eq = "1.1"
 rstest = "0.18.2"
-pyo3 = { version = "0.19", features = ["auto-initialize"]}
+pyo3 = { version = "0.20", features = ["auto-initialize"]}
 
 [features]
 nonumpy = []

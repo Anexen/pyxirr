@@ -49,6 +49,12 @@ impl FromStr for DateLike {
 #[derive(Debug)]
 pub struct InvalidPaymentsError(String);
 
+impl InvalidPaymentsError {
+    pub fn new<T: fmt::Display>(message: T) -> Self {
+        Self(message.to_string())
+    }
+}
+
 impl fmt::Display for InvalidPaymentsError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.fmt(f)
@@ -59,8 +65,8 @@ impl Error for InvalidPaymentsError {}
 
 pub fn validate(payments: &[f64], dates: Option<&[DateLike]>) -> Result<(), InvalidPaymentsError> {
     if dates.is_some() && payments.len() != dates.unwrap_or_default().len() {
-        return Err(InvalidPaymentsError(
-            "the amounts and dates arrays are of different lengths".into(),
+        return Err(InvalidPaymentsError::new(
+            "the amounts and dates arrays are of different lengths",
         ));
     }
 
@@ -70,6 +76,6 @@ pub fn validate(payments: &[f64], dates: Option<&[DateLike]>) -> Result<(), Inva
     if positive && negative {
         Ok(())
     } else {
-        Err(InvalidPaymentsError("negative and positive payments are required".into()))
+        Err(InvalidPaymentsError::new("negative and positive payments are required"))
     }
 }

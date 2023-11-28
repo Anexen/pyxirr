@@ -6,7 +6,6 @@ use pyo3::{
     exceptions::{PyTypeError, PyValueError},
     prelude::*,
     types::{PyIterator, PyList, PySequence, PyTuple},
-    AsPyPointer,
 };
 
 use crate::conversions::float_or_none;

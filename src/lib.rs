@@ -1,5 +1,5 @@
 use broadcasting::Arg;
-use conversions::{fallible_float_or_none, float_or_none, PyDayCount};
+use conversions::{fallible_float_or_none, float_or_none, AmountArray, PyDayCount};
 use pyo3::{create_exception, exceptions, prelude::*, wrap_pyfunction};
 
 mod broadcasting;
@@ -94,11 +94,10 @@ fn xnpv(
 #[pyo3(text_signature = "(amounts, *, guess=0.1, silent=False)")]
 fn irr(
     py: Python,
-    amounts: &PyAny,
+    amounts: AmountArray,
     guess: Option<f64>,
     silent: Option<bool>,
 ) -> PyResult<Option<f64>> {
-    let amounts = conversions::extract_amount_series(amounts)?;
     py.allow_threads(move || {
         let result = core::irr(&amounts, guess);
         fallible_float_or_none(result, silent.unwrap_or(false))
@@ -117,12 +116,11 @@ fn irr(
 fn npv(
     py: Python,
     rate: f64,
-    amounts: &PyAny,
+    amounts: AmountArray,
     start_from_zero: Option<bool>,
 ) -> PyResult<Option<f64>> {
-    let payments = conversions::extract_amount_series(amounts)?;
     py.allow_threads(move || {
-        let result = core::npv(rate, &payments, start_from_zero);
+        let result = core::npv(rate, &amounts, start_from_zero);
         Ok(float_or_none(result))
     })
 }
@@ -150,8 +148,7 @@ fn fv<'a>(
 /// Net Future Value.
 #[pyfunction]
 #[pyo3(text_signature = "(rate, nper, amounts)")]
-fn nfv(py: Python, rate: f64, nper: f64, amounts: &PyAny) -> PyResult<Option<f64>> {
-    let amounts = conversions::extract_amount_series(amounts)?;
+fn nfv(py: Python, rate: f64, nper: f64, amounts: AmountArray) -> PyResult<Option<f64>> {
     py.allow_threads(move || Ok(float_or_none(core::nfv(rate, nper, &amounts))))
 }
 
@@ -176,7 +173,7 @@ fn xfv(
     let day_count = day_count.map(|x| x.try_into()).transpose()?;
 
     py.allow_threads(move || {
-        Ok(float_or_none(core::xfv(
+        let result = core::xfv(
             &start_date,
             &cash_flow_date,
             &end_date,
@@ -184,7 +181,8 @@ fn xfv(
             end_rate,
             cash_flow,
             day_count,
-        )))
+        );
+        Ok(float_or_none(result))
     })
 }
 
@@ -234,14 +232,13 @@ fn pv<'a>(
 #[pyo3(text_signature = "(amounts, finance_rate, reinvest_rate, *, silent=False)")]
 fn mirr(
     py: Python,
-    amounts: &PyAny,
+    amounts: AmountArray,
     finance_rate: f64,
     reinvest_rate: f64,
     silent: Option<bool>,
 ) -> PyResult<Option<f64>> {
-    let values = conversions::extract_amount_series(amounts)?;
     py.allow_threads(move || {
-        let result = core::mirr(&values, finance_rate, reinvest_rate);
+        let result = core::mirr(&amounts, finance_rate, reinvest_rate);
         fallible_float_or_none(result, silent.unwrap_or(false))
     })
 }
@@ -401,9 +398,376 @@ fn days_between(d1: core::DateLike, d2: core::DateLike, day_count: PyDayCount) -
     Ok(core::days_between(&d1, &d2, day_count.try_into()?))
 }
 
+mod pe {
+    use crate::{
+        conversions::{fallible_float_or_none, AmountArray},
+        core::private_equity,
+    };
+    use pyo3::prelude::*;
+
+    pub fn module(_py: Python, m: &PyModule) -> PyResult<()> {
+        m.add_function(wrap_pyfunction!(dpi, m)?)?;
+        m.add_function(wrap_pyfunction!(dpi_2, m)?)?;
+        m.add_function(wrap_pyfunction!(rvpi, m)?)?;
+        m.add_function(wrap_pyfunction!(tvpi, m)?)?;
+        m.add_function(wrap_pyfunction!(tvpi_2, m)?)?;
+        m.add_function(wrap_pyfunction!(moic, m)?)?;
+        m.add_function(wrap_pyfunction!(moic_2, m)?)?;
+        m.add_function(wrap_pyfunction!(ks_pme, m)?)?;
+        m.add_function(wrap_pyfunction!(ks_pme_2, m)?)?;
+        m.add_function(wrap_pyfunction!(ks_pme_flows, m)?)?;
+        m.add_function(wrap_pyfunction!(ks_pme_flows_2, m)?)?;
+        m.add_function(wrap_pyfunction!(m_pme, m)?)?;
+        m.add_function(wrap_pyfunction!(m_pme_2, m)?)?;
+        m.add_function(wrap_pyfunction!(pme_plus, m)?)?;
+        m.add_function(wrap_pyfunction!(pme_plus_2, m)?)?;
+        m.add_function(wrap_pyfunction!(pme_plus_flows, m)?)?;
+        m.add_function(wrap_pyfunction!(pme_plus_flows_2, m)?)?;
+        m.add_function(wrap_pyfunction!(pme_plus_lambda, m)?)?;
+        m.add_function(wrap_pyfunction!(pme_plus_lambda_2, m)?)?;
+        m.add_function(wrap_pyfunction!(ln_pme_nav, m)?)?;
+        m.add_function(wrap_pyfunction!(ln_pme_nav_2, m)?)?;
+        m.add_function(wrap_pyfunction!(ln_pme, m)?)?;
+        m.add_function(wrap_pyfunction!(ln_pme_2, m)?)?;
+        m.add_function(wrap_pyfunction!(direct_alpha, m)?)?;
+        m.add_function(wrap_pyfunction!(direct_alpha_2, m)?)?;
+
+        Ok(())
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/dpi.md")]
+    fn dpi(py: Python, amounts: AmountArray) -> PyResult<f64> {
+        py.allow_threads(move || Ok(private_equity::dpi(&amounts)?))
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/dpi.md")]
+    fn dpi_2(py: Python, contributions: AmountArray, distributions: AmountArray) -> PyResult<f64> {
+        py.allow_threads(move || Ok(private_equity::dpi_2(&contributions, &distributions)?))
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/rvpi.md")]
+    fn rvpi(py: Python, contributions: AmountArray, nav: f64) -> PyResult<f64> {
+        py.allow_threads(move || Ok(private_equity::rvpi(&contributions, nav)?))
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/tvpi.md")]
+    pub fn tvpi(py: Python, amounts: AmountArray, nav: Option<f64>) -> PyResult<f64> {
+        py.allow_threads(move || Ok(private_equity::tvpi(&amounts, nav.unwrap_or(0.0))?))
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/tvpi.md")]
+    pub fn tvpi_2(
+        py: Python,
+        contributions: AmountArray,
+        distributions: AmountArray,
+        nav: Option<f64>,
+    ) -> PyResult<f64> {
+        py.allow_threads(move || {
+            Ok(private_equity::tvpi_2(&contributions, &distributions, nav.unwrap_or(0.0))?)
+        })
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/moic.md")]
+    pub fn moic(py: Python, amounts: AmountArray, nav: Option<f64>) -> PyResult<f64> {
+        py.allow_threads(move || Ok(private_equity::moic(&amounts, nav.unwrap_or(0.0))?))
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/moic.md")]
+    pub fn moic_2(
+        py: Python,
+        contributions: AmountArray,
+        distributions: AmountArray,
+        nav: Option<f64>,
+    ) -> PyResult<f64> {
+        py.allow_threads(move || {
+            Ok(private_equity::moic_2(&contributions, &distributions, nav.unwrap_or(0.0))?)
+        })
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/ks_pme.md")]
+    fn ks_pme(
+        py: Python,
+        amounts: AmountArray,
+        index: AmountArray,
+        nav: Option<f64>,
+    ) -> PyResult<f64> {
+        py.allow_threads(move || Ok(private_equity::ks_pme(&amounts, &index, nav.unwrap_or(0.0))?))
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/ks_pme.md")]
+    fn ks_pme_2(
+        py: Python,
+        contributions: AmountArray,
+        distributions: AmountArray,
+        index: AmountArray,
+        nav: Option<f64>,
+    ) -> PyResult<f64> {
+        py.allow_threads(move || {
+            Ok(private_equity::ks_pme_2(
+                &contributions,
+                &distributions,
+                &index,
+                nav.unwrap_or(0.0),
+            )?)
+        })
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/ks_pme_flows.md")]
+    fn ks_pme_flows(py: Python, amounts: AmountArray, index: AmountArray) -> PyResult<Vec<f64>> {
+        py.allow_threads(move || Ok(private_equity::ks_pme_flows(&amounts, &index)?))
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/ks_pme_flows.md")]
+    fn ks_pme_flows_2(
+        py: Python,
+        contributions: AmountArray,
+        distributions: AmountArray,
+        index: AmountArray,
+    ) -> PyResult<(Vec<f64>, Vec<f64>)> {
+        py.allow_threads(move || {
+            Ok(private_equity::ks_pme_flows_2(&contributions, &distributions, &index)?)
+        })
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/m_pme.md")]
+    fn m_pme(
+        py: Python,
+        amounts: AmountArray,
+        index: AmountArray,
+        nav: AmountArray,
+    ) -> PyResult<f64> {
+        py.allow_threads(move || Ok(private_equity::m_pme(&amounts, &index, &nav)?))
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/m_pme.md")]
+    fn m_pme_2(
+        py: Python,
+        contributions: AmountArray,
+        distributions: AmountArray,
+        index: AmountArray,
+        nav: AmountArray,
+    ) -> PyResult<f64> {
+        py.allow_threads(move || {
+            Ok(private_equity::m_pme_2(&contributions, &distributions, &index, &nav)?)
+        })
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/pme_plus.md")]
+    fn pme_plus(
+        py: Python,
+        amounts: AmountArray,
+        index: AmountArray,
+        nav: Option<f64>,
+    ) -> PyResult<Option<f64>> {
+        py.allow_threads(move || {
+            fallible_float_or_none(
+                private_equity::pme_plus(&amounts, &index, nav.unwrap_or(0.0)),
+                false,
+            )
+        })
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/pme_plus.md")]
+    fn pme_plus_2(
+        py: Python,
+        contributions: AmountArray,
+        distributions: AmountArray,
+        index: AmountArray,
+        nav: Option<f64>,
+    ) -> PyResult<Option<f64>> {
+        py.allow_threads(move || {
+            fallible_float_or_none(
+                private_equity::pme_plus_2(
+                    &contributions,
+                    &distributions,
+                    &index,
+                    nav.unwrap_or(0.0),
+                ),
+                false,
+            )
+        })
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/pme_plus_flows.md")]
+    fn pme_plus_flows(
+        py: Python,
+        amounts: AmountArray,
+        index: AmountArray,
+        nav: Option<f64>,
+    ) -> PyResult<Vec<f64>> {
+        py.allow_threads(move || {
+            Ok(private_equity::pme_plus_flows(&amounts, &index, nav.unwrap_or(0.0))?)
+        })
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/pme_plus_flows.md")]
+    fn pme_plus_flows_2(
+        py: Python,
+        contributions: AmountArray,
+        distributions: AmountArray,
+        index: AmountArray,
+        nav: Option<f64>,
+    ) -> PyResult<(Vec<f64>, Vec<f64>)> {
+        py.allow_threads(move || {
+            let adj_distributions = private_equity::pme_plus_flows_2(
+                &contributions,
+                &distributions,
+                &index,
+                nav.unwrap_or(0.0),
+            )?;
+
+            Ok((contributions.to_vec(), adj_distributions))
+        })
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/pme_plus_lambda.md")]
+    fn pme_plus_lambda(
+        py: Python,
+        amounts: AmountArray,
+        index: AmountArray,
+        nav: Option<f64>,
+    ) -> PyResult<f64> {
+        py.allow_threads(move || {
+            Ok(private_equity::pme_plus_lambda(&amounts, &index, nav.unwrap_or(0.0))?)
+        })
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/pme_plus_lambda.md")]
+    fn pme_plus_lambda_2(
+        py: Python,
+        contributions: AmountArray,
+        distributions: AmountArray,
+        index: AmountArray,
+        nav: Option<f64>,
+    ) -> PyResult<f64> {
+        py.allow_threads(move || {
+            Ok(private_equity::pme_plus_lambda_2(
+                &contributions,
+                &distributions,
+                &index,
+                nav.unwrap_or(0.0),
+            )?)
+        })
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/ln_pme_nav.md")]
+    fn ln_pme_nav(py: Python, amounts: AmountArray, index: AmountArray) -> PyResult<f64> {
+        py.allow_threads(move || Ok(private_equity::ln_pme_nav(&amounts, &index)?))
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/ln_pme_nav.md")]
+    fn ln_pme_nav_2(
+        py: Python,
+        contributions: AmountArray,
+        distributions: AmountArray,
+        index: AmountArray,
+    ) -> PyResult<f64> {
+        py.allow_threads(move || {
+            Ok(private_equity::ln_pme_nav_2(&contributions, &distributions, &index)?)
+        })
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/ln_pme.md")]
+    fn ln_pme(py: Python, amounts: AmountArray, index: AmountArray) -> PyResult<Option<f64>> {
+        py.allow_threads(move || {
+            fallible_float_or_none(private_equity::ln_pme(&amounts, &index), false)
+        })
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/ln_pme.md")]
+    fn ln_pme_2(
+        py: Python,
+        contributions: AmountArray,
+        distributions: AmountArray,
+        index: AmountArray,
+    ) -> PyResult<Option<f64>> {
+        py.allow_threads(move || {
+            fallible_float_or_none(
+                private_equity::ln_pme_2(&contributions, &distributions, &index),
+                false,
+            )
+        })
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/direct_alpha.md")]
+    fn direct_alpha(
+        py: Python,
+        amounts: AmountArray,
+        index: AmountArray,
+        nav: Option<f64>,
+    ) -> PyResult<Option<f64>> {
+        py.allow_threads(move || {
+            fallible_float_or_none(
+                private_equity::direct_alpha(&amounts, &index, nav.unwrap_or(0.0)),
+                false,
+            )
+        })
+    }
+
+    #[pyfunction]
+    #[doc = include_str!("../docs/_inline/pe/direct_alpha.md")]
+    fn direct_alpha_2(
+        py: Python,
+        contributions: AmountArray,
+        distributions: AmountArray,
+        index: AmountArray,
+        nav: Option<f64>,
+    ) -> PyResult<Option<f64>> {
+        py.allow_threads(move || {
+            fallible_float_or_none(
+                private_equity::direct_alpha_2(
+                    &contributions,
+                    &distributions,
+                    &index,
+                    nav.unwrap_or(0.0),
+                ),
+                false,
+            )
+        })
+    }
+}
+
+fn add_submodule<F>(py: Python, parent: &PyModule, name: &str, mod_init: F) -> PyResult<()>
+where
+    F: Fn(Python, &PyModule) -> PyResult<()>,
+{
+    let child_module = PyModule::new(py, name)?;
+    mod_init(py, child_module)?;
+    parent.add(name.split(".").last().unwrap(), child_module)?;
+    py.import("sys")?.getattr("modules")?.set_item(name, child_module)?;
+    Ok(())
+}
+
 #[pymodule]
+#[pyo3(name = "_pyxirr")]
 pub fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
+
+    add_submodule(py, m, "pyxirr.pe", pe::module)?;
 
     m.add_class::<core::DayCount>()?;
     m.add_function(wrap_pyfunction!(year_fraction, m)?)?;

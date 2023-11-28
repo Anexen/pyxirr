@@ -211,6 +211,28 @@ fn extract_records(data: &PyAny) -> PyResult<(Vec<DateLike>, Vec<f64>)> {
     Ok((_dates, _amounts))
 }
 
+pub struct AmountArray(Vec<f64>);
+
+impl AmountArray {
+    pub fn to_vec(self) -> Vec<f64> {
+        self.0
+    }
+}
+
+impl<'s> FromPyObject<'s> for AmountArray {
+    fn extract(obj: &'s PyAny) -> PyResult<Self> {
+        extract_amount_series(obj).map(|v| AmountArray(v))
+    }
+}
+
+impl std::ops::Deref for AmountArray {
+    type Target = [f64];
+
+    fn deref(&self) -> &[f64] {
+        self.0.as_ref()
+    }
+}
+
 pub fn extract_amount_series(series: &PyAny) -> PyResult<Vec<f64>> {
     match series.get_type().name()? {
         "Series" => extract_amount_series_from_numpy(series.getattr("values")?),
