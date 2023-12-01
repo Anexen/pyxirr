@@ -46,7 +46,7 @@ impl FromStr for DateLike {
 }
 
 /// An error returned when the payments do not contain both negative and positive payments.
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct InvalidPaymentsError(String);
 
 impl InvalidPaymentsError {

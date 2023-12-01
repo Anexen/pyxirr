@@ -22,6 +22,27 @@ impl From<broadcasting::BroadcastingError> for PyErr {
 }
 
 macro_rules! dispatch_vectorized {
+    (infallible $py:ident, ($($vars:ident),*), $non_vec:expr, $vec:expr ) => {
+        {
+            match ($($vars,)*) {
+                ($(Arg::Scalar($vars),)*) => {
+                    let result = $py.allow_threads(move || $non_vec);
+                    Arg::Scalar(result)
+                },
+                ($($vars,)*) => {
+                    let has_numpy_array = $(matches!($vars, Arg::NumpyArray(_)) || )* false;
+                    let ($($vars,)*) = ($($vars.into_arrayd(),)*);
+                    let ($($vars,)*) = ($($vars.view(),)*);
+                    let result = $py.allow_threads(move || $vec);
+                    if has_numpy_array {
+                        Arg::from(numpy::ToPyArray::to_pyarray(&result, $py))
+                    } else {
+                        Arg::from(result)
+                    }
+                }
+            }
+        }
+    };
     ($py:ident, ($($vars:ident),*), $non_vec:expr, $vec:expr ) => {
         {
             match ($($vars,)*) {
@@ -48,8 +69,8 @@ macro_rules! dispatch_vectorized {
 
 /// Internal Rate of Return for a non-periodic cash flows.
 #[pyfunction]
-#[pyo3(signature = (dates, amounts=None, *, guess=0.1, silent=false, day_count=None))]
-#[pyo3(text_signature = "(dates, amounts=None, *, guess=0.1, silent=False, day_count=None)")]
+#[pyo3(signature = (dates, amounts=None, *, guess=None, silent=false, day_count=None))]
+#[pyo3(text_signature = "(dates, amounts=None, *, guess=None, silent=False, day_count=None)")]
 fn xirr(
     py: Python,
     dates: &PyAny,
@@ -71,21 +92,59 @@ fn xirr(
 #[pyfunction]
 #[pyo3(signature = (rate, dates, amounts=None, *, silent=false, day_count=None))]
 #[pyo3(text_signature = "(rate, dates, amounts=None, *, silent=False, day_count=None)")]
-fn xnpv(
-    py: Python,
-    rate: f64,
+fn xnpv<'a>(
+    py: Python<'a>,
+    rate: Arg<f64, 'a>,
     dates: &PyAny,
     amounts: Option<&PyAny>,
     silent: Option<bool>,
     day_count: Option<PyDayCount>,
-) -> PyResult<Option<f64>> {
+) -> PyResult<Option<Arg<f64, 'a>>> {
     let (dates, amounts) = conversions::extract_payments(dates, amounts)?;
     let day_count = day_count.map(|x| x.try_into()).transpose()?;
+    let silent = silent.unwrap_or(false);
 
-    py.allow_threads(move || {
-        let result = core::xnpv(rate, &dates, &amounts, day_count);
-        fallible_float_or_none(result, silent.unwrap_or(false))
-    })
+    match rate {
+        Arg::Scalar(rate) => {
+            let result = py.allow_threads(move || core::xnpv(rate, &dates, &amounts, day_count));
+            match result {
+                Ok(rate) if rate.is_finite() => Ok(Some(Arg::Scalar(rate))),
+                Ok(_) => Ok(None),
+                Err(e) => {
+                    if silent {
+                        Ok(None)
+                    } else {
+                        Err(e.into())
+                    }
+                }
+            }
+        }
+        rate => {
+            let has_numpy_array = matches!(rate, Arg::NumpyArray(_)) || false;
+            let rate = rate.into_arrayd();
+            let result = py.allow_threads(move || {
+                let r = rate.mapv(|r| core::xnpv(r, &dates, &amounts, day_count));
+
+                if silent {
+                    Ok(r.mapv(|e| e.unwrap_or(f64::NAN)))
+                } else {
+                    let err = r.iter().filter(|e| e.is_err()).next();
+                    if let Some(err) = err {
+                        Err(err.clone().unwrap_err())
+                    } else {
+                        Ok(r.mapv(|v| v.unwrap()))
+                    }
+                }
+            });
+
+            let result = if has_numpy_array {
+                result.map(|r| Arg::from(numpy::ToPyArray::to_pyarray(&r, py)))
+            } else {
+                result.map(|r| Arg::from(r))
+            };
+            result.map(|v| Some(v)).map_err(|e| e.into())
+        }
+    }
 }
 
 /// Internal Rate of Return
@@ -113,16 +172,30 @@ fn irr(
 #[pyfunction]
 #[pyo3(signature = (rate, amounts, *, start_from_zero=true))]
 #[pyo3(text_signature = "(rate, amounts, *, start_from_zero = True)")]
-fn npv(
-    py: Python,
-    rate: f64,
+fn npv<'a>(
+    py: Python<'a>,
+    rate: Arg<f64, 'a>,
     amounts: AmountArray,
     start_from_zero: Option<bool>,
-) -> PyResult<Option<f64>> {
-    py.allow_threads(move || {
-        let result = core::npv(rate, &amounts, start_from_zero);
-        Ok(float_or_none(result))
-    })
+) -> Arg<f64, 'a> {
+    match rate {
+        Arg::Scalar(rate) => {
+            let result = py.allow_threads(move || core::npv(rate, &amounts, start_from_zero));
+            Arg::Scalar(result)
+        }
+        Arg::Array(rates) => {
+            let result =
+                py.allow_threads(move || rates.mapv(|r| core::npv(r, &amounts, start_from_zero)));
+            Arg::from(result)
+        }
+        Arg::NumpyArray(rates) => {
+            let view = rates.readonly();
+            let rates = view.as_array();
+            let result =
+                py.allow_threads(move || rates.mapv(|r| core::npv(r, &amounts, start_from_zero)));
+            Arg::from(numpy::ToPyArray::to_pyarray(&result, py))
+        }
+    }
 }
 
 /// Future Value.
@@ -396,6 +469,20 @@ fn year_fraction(d1: core::DateLike, d2: core::DateLike, day_count: PyDayCount) 
 #[pyfunction]
 fn days_between(d1: core::DateLike, d2: core::DateLike, day_count: PyDayCount) -> PyResult<i32> {
     Ok(core::days_between(&d1, &d2, day_count.try_into()?))
+}
+
+#[pyfunction]
+/// Conventional cash flow is a series of inward and outward cash flows over time in which there is
+/// only one change in the cash flow direction. A conventional cash flow for a project or
+/// investment is typically structured as an initial outlay or outflow, followed by a number of
+/// inflows over a period of time.
+fn is_conventional_cash_flow(cf: AmountArray) -> bool {
+    core::sign_changes(&cf) == 1
+}
+
+#[pyfunction]
+fn zero_crossing_points(cf: AmountArray) -> Vec<usize> {
+    core::zero_crossing_points(&cf)
 }
 
 mod pe {
@@ -790,6 +877,8 @@ pub fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(irr, m)?)?;
     m.add_function(wrap_pyfunction!(mirr, m)?)?;
     m.add_function(wrap_pyfunction!(xirr, m)?)?;
+    m.add_function(wrap_pyfunction!(is_conventional_cash_flow, m)?)?;
+    m.add_function(wrap_pyfunction!(zero_crossing_points, m)?)?;
 
     m.add("InvalidPaymentsError", py.get_type::<InvalidPaymentsError>())?;
     m.add("BroadcastingError", py.get_type::<BroadcastingError>())?;

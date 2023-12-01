@@ -24,6 +24,20 @@ CashFlowDict = Dict[DateLike, Amount]
 CashFlow = Union[CashFlowSeries, CashFlowTable, CashFlowDict]
 ```
 
+## Multiple IRR problem
+
+The multiple internal rates of return problem occur when the signs of cash
+flows change more than once. In this case, we say that the project has
+non-conventional cash flows. This leads to situation, where it can have more
+the one (X)IRR or have no (X)IRR at all.
+
+PyXIRR's approach to the Multiple IRR problem: select the lowest IRR to be conservative
+
+See also:
+
+- <https://crystalsofeconomics.wordpress.com/2015/10/25/why-multiple-irr/>
+- <http://financialmanagementpro.com/multiple-irr-problem/>
+
 ## Day Count Conventions
 
 {% include_relative _inline/day_count_conventions.md %}

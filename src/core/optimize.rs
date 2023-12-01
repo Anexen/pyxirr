@@ -1,7 +1,7 @@
 const MAX_ERROR: f64 = 1e-9;
 const MAX_ITERATIONS: u32 = 50;
 
-pub fn newton_raphson<Func, Deriv>(start: f64, f: Func, d: Deriv) -> f64
+pub fn newton_raphson<Func, Deriv>(start: f64, f: &Func, d: &Deriv) -> f64
 where
     Func: Fn(f64) -> f64,
     Deriv: Fn(f64) -> f64,
@@ -38,11 +38,12 @@ where
 
     // https://programmingpraxis.com/2012/01/13/excels-xirr-function/
 
-    newton_raphson(start, &f, |x: f64| (f(x + MAX_ERROR) - f(x - MAX_ERROR)) / (2.0 * MAX_ERROR))
+    let df = |x| (f(x + MAX_ERROR) - f(x - MAX_ERROR)) / (2.0 * MAX_ERROR);
+    newton_raphson(start, &f, &df)
 }
 
 // https://github.com/scipy/scipy/blob/39bf11b96f771dcecf332977fb2c7843a9fd55f2/scipy/optimize/Zeros/brentq.c
-pub fn brentq<Func>(f: Func, xa: f64, xb: f64, iter: usize) -> f64
+pub fn brentq<Func>(f: &Func, xa: f64, xb: f64, iter: usize) -> f64
 where
     Func: Fn(f64) -> f64,
 {
@@ -134,4 +135,17 @@ where
     }
 
     f64::NAN
+}
+
+pub fn brentq_grid_search<'a, Func>(
+    breakpoints: &'a [&[f64]],
+    f: &'a Func,
+) -> impl Iterator<Item = f64> + 'a
+where
+    Func: Fn(f64) -> f64 + 'a,
+{
+    breakpoints
+        .into_iter()
+        .flat_map(|x| x.windows(2).map(|pair| brentq(f, pair[0], pair[1], 100)))
+        .filter(|r| r.is_finite() && f(*r).abs() < 1e-3)
 }

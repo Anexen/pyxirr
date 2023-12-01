@@ -31,3 +31,13 @@ include = [
     { path = "Cargo.lock", format = "sdist" },
     { path = ".cargo/*", format = "sdist" },
 ]
+
+[tool.black]
+line-length = 79
+target-version = ["py311"]
+
+[tool.isort]
+profile = "black"
+atomic = true
+line_length = 79
+lines_after_imports = 2

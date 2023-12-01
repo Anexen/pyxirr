@@ -4,7 +4,7 @@ use ndarray::{ArrayD, ArrayViewD};
 
 use super::{
     models::{validate, InvalidPaymentsError},
-    optimize::{brentq, newton_raphson, newton_raphson_with_default_deriv},
+    optimize::{brentq_grid_search, newton_raphson, newton_raphson_with_default_deriv},
 };
 use crate::{broadcast_together, broadcasting::BroadcastingError};
 
@@ -449,23 +449,13 @@ pub fn irr(values: &[f64], guess: Option<f64>) -> Result<f64, InvalidPaymentsErr
         return Ok(rate);
     }
 
-    #[rustfmt::skip]
-    let breakpoint_list = [
-        &[0.0, 0.5, 1.0, 1e9],
-        &[0.0, -0.5, -0.9, -0.99999999999999]
-    ];
+    // strategy: closest to zero
+    // let breakpoints: &[f64] = &[0.0, 0.25, -0.25, 0.5, -0.5, 1.0, -0.9, -0.99999999999999, 1e9];
+    // strategy: pessimistic
+    let breakpoints: &[f64] = &[-0.99999999999999, -0.75, -0.5, -0.25, 0., 0.25, 0.5, 1.0, 1e6];
+    let rate = brentq_grid_search(&[breakpoints], &f).next();
 
-    for breakpoints in breakpoint_list {
-        for pair in breakpoints.windows(2) {
-            let rate = brentq(f, pair[0], pair[1], 100);
-
-            if is_good_rate(rate) {
-                return Ok(rate);
-            }
-        }
-    }
-
-    Ok(f64::NAN)
+    Ok(rate.unwrap_or(f64::NAN))
 }
 
 pub fn mirr(

@@ -1,7 +1,7 @@
 import sys
+from collections.abc import Iterable, Sequence
 from datetime import date, datetime
 from decimal import Decimal
-from collections.abc import Iterable, Sequence
 from typing import (
     Any,
     Dict,
@@ -13,6 +13,7 @@ from typing import (
     Union,
     overload,
 )
+
 
 if sys.version_info >= (3, 8):
     from typing import Literal, Protocol
@@ -130,7 +131,11 @@ _ArrayLike = Union[
     Sequence[Sequence[Sequence[Sequence[Sequence[_T]]]]],
     Sequence[Sequence[Sequence[Sequence[Sequence[Sequence[_T]]]]]],
     Sequence[Sequence[Sequence[Sequence[Sequence[Sequence[Sequence[_T]]]]]]],
-    Sequence[Sequence[Sequence[Sequence[Sequence[Sequence[Sequence[Sequence[_T]]]]]]]],
+    Sequence[
+        Sequence[
+            Sequence[Sequence[Sequence[Sequence[Sequence[Sequence[_T]]]]]]
+        ]
+    ],
 ]
 _ScalarOrArrayLike = Union[_T, _ArrayLike[_T]]
 
@@ -260,12 +265,23 @@ def pv(
     ...
 
 
+@overload
 def npv(
     rate: _Rate,
     amounts: _AmountArray,
     *,
     start_from_zero: bool = True,
 ) -> Optional[float]:
+    ...
+
+
+@overload
+def npv(
+    rate: Iterable[_Rate],
+    amounts: _AmountArray,
+    *,
+    start_from_zero: bool = True,
+) -> List[Optional[float]]:
     ...
 
 
@@ -289,6 +305,17 @@ def xnpv(
     silent: bool = False,
     day_count: _DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
+    ...
+
+
+@overload
+def xnpv(
+    rate: Iterable[_Rate],
+    dates: _CashFlow,
+    *,
+    silent: bool = False,
+    day_count: _DayCount = DayCount.ACT_365F,
+) -> List[Optional[float]]:
     ...
 
 
@@ -481,4 +508,12 @@ def xirr(
     silent: bool = False,
     day_count: _DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
+    ...
+
+
+def is_conventional_cash_flow(cf: _AmountArray) -> bool:
+    ...
+
+
+def zero_crossing_points(cf: _AmountArray) -> list[int]:
     ...
