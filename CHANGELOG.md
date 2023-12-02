@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.10.0] - 2023-12-03
+
+- Private Equity functions ([#42](https://github.com/Anexen/pyxirr/issues/42))
+- XNPV/NPV functions now accept rate as multidimensional array
+- Explain Multiple IRR problem + provide utility functions for analysis
+- XIRR improvements (prevent from values < -1, grid search + brentq as fallback)
+
 ## [0.9.3] - 2023-10-11
 
 - IRR improvements ([#47](https://github.com/Anexen/pyxirr/pull/47))
