@@ -169,6 +169,8 @@ pe.pme_plus([-20, 15, 0], index=[100, 115, 130], nav=20)
 pe.direct_alpha([-20, 15, 0], index=[100, 115, 130], nav=20)
 ```
 
+[Docs](https://anexen.github.io/pyxirr/private_equity.html)
+
 ### Other financial functions
 
 ```python
@@ -185,6 +187,8 @@ pyxirr.irr([-100, 39, 59, 55, 20])
 
 # ... and more! Check out the docs.
 ```
+
+[Docs](https://anexen.github.io/pyxirr/functions.html)
 
 ### Vectorization
 

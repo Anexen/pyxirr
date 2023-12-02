@@ -1,261 +1,268 @@
 {% include head.html %}
 
-## DPI
-
-{% include_relative _inline/pe/dpi.md %}
+## Type annotations
 
 ```python
-def dpi(amounts: _AmountArray) -> float:
+Amount = Union[int, float, Decimal]  # also supports numpy types
+AmountArray = Iterable[Amount]
+```
+
+## DPI
+
+```python
+def dpi(amounts: AmountArray) -> float:
     ...
 
 
 def dpi_2(
-    contributions: _AmountArray,
-    distributions: _AmountArray,
+    contributions: AmountArray,
+    distributions: AmountArray,
 ) -> float:
     ...
 ```
+
+{% include_relative _inline/pe/dpi.md %}
 
 ## RVPI
 
-{% include_relative _inline/pe/rvpi.md %}
-
 ```python
 def rvpi(
-    contributions: _AmountArray,
-    nav: _Amount,
+    contributions: AmountArray,
+    nav: Amount,
 ) -> float:
     ...
 ```
 
-## TVPI
+{% include_relative _inline/pe/rvpi.md %}
 
-{% include_relative _inline/pe/tvpi.md %}
+## TVPI
 
 ```python
 def tvpi(
-    amounts: _AmountArray,
-    nav: _Amount = 0,
+    amounts: AmountArray,
+    nav: Amount = 0,
 ) -> float:
     ...
 
 
 def tvpi_2(
-    contributions: _AmountArray,
-    distributions: _AmountArray,
-    nav: _Amount = 0,
+    contributions: AmountArray,
+    distributions: AmountArray,
+    nav: Amount = 0,
 ) -> float:
     ...
 ```
-## MOIC
 
-{% include_relative _inline/pe/moic.md %}
+{% include_relative _inline/pe/tvpi.md %}
+
+## MOIC
 
 ```python
 def moic(
-    amounts: _AmountArray,
-    nav: _Amount = 0,
+    amounts: AmountArray,
+    nav: Amount = 0,
 ) -> float:
     ...
 
 
 def moic_2(
-    contributions: _AmountArray,
-    distributions: _AmountArray,
-    nav: _Amount = 0,
+    contributions: AmountArray,
+    distributions: AmountArray,
+    nav: Amount = 0,
 ) -> float:
     ...
 ```
 
-## LN-PME
+{% include_relative _inline/pe/moic.md %}
 
-{% include_relative _inline/pe/ln_pme.md %}
+## LN-PME
 
 ```python
 def ln_pme(
-    amounts: _AmountArray,
-    index: _AmountArray,
+    amounts: AmountArray,
+    index: AmountArray,
 ) -> Optional[float]:
     ...
 
 
 def ln_pme_2(
-    contributions: _AmountArray,
-    distributions: _AmountArray,
-    index: _AmountArray,
+    contributions: AmountArray,
+    distributions: AmountArray,
+    index: AmountArray,
 ) -> Optional[float]:
     ...
 ```
 
-## LN-PME NAV
+{% include_relative _inline/pe/ln_pme.md %}
 
-{% include_relative _inline/pe/ln_pme_nav.md %}
+## LN-PME NAV
 
 ```python
 def ln_pme_nav(
-    amounts: _AmountArray,
-    index: _AmountArray,
+    amounts: AmountArray,
+    index: AmountArray,
 ) -> float:
     ...
 
 
 def ln_pme_nav_2(
-    contributions: _AmountArray,
-    distributions: _AmountArray,
-    index: _AmountArray,
+    contributions: AmountArray,
+    distributions: AmountArray,
+    index: AmountArray,
 ) -> float:
     ...
 ```
 
-## KS-PME Flows
+{% include_relative _inline/pe/ln_pme_nav.md %}
 
-{% include_relative _inline/pe/ks_pme_flows.md %}
+## KS-PME Flows
 
 ```python
 def ks_pme_flows(
-    amounts: _AmountArray,
-    index: _AmountArray,
+    amounts: AmountArray,
+    index: AmountArray,
 ) -> List[float]:
     ...
 
 
 def ks_pme_flows_2(
-    contributions: _AmountArray,
-    distributions: _AmountArray,
-    index: _AmountArray,
+    contributions: AmountArray,
+    distributions: AmountArray,
+    index: AmountArray,
 ) -> Tuple[List[float], List[float]]:
     ...
 ```
 
-## KS-PME
+{% include_relative _inline/pe/ks_pme_flows.md %}
 
-{% include_relative _inline/pe/ks_pme.md %}
+## KS-PME
 
 ```python
 def ks_pme(
-    amounts: _AmountArray,
-    index: _AmountArray,
-    nav: _Amount = 0,
+    amounts: AmountArray,
+    index: AmountArray,
+    nav: Amount = 0,
 ) -> Optional[float]:
     ...
 
 
 def ks_pme_2(
-    contributions: _AmountArray,
-    distributions: _AmountArray,
-    index: _AmountArray,
-    nav: _Amount = 0,
+    contributions: AmountArray,
+    distributions: AmountArray,
+    index: AmountArray,
+    nav: Amount = 0,
 ) -> Optional[float]:
     ...
 ```
 
+{% include_relative _inline/pe/ks_pme.md %}
 
 ## mPME
 
-{% include_relative _inline/pe/m_pme.md %}
-
 ```python
 def m_pme(
-    amounts: _AmountArray,
-    index: _AmountArray,
-    nav: _AmountArray,
+    amounts: AmountArray,
+    index: AmountArray,
+    nav: AmountArray,
 ) -> float:
     ...
 
 
 def m_pme_2(
-    contributions: _AmountArray,
-    distributions: _AmountArray,
-    index: _AmountArray,
-    nav: _AmountArray,
+    contributions: AmountArray,
+    distributions: AmountArray,
+    index: AmountArray,
+    nav: AmountArray,
 ) -> float:
     ...
 ```
 
-## PME+ Flows
+{% include_relative _inline/pe/m_pme.md %}
 
-{% include_relative _inline/pe/pme_plus_flows.md %}
+## PME+ Flows
 
 ```python
 def pme_plus_flows(
-    amounts: _AmountArray,
-    index: _AmountArray,
-    nav: _Amount = 0,
+    amounts: AmountArray,
+    index: AmountArray,
+    nav: Amount = 0,
 ) -> List[float]:
     ...
 
 
 def pme_plus_flows_2(
-    contributions: _AmountArray,
-    distributions: _AmountArray,
-    index: _AmountArray,
-    nav: _Amount = 0,
+    contributions: AmountArray,
+    distributions: AmountArray,
+    index: AmountArray,
+    nav: Amount = 0,
 ) -> Tuple[List[float], List[float]]:
     ...
 ```
 
-## PME+ Lambda
+{% include_relative _inline/pe/pme_plus_flows.md %}
 
-{% include_relative _inline/pe/pme_plus_lambda.md %}
+## PME+ Lambda
 
 ```python
 def pme_plus_lambda(
-    amounts: _AmountArray,
-    index: _AmountArray,
-    nav: _Amount = 0,
+    amounts: AmountArray,
+    index: AmountArray,
+    nav: Amount = 0,
 ) -> float:
     ...
 
 
 def pme_plus_lambda_2(
-    contributions: _AmountArray,
-    distributions: _AmountArray,
-    index: _AmountArray,
-    nav: _Amount = 0,
+    contributions: AmountArray,
+    distributions: AmountArray,
+    index: AmountArray,
+    nav: Amount = 0,
 ) -> float:
     ...
 ```
 
-## PME+
+{% include_relative _inline/pe/pme_plus_lambda.md %}
 
-{% include_relative _inline/pe/pme_plus.md %}
+## PME+
 
 ```python
 def pme_plus(
-    amounts: _AmountArray,
-    index: _AmountArray,
-    nav: _Amount = 0,
+    amounts: AmountArray,
+    index: AmountArray,
+    nav: Amount = 0,
 ) -> Optional[float]:
     ...
 
 
 def pme_plus_2(
-    contributions: _AmountArray,
-    distributions: _AmountArray,
-    index: _AmountArray,
-    nav: _Amount = 0,
+    contributions: AmountArray,
+    distributions: AmountArray,
+    index: AmountArray,
+    nav: Amount = 0,
 ) -> Optional[float]:
     ...
 ```
 
-## Direct Alpha
+{% include_relative _inline/pe/pme_plus.md %}
 
-{% include_relative _inline/pe/direct_alpha.md %}
+## Direct Alpha
 
 ```python
 def direct_alpha(
-    amounts: _AmountArray,
-    index: _AmountArray,
-    nav: _Amount = 0,
+    amounts: AmountArray,
+    index: AmountArray,
+    nav: Amount = 0,
 ) -> Optional[float]:
     ...
 
 
 def direct_alpha_2(
-    contributions: _AmountArray,
-    distributions: _AmountArray,
-    index: _AmountArray,
-    nav: _Amount = 0,
+    contributions: AmountArray,
+    distributions: AmountArray,
+    index: AmountArray,
+    nav: Amount = 0,
 ) -> Optional[float]:
     ...
 ```
+
+{% include_relative _inline/pe/direct_alpha.md %}
