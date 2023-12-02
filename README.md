@@ -61,63 +61,60 @@ xirr(['2020-01-01', '2021-01-01'], [-1000, 1200])
 
 # Multiple IRR problem
 
-The multiple internal rates of return problem occur when the signs of cash
-flows change more than once. In this case, we say that the project has
-non-conventional cash flows. This leads to situation, where it can have more
-the one (X)IRR or have no (X)IRR at all.
+The Multiple IRR problem occur when the signs of cash flows change more than
+once. In this case, we say that the project has non-conventional cash flows.
+This leads to situation, where it can have more the one IRR or have no IRR at all.
 
-PyXIRR's approach to the Multiple IRR problem: select the lowest IRR to be conservative
+PyXIRR's approach to the Multiple IRR problem:
+
+1. It looks for positive result around 0.1 (the same as Excel with the default guess=0.1).
+2. If it can't find a result, it uses several other attempts and selects the lowest IRR to be conservative.
+
+Here is an example of how to find multiple IRRs:
 
 ```python
-import pandas as pd
+import numpy as np
 import pyxirr
 
+# load cash flow:
 cf = pd.read_csv("tests/samples/30-22.csv", names=["date", "amount"])
 # check whether the cash flow is conventional:
 print(pyxirr.is_conventional_cash_flow(cf["amount"]))  # false
 
-r1 = pyxirr.xirr(cf)
-print("r1: ", r1)  # -0.31540826742734207
-# check using NPV
-print("XNPV(r1): ", pyxirr.xnpv(r1, cf)) # -2.3283064365386963e-10
-
-# the second root
-r2 = pyxirr.xirr(cf, guess=0.0)  # -0.028668460065441048
-print("r2: ", r2)
-print("XNPV(r2): ", pyxirr.xnpv(r2, cf))  # 0.0
-
-# print NPV profile
-import numpy as np
-
+# build NPV profile:
+# calculate 50 NPV values for different rates
 rates = np.linspace(-0.5, 0.5, 50)
+# any iterable, any rates, e.g.
+# rates = [-0.5, -0.3, -0.1, 0.1, -0.6]
 values = pyxirr.xnpv(rates, cf)
-series = pd.Series(values, index=rates)
 
-print("Zero crossing points:")
-for idx in pyxirr.zero_crossing_points(values):
-    print(series.iloc[[idx, idx+1]])
-
+# print NPV profile:
 # NPV changes sign two times:
 #   1) between -0.316 and -0.295
 #   2) between -0.03 and -0.01
-
-print(series)
-# -0.500000   -8.962169e+08
-# ...
-# -0.336735   -5.895002e+05
-# -0.316327   -1.457451e+04
-# -0.295918    1.801890e+05
-# -0.275510    2.175858e+05
-# ...
-# -0.051020    2.612340e+03
-# -0.030612    1.857505e+02
-# -0.010204   -1.452180e+03
-#  0.010204   -2.533466e+03
-# ...
-#  0.500000   -2.358226e+03
+print("NPV profile:")
+for rate, value in zip(rates, values):
+    print(rate, value)
 
 # plot NPV profile
+import pandas as pd
+series = pd.Series(values, index=rates)
 pd.DataFrame(series[series > -1e6]).assign(zero=0).plot()
+
+# find points where NPV function crosses zero
+indexes = pyxirr.zero_crossing_points(values)
+
+print("Zero crossing points:")
+for idx in indexes:
+    print("between", rates[idx], "and", rates[idx+1])
+
+# XIRR has two results:
+#   -0.31540826742734207
+#   -0.028668460065441048
+for i, idx in enumerate(indexes, start=1):
+    rate = pyxirr.xirr(cf, guess=rates[idx])
+    npv = pyxirr.xnpv(rate, cf)
+    print(f"{i}) {rate}; XNPV = {npv}")
 ```
 
 # More Examples
