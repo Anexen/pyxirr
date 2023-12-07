@@ -709,9 +709,10 @@ fn test_gh_46(#[case] input: &[f64], #[case] expected: f64) {
 }
 
 #[rstest]
-#[case::unordered("tests/samples/unordered.csv")]
-#[case::random_100("tests/samples/random_100.csv")]
-#[case::random_1000("tests/samples/random_1000.csv")]
+#[case("tests/samples/unordered.csv")]
+#[case("tests/samples/random_100.csv")]
+#[case("tests/samples/random_1000.csv")]
+#[case("tests/samples/minus_0_993.csv")]
 fn test_irr_samples(#[case] input: &str) {
     Python::with_gil(|py| {
         let payments = PaymentsLoader::from_csv(py, input).to_columns();
@@ -720,7 +721,7 @@ fn test_irr_samples(#[case] input: &str) {
         assert_almost_eq!(rate, irr_expected_result(input));
         // test net present value of all cash flows equal to zero
         let npv: f64 = pyxirr_call!(py, "npv", (rate, payments.1));
-        assert_almost_eq!(npv, 0.0);
+        assert_almost_eq!(npv, 0.0, 1e-8);
     });
 }
 

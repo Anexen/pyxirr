@@ -1,12 +1,13 @@
 // https://www.insead.edu/sites/default/files/assets/dept/centres/gpei/docs/Measuring_PE_Fund-Performance-2019.pdf
 
+use super::utils;
 use super::InvalidPaymentsError;
 
 type Result<T> = std::result::Result<T, InvalidPaymentsError>;
 
 #[doc = include_str!("../../docs/_inline/pe/dpi.md")]
 pub fn dpi(amounts: &[f64]) -> Result<f64> {
-    let (cs, ds) = sum_negatives_positives(amounts);
+    let (cs, ds) = utils::sum_negatives_positives(amounts);
     check_zero_contributions(cs)?;
     Ok(ds / -cs)
 }
@@ -23,13 +24,13 @@ pub fn dpi_2(contributions: &[f64], distributions: &[f64]) -> Result<f64> {
 pub fn rvpi(contributions: &[f64], nav: f64) -> Result<f64> {
     let cs: f64 = contributions.iter().sum();
     check_zero_contributions(cs)?;
-    let sign = series_signum(contributions);
+    let sign = utils::series_signum(contributions);
     Ok(nav / (sign * cs))
 }
 
 #[doc = include_str!("../../docs/_inline/pe/tvpi.md")]
 pub fn tvpi(amounts: &[f64], nav: f64) -> Result<f64> {
-    let (cs, ds) = sum_negatives_positives(amounts);
+    let (cs, ds) = utils::sum_negatives_positives(amounts);
     check_zero_contributions(cs)?;
     Ok((ds + nav) / -cs)
 }
@@ -62,7 +63,7 @@ pub fn moic_2(contributions: &[f64], distributions: &[f64], nav: f64) -> Result<
 pub fn ks_pme_flows(amounts: &[f64], index: &[f64]) -> Result<Vec<f64>> {
     check_input_len(amounts, index)?;
 
-    Ok(pairwise_mul(amounts, &index_performance(index)))
+    Ok(utils::pairwise_mul(amounts, &index_performance(index)))
 }
 
 #[doc = include_str!("../../docs/_inline/pe/ks_pme_flows.md")]
@@ -75,8 +76,8 @@ pub fn ks_pme_flows_2(
     check_input_len(distributions, index)?;
 
     let px = index_performance(index);
-    let c = pairwise_mul(contributions, &px);
-    let d = pairwise_mul(distributions, &px);
+    let c = utils::pairwise_mul(contributions, &px);
+    let d = utils::pairwise_mul(distributions, &px);
 
     Ok((c, d))
 }
@@ -154,7 +155,7 @@ pub fn pme_plus_flows_2(
     nav: f64,
 ) -> Result<Vec<f64>> {
     let lambda = pme_plus_lambda_2(contributions, distributions, index, nav)?;
-    Ok(scale(distributions, lambda))
+    Ok(utils::scale(distributions, lambda))
 }
 
 #[doc = include_str!("../../docs/_inline/pe/pme_plus_lambda.md")]
@@ -176,8 +177,8 @@ pub fn pme_plus_lambda_2(
     check_input_len(distributions, index)?;
 
     let px = index_performance(index);
-    let ds = sum_pairwise_mul(distributions, &px);
-    let cs = sum_pairwise_mul(contributions, &px);
+    let ds = utils::sum_pairwise_mul(distributions, &px);
+    let cs = utils::sum_pairwise_mul(contributions, &px);
 
     Ok((cs - nav) / ds)
 }
@@ -212,7 +213,7 @@ pub fn pme_plus_2(
 #[doc = include_str!("../../docs/_inline/pe/ln_pme_nav.md")]
 pub fn ln_pme_nav(amounts: &[f64], index: &[f64]) -> Result<f64> {
     check_input_len(amounts, index)?;
-    Ok(-sum_pairwise_mul(amounts, &index_performance(index)))
+    Ok(-utils::sum_pairwise_mul(amounts, &index_performance(index)))
 }
 
 #[doc = include_str!("../../docs/_inline/pe/ln_pme_nav.md")]
@@ -300,33 +301,6 @@ fn combine_amounts(contributions: &[f64], distributions: &[f64]) -> Vec<f64> {
 fn index_performance(index: &[f64]) -> Vec<f64> {
     let last = index.last().unwrap();
     index.iter().map(|p| last / p).collect()
-}
-
-fn scale(values: &[f64], factor: f64) -> Vec<f64> {
-    values.iter().map(|v| v * factor).collect()
-}
-
-fn sum_pairwise_mul(a: &[f64], b: &[f64]) -> f64 {
-    a.iter().zip(b).map(|(x, y)| x * y).sum()
-}
-
-fn pairwise_mul(a: &[f64], b: &[f64]) -> Vec<f64> {
-    a.iter().zip(b).map(|(x, y)| x * y).collect()
-}
-
-fn series_signum(a: &[f64]) -> f64 {
-    // returns -1. if any item is negative, otherwise +1.
-    a.iter().any(|x| x.is_sign_negative()).then_some(-1.).unwrap_or(1.)
-}
-
-fn sum_negatives_positives(values: &[f64]) -> (f64, f64) {
-    values.iter().fold((0., 0.), |acc, x| {
-        if x.is_sign_negative() {
-            (acc.0 + x, acc.1)
-        } else {
-            (acc.0, acc.1 + x)
-        }
-    })
 }
 
 #[cfg(test)]

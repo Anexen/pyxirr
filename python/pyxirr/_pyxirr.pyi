@@ -327,7 +327,7 @@ def rate(  # type: ignore[misc]
     fv: _Amount = 0,
     *,
     pmt_at_beginning: bool = False,
-    guess: _Guess = 0.1,
+    guess: _Guess = None,
 ) -> Optional[float]:
     ...
 
@@ -340,7 +340,7 @@ def rate(
     fv: _ScalarOrArrayLike[_Amount] = 0,
     *,
     pmt_at_beginning: _ScalarOrArrayLike[bool] = False,
-    guess: _Guess = 0.1,
+    guess: _Guess = None,
 ) -> List[Optional[float]]:
     ...
 
@@ -472,7 +472,7 @@ def cumprinc(
 def irr(
     amounts: _AmountArray,
     *,
-    guess: _Guess = 0.1,
+    guess: _Guess = None,
     silent: bool = False,
 ) -> Optional[float]:
     ...
@@ -493,7 +493,7 @@ def xirr(
     dates: _DateLikeArray,
     amounts: _AmountArray,
     *,
-    guess: _Guess = 0.1,
+    guess: _Guess = None,
     silent: bool = False,
     day_count: _DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
@@ -504,7 +504,7 @@ def xirr(
 def xirr(
     dates: _CashFlow,
     *,
-    guess: _Guess = 0.1,
+    guess: _Guess = None,
     silent: bool = False,
     day_count: _DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:

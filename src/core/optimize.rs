@@ -149,3 +149,84 @@ where
         .flat_map(|x| x.windows(2).map(|pair| brentq(f, pair[0], pair[1], 100)))
         .filter(|r| r.is_finite() && f(*r).abs() < 1e-3)
 }
+
+// use std::f64::consts::PI;
+//
+// use num_complex::Complex;
+
+// pub fn durand_kerner(coefficients: &[f64]) -> Vec<f64> {
+//     // https://github.com/TheAlgorithms/C-Plus-Plus/blob/master/numerical_methods/durand_kerner_roots.cpp#L109
+//
+//     // numerical errors less when the first coefficient is "1"
+//     // hence, we normalize the first coefficient
+//     let coefficients: Vec<_> = coefficients.iter().map(|x| x / coefficients[0]).collect();
+//     let degree = coefficients.len() - 1;
+//     let accuracy = 1e-10;
+//
+//     let mut roots: Vec<_> = (0..degree)
+//         .into_iter()
+//         .map(|i| Complex::<f64>::new(PI * (i as f64 / degree as f64), 0.0))
+//         .collect();
+//
+//     let mut prev_delta = f64::INFINITY;
+//
+//     for _ in 0..MAX_ITERATIONS {
+//         let mut tol_condition = 0.0f64;
+//
+//         for n in 0..degree {
+//             let numerator = polyval(&coefficients, roots[n]);
+//
+//             let mut denominator = Complex::new(1.0, 0.0);
+//             for i in 0..degree {
+//                 if i != n {
+//                     denominator *= roots[n] - roots[i];
+//                 }
+//             }
+//
+//             let delta = numerator / denominator;
+//
+//             if !delta.norm().is_finite() {
+//                 break;
+//             }
+//
+//             roots[n] -= delta;
+//
+//             tol_condition = tol_condition.max(delta.norm())
+//         }
+//
+//         if (prev_delta - tol_condition).abs() <= accuracy || tol_condition < accuracy {
+//             break;
+//         }
+//
+//         prev_delta = tol_condition
+//     }
+//
+//     roots.into_iter().map(|x| x.norm()).collect()
+// }
+
+// valuate a polynomial at specific values.
+// fn polyval(coefficients: &[f64], x: Complex<f64>) -> Complex<f64> {
+//     let degree = coefficients.len() - 1;
+//     coefficients.iter().enumerate().map(|(i, c)| c * x.powf((degree - i) as f64)).sum()
+// }
+
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use assert_approx_eq::assert_approx_eq;
+//     use rstest::rstest;
+//
+//     #[rstest]
+//     fn test_durand_kerner() {
+//         let cf = &[-1e6, 5000., -3.];
+//         let roots = durand_kerner(cf);
+//
+//         dbg!(&roots);
+//         for root in roots {
+//             let guess = root - 1.;
+//             dbg!(guess);
+//             let rate = crate::core::irr(cf, Some(guess)).unwrap();
+//             assert_approx_eq!(crate::core::npv(rate, cf, None), 0.0);
+//         }
+//     }
+// }

@@ -76,6 +76,7 @@ fn test_xnpv_samples(#[case] input: &str) {
 #[case::case_30_48("tests/samples/30-48.csv")]
 #[case::close_to_minus_0_99("tests/samples/minus_0_99.csv")]
 #[case::close_to_minus_0_99999("tests/samples/minus_0_99999.csv")]
+#[case::close_to_minus_0_993("tests/samples/minus_0_993.csv")]
 fn test_xirr_samples(#[case] input: &str) {
     let result = Python::with_gil(|py| {
         let payments = PaymentsLoader::from_csv(py, input).to_records();

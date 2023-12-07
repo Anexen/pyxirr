@@ -1,7 +1,7 @@
 use super::{year_fraction, DayCount};
 use crate::core::{
     models::{validate, DateLike, InvalidPaymentsError},
-    optimize::{brentq_grid_search, newton_raphson},
+    optimize::{brentq, newton_raphson},
 };
 
 pub fn xirr(
@@ -30,13 +30,24 @@ pub fn xirr(
         return Ok(rate);
     }
 
-    // strategy: closest to zero
-    // let breakpoints: &[f64] = &[0.0, 0.25, -0.25, 0.5, -0.5, 1.0, -0.9, -0.99999999999999, 1e9];
-    // strategy: pessimistic
-    let breakpoints: &[f64] = &[-0.99999999999999, -0.75, -0.5, -0.25, 0., 0.25, 0.5, 1.0, 1e6];
-    let rate = brentq_grid_search(&[breakpoints], &f).next();
+    let rate = brentq(&f, -0.999999999999999, 100., 100);
 
-    Ok(rate.unwrap_or(f64::NAN))
+    if is_good_rate(rate) {
+        return Ok(rate);
+    }
+
+    let mut step = 0.01;
+    let mut guess = -0.99999999999999;
+    while guess < 1.0 {
+        let rate = newton_raphson(guess, &f, &df);
+        if is_good_rate(rate) {
+            return Ok(rate);
+        }
+        guess += step;
+        step = (step * 1.1).min(0.1);
+    }
+
+    Ok(f64::NAN)
 }
 
 /// Calculate the net present value of a series of payments at irregular intervals.
@@ -53,13 +64,17 @@ pub fn xnpv(
 }
 
 pub fn sign_changes(v: &[f64]) -> i32 {
-    v.windows(2).map(|v| (v[0].signum() != v[1].signum()) as i32).sum()
+    v.windows(2)
+        .map(|p| (p[0].is_finite() && p[1].is_finite() && p[0].signum() != p[1].signum()) as i32)
+        .sum()
 }
 
 pub fn zero_crossing_points(v: &[f64]) -> Vec<usize> {
     v.windows(2)
         .enumerate()
-        .filter_map(|(i, p)| (p[0].signum() != p[1].signum()).then_some(i))
+        .filter_map(|(i, p)| {
+            (p[0].is_finite() && p[1].is_finite() && p[0].signum() != p[1].signum()).then_some(i)
+        })
         .collect()
 }
 
@@ -94,6 +109,7 @@ mod tests {
         assert_eq!(sign_changes(&[1., -2., 3.]), 2);
         assert_eq!(sign_changes(&[-1., 2., -3.]), 2);
         assert_eq!(sign_changes(&[-1., -2., -3.]), 0);
+        assert_eq!(sign_changes(&[1., f64::NAN, 3.]), 0);
     }
 
     #[rstest]
@@ -102,9 +118,10 @@ mod tests {
         assert_eq!(zero_crossing_points(&[1., -2., -3.]), vec![0]);
         assert_eq!(zero_crossing_points(&[1., -2., 3.]), vec![0, 1]);
         assert_eq!(zero_crossing_points(&[-1., -2., 3.]), vec![1]);
+        assert_eq!(zero_crossing_points(&[1., f64::NAN, 3.]), vec![]);
 
-        assert_eq!(zero_crossing_points(
-            &[7., 6., -3., -4., -7., 8., 3., -6., 7., 8.]),
+        assert_eq!(
+            zero_crossing_points(&[7., 6., -3., -4., -7., 8., 3., -6., 7., 8.]),
             vec![1, 4, 6, 7],
         );
     }

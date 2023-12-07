@@ -149,8 +149,8 @@ fn xnpv<'a>(
 
 /// Internal Rate of Return
 #[pyfunction]
-#[pyo3(signature = (amounts, *, guess=0.1, silent=false))]
-#[pyo3(text_signature = "(amounts, *, guess=0.1, silent=False)")]
+#[pyo3(signature = (amounts, *, guess=None, silent=false))]
+#[pyo3(text_signature = "(amounts, *, guess=None, silent=False)")]
 fn irr(
     py: Python,
     amounts: AmountArray,
@@ -400,8 +400,8 @@ fn nper<'a>(
 
 /// Compute the number of periodic payments.
 #[pyfunction]
-#[pyo3(signature = (nper, pmt, pv, fv=Arg::Scalar(0.0), *, pmt_at_beginning=Arg::Scalar(false), guess=0.1))]
-#[pyo3(text_signature = "(nper, pmt, pv, fv=0, *, pmt_at_beginning=False, guess=0.1)")]
+#[pyo3(signature = (nper, pmt, pv, fv=Arg::Scalar(0.0), *, pmt_at_beginning=Arg::Scalar(false), guess=None))]
+#[pyo3(text_signature = "(nper, pmt, pv, fv=0, *, pmt_at_beginning=False, guess=None)")]
 fn rate<'a>(
     py: Python<'a>,
     nper: Arg<'a, f64>,

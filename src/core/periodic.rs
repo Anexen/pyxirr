@@ -4,7 +4,8 @@ use ndarray::{ArrayD, ArrayViewD};
 
 use super::{
     models::{validate, InvalidPaymentsError},
-    optimize::{brentq_grid_search, newton_raphson, newton_raphson_with_default_deriv},
+    optimize::{brentq, brentq_grid_search, newton_raphson, newton_raphson_with_default_deriv},
+    utils,
 };
 use crate::{broadcast_together, broadcasting::BroadcastingError};
 
@@ -443,7 +444,21 @@ pub fn irr(values: &[f64], guess: Option<f64>) -> Result<f64, InvalidPaymentsErr
     let df = |rate| self::npv_deriv(rate, values);
     let is_good_rate = |rate: f64| rate.is_finite() && f(rate).abs() < 1e-3;
 
-    let rate = newton_raphson(guess.unwrap_or(0.1), &f, &df);
+    let guess = match guess {
+        Some(g) => g,
+        None => {
+            let (outflows, inflows) = utils::sum_negatives_positives(values);
+            inflows / -outflows - 1.0
+        }
+    };
+
+    let rate = newton_raphson(guess, &f, &df);
+
+    if is_good_rate(rate) {
+        return Ok(rate);
+    }
+
+    let rate = brentq(&f, -0.999999999999999, 100., 100);
 
     if is_good_rate(rate) {
         return Ok(rate);

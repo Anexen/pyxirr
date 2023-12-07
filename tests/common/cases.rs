@@ -58,6 +58,7 @@ pub fn xirr_expected_result(input: &str) -> f64 {
         "tests/samples/30-48.csv" => -0.07525261340272364,
         "tests/samples/minus_0_99.csv" => -0.9989769231734277,
         "tests/samples/minus_0_99999.csv" => -0.9999884228170087,
+        "tests/samples/minus_0_993.csv" => -0.993785049929284,
         _ => panic!(),
     }
 }
@@ -79,6 +80,7 @@ pub fn irr_expected_result(input: &str) -> f64 {
         "tests/samples/unordered.csv" => 0.7039842300,
         "tests/samples/random_100.csv" => 2.3320600601,
         "tests/samples/random_1000.csv" => 0.8607558299,
+        "tests/samples/minus_0_993.csv" => -0.995697224362268,
         _ => panic!(),
     }
 }
