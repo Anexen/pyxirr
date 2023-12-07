@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.10.1] - 2023-12-08
+
+- XIRR improvements ([#49](https://github.com/Anexen/pyxirr/pull/49))
+- Handle NAN in utility functions for multi-root analysis
+
 ## [0.10.0] - 2023-12-03
 
 - Private Equity functions ([#42](https://github.com/Anexen/pyxirr/issues/42))
