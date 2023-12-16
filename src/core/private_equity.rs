@@ -262,7 +262,7 @@ pub fn direct_alpha_2(
     nav: f64,
 ) -> Result<f64> {
     let amounts = &combine_amounts(contributions, distributions);
-    direct_alpha(&amounts, index, nav)
+    direct_alpha(amounts, index, nav)
 }
 
 fn check_zero_contributions(contributions: f64) -> Result<()> {
@@ -276,7 +276,7 @@ fn check_zero_contributions(contributions: f64) -> Result<()> {
 fn check_input_len(amounts: &[f64], index: &[f64]) -> Result<()> {
     if amounts.len() != index.len() {
         Err(InvalidPaymentsError::new("Amounts must be the same length as index."))
-    } else if index.len() == 0 {
+    } else if index.is_empty() {
         Err(InvalidPaymentsError::new("Input array must contain at least one value"))
     } else {
         Ok(())

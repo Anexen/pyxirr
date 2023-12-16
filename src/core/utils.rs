@@ -12,7 +12,7 @@ pub(crate) fn pairwise_mul(a: &[f64], b: &[f64]) -> Vec<f64> {
 
 pub(crate) fn series_signum(a: &[f64]) -> f64 {
     // returns -1. if any item is negative, otherwise +1.
-    a.iter().any(|x| x.is_sign_negative()).then_some(-1.).unwrap_or(1.)
+    if a.iter().any(|x| x.is_sign_negative()) { -1. } else { 1. }
 }
 
 pub(crate) fn sum_negatives_positives(values: &[f64]) -> (f64, f64) {

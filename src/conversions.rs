@@ -221,7 +221,7 @@ impl AmountArray {
 
 impl<'s> FromPyObject<'s> for AmountArray {
     fn extract(obj: &'s PyAny) -> PyResult<Self> {
-        extract_amount_series(obj).map(|v| AmountArray(v))
+        extract_amount_series(obj).map(AmountArray)
     }
 }
 
