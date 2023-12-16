@@ -145,7 +145,7 @@ where
     Func: Fn(f64) -> f64 + 'a,
 {
     breakpoints
-        .into_iter()
+        .iter()
         .flat_map(|x| x.windows(2).map(|pair| brentq(f, pair[0], pair[1], 100)))
         .filter(|r| r.is_finite() && f(*r).abs() < 1e-3)
 }

@@ -58,7 +58,7 @@ macro_rules! dispatch_vectorized {
                     let result = if has_numpy_array {
                         result.map(|r| Arg::from(numpy::ToPyArray::to_pyarray(&r, $py)))
                     } else {
-                        result.map(|r| Arg::from(r))
+                        result.map(Arg::from)
                     };
                     result.map_err(|e| e.into())
                 }
@@ -120,7 +120,7 @@ fn xnpv<'a>(
             }
         }
         rate => {
-            let has_numpy_array = matches!(rate, Arg::NumpyArray(_)) || false;
+            let has_numpy_array = matches!(rate, Arg::NumpyArray(_));
             let rate = rate.into_arrayd();
             let result = py.allow_threads(move || {
                 let r = rate.mapv(|r| core::xnpv(r, &dates, &amounts, day_count));
@@ -128,7 +128,7 @@ fn xnpv<'a>(
                 if silent {
                     Ok(r.mapv(|e| e.unwrap_or(f64::NAN)))
                 } else {
-                    let err = r.iter().filter(|e| e.is_err()).next();
+                    let err = r.iter().find(|e| e.is_err());
                     if let Some(err) = err {
                         Err(err.clone().unwrap_err())
                     } else {
@@ -140,9 +140,9 @@ fn xnpv<'a>(
             let result = if has_numpy_array {
                 result.map(|r| Arg::from(numpy::ToPyArray::to_pyarray(&r, py)))
             } else {
-                result.map(|r| Arg::from(r))
+                result.map(Arg::from)
             };
-            result.map(|v| Some(v)).map_err(|e| e.into())
+            result.map(Some).map_err(|e| e.into())
         }
     }
 }
@@ -844,7 +844,7 @@ where
 {
     let child_module = PyModule::new(py, name)?;
     mod_init(py, child_module)?;
-    parent.add(name.split(".").last().unwrap(), child_module)?;
+    parent.add(name.split('.').last().unwrap(), child_module)?;
     py.import("sys")?.getattr("modules")?.set_item(name, child_module)?;
     Ok(())
 }
