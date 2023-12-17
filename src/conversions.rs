@@ -214,7 +214,7 @@ fn extract_records(data: &PyAny) -> PyResult<(Vec<DateLike>, Vec<f64>)> {
 pub struct AmountArray(Vec<f64>);
 
 impl AmountArray {
-    pub fn to_vec(self) -> Vec<f64> {
+    pub fn into_vec(self) -> Vec<f64> {
         self.0
     }
 }

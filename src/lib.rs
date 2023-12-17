@@ -720,7 +720,7 @@ mod pe {
                 nav.unwrap_or(0.0),
             )?;
 
-            Ok((contributions.to_vec(), adj_distributions))
+            Ok((contributions.into_vec(), adj_distributions))
         })
     }
 
