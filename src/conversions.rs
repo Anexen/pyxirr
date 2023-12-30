@@ -11,10 +11,7 @@ use pyo3::{
 };
 use time::Date;
 
-use crate::core::{DateLike, DayCount};
-
-// time::Date::from_ordinal_date(1970, 1).unwrap().to_julian_day();
-static UNIX_EPOCH_JULIAN_DAY: i32 = 2440588;
+use crate::core::{DateLike, DayCount, DaysSinceUnixEpoch};
 
 pub fn float_or_none(result: f64) -> Option<f64> {
     if result.is_nan() {
@@ -69,23 +66,9 @@ impl DayCount {
     }
 }
 
-struct DaysSinceUnixEpoch(i32);
-
 impl<'s> FromPyObject<'s> for DaysSinceUnixEpoch {
     fn extract(obj: &'s PyAny) -> PyResult<Self> {
-        obj.extract::<i64>().map(|x| Self(x as i32))
-    }
-}
-
-impl From<DaysSinceUnixEpoch> for DateLike {
-    fn from(value: DaysSinceUnixEpoch) -> Self {
-        Date::from_julian_day(UNIX_EPOCH_JULIAN_DAY + value.0).unwrap().into()
-    }
-}
-
-impl From<i64> for DateLike {
-    fn from(value: i64) -> Self {
-        Date::from_julian_day(UNIX_EPOCH_JULIAN_DAY + (value as i32)).unwrap().into()
+        obj.extract::<i32>().map(|x| x.into())
     }
 }
 
@@ -103,10 +86,7 @@ impl From<&PyDate> for DateLike {
 
 impl From<&datetime64<units::Days>> for DateLike {
     fn from(value: &datetime64<units::Days>) -> Self {
-        let days_since_unix_epoch: i32 = Into::<i64>::into(*value) as i32;
-        let date = Date::from_julian_day(UNIX_EPOCH_JULIAN_DAY + days_since_unix_epoch).unwrap();
-
-        date.into()
+        DateLike::from(DaysSinceUnixEpoch::from(i64::from(*value) as i32))
     }
 }
 

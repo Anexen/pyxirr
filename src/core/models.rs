@@ -2,8 +2,14 @@ use std::{error::Error, fmt, str::FromStr};
 
 use time::{macros::format_description, Date};
 
+// time::Date::from_ordinal_date(1970, 1).unwrap().to_julian_day();
+static UNIX_EPOCH_JULIAN_DAY: i32 = 2440588;
+
 #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Copy)]
 pub struct DateLike(Date);
+
+pub struct Timestamp(i64);
+pub struct DaysSinceUnixEpoch(i32);
 
 impl From<DateLike> for Date {
     fn from(val: DateLike) -> Self {
@@ -20,6 +26,31 @@ impl From<Date> for DateLike {
 impl AsRef<Date> for DateLike {
     fn as_ref(&self) -> &Date {
         &self.0
+    }
+}
+
+impl From<i32> for DaysSinceUnixEpoch {
+    fn from(value: i32) -> Self {
+        Self(value)
+    }
+}
+
+impl From<i64> for Timestamp {
+    fn from(value: i64) -> Self {
+        Self(value)
+    }
+}
+
+impl From<DaysSinceUnixEpoch> for DateLike {
+    fn from(value: DaysSinceUnixEpoch) -> Self {
+        Date::from_julian_day(UNIX_EPOCH_JULIAN_DAY + value.0).unwrap().into()
+    }
+}
+
+impl From<Timestamp> for DateLike {
+    fn from(value: Timestamp) -> Self {
+        let days = value.0.div_euclid(86400) as i32;
+        Date::from_julian_day(UNIX_EPOCH_JULIAN_DAY + days).unwrap().into()
     }
 }
 
@@ -77,5 +108,32 @@ pub fn validate(payments: &[f64], dates: Option<&[DateLike]>) -> Result<(), Inva
         Ok(())
     } else {
         Err(InvalidPaymentsError::new("negative and positive payments are required"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_date_like_from_integer() {
+        let dt = DateLike::from(Timestamp(1335020400));
+        assert_eq!(dt.0.to_string(), "2012-04-21");
+
+        let dt = DateLike::from(DaysSinceUnixEpoch(15801));
+        assert_eq!(dt.0.to_string(), "2013-04-06");
+    }
+
+    #[test]
+    fn test_date_like_from_integer_leap_year() {
+        let dt = DateLike::from(Timestamp(1456749295));
+        assert_eq!(dt.0.to_string(), "2016-02-29");
+        let dt = DateLike::from(Timestamp(1456835356));
+        assert_eq!(dt.0.to_string(), "2016-03-01");
+
+        let dt = DateLike::from(DaysSinceUnixEpoch(15399));
+        assert_eq!(dt.0.to_string(), "2012-02-29");
+        let dt = DateLike::from(DaysSinceUnixEpoch(15400));
+        assert_eq!(dt.0.to_string(), "2012-03-01");
     }
 }
