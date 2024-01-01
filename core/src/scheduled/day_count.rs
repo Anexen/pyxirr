@@ -5,11 +5,10 @@ use time::{
     Date, Month,
 };
 
-#[pyo3::pyclass]
-#[pyo3(frozen)]
-#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "python", pyo3::pyclass)]
+#[cfg_attr(feature = "python", pyo3(frozen))]
+#[derive(Debug, Clone, Copy, Default)]
 #[allow(non_camel_case_types)]
-#[derive(Default)]
 pub enum DayCount {
     ACT_ACT_ISDA,
     #[default]

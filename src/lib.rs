@@ -1,25 +1,14 @@
-use broadcasting::Arg;
-use conversions::{fallible_float_or_none, float_or_none, AmountArray, PyDayCount};
-use pyo3::{create_exception, exceptions, prelude::*, wrap_pyfunction};
+use pyo3::{prelude::*, wrap_pyfunction};
+
+pub use pyxirr_core as core;
 
 mod broadcasting;
 mod conversions;
-mod core;
 
-create_exception!(pyxirr, InvalidPaymentsError, exceptions::PyException);
-create_exception!(pyxirr, BroadcastingError, exceptions::PyException);
+use crate::broadcasting::Arg;
+use crate::conversions::{fallible_float_or_none, float_or_none, AmountArray, PyDayCount};
 
-impl From<core::InvalidPaymentsError> for PyErr {
-    fn from(value: core::InvalidPaymentsError) -> Self {
-        InvalidPaymentsError::new_err(value.to_string())
-    }
-}
-
-impl From<broadcasting::BroadcastingError> for PyErr {
-    fn from(value: broadcasting::BroadcastingError) -> Self {
-        BroadcastingError::new_err(value.to_string())
-    }
-}
+pub use pyxirr_core::pyo3::{BroadcastingError, InvalidPaymentsError};
 
 macro_rules! dispatch_vectorized {
     (infallible $py:ident, ($($vars:ident),*), $non_vec:expr, $vec:expr ) => {
@@ -880,8 +869,8 @@ pub fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(is_conventional_cash_flow, m)?)?;
     m.add_function(wrap_pyfunction!(zero_crossing_points, m)?)?;
 
-    m.add("InvalidPaymentsError", py.get_type::<InvalidPaymentsError>())?;
-    m.add("BroadcastingError", py.get_type::<BroadcastingError>())?;
+    m.add("InvalidPaymentsError", py.get_type::<core::pyo3::InvalidPaymentsError>())?;
+    m.add("BroadcastingError", py.get_type::<core::pyo3::BroadcastingError>())?;
 
     Ok(())
 }

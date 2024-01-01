@@ -372,7 +372,18 @@ dependencies = [
  "ndarray",
  "numpy",
  "pyo3",
+ "pyxirr-core",
  "rstest",
+ "time",
+]
+
+[[package]]
+name = "pyxirr-core"
+version = "0.0.0"
+dependencies = [
+ "ndarray",
+ "numpy",
+ "pyo3",
  "time",
 ]
 
