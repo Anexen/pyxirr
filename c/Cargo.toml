@@ -1,0 +1,13 @@
+[package]
+name = "xirr-capi"
+version = "0.0.0"
+edition = "2021"
+
+[lib]
+name = "xirr"
+crate-type = ["cdylib"]
+doctest = false
+
+[dependencies]
+libc = "0.2"
+pyxirr-core = { path = "../core" }

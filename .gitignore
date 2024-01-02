@@ -1,4 +1,5 @@
-/target
+target
 .mypy_cache/
 __pycache__
 *.so
+.gdb_history
