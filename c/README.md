@@ -7,6 +7,12 @@ language.
 This crate provides financial functions via FFI, so they can be used with other
 languages, such as C, C#, Ruby, NodeJS and many others.
 
+## Building
+
+```bash
+cargo build --release
+```
+
 ## `C`
 
 ```c
