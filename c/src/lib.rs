@@ -1,4 +1,4 @@
-use libc::{c_double, c_long, c_ushort, size_t};
+use libc::{c_double, c_longlong, c_ushort, size_t};
 
 use pyxirr_core::{self as core, DateLike, DayCount};
 
@@ -32,7 +32,7 @@ pub enum ReturnCode {
 #[no_mangle]
 pub unsafe extern "C" fn xnpv(
     rate: c_double,
-    dates_ptr: *const c_long,
+    dates_ptr: *const c_longlong,
     dates_length: size_t,
     values_ptr: *const c_double,
     values_length: size_t,
@@ -69,7 +69,7 @@ pub unsafe extern "C" fn xnpv(
 
 #[no_mangle]
 pub unsafe extern "C" fn xirr(
-    dates_ptr: *const c_long,
+    dates_ptr: *const c_longlong,
     dates_length: size_t,
     values_ptr: *const c_double,
     values_length: size_t,
