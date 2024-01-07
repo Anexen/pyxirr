@@ -238,7 +238,7 @@ mod tests {
     use rstest::rstest;
 
     use super::*;
-    use crate::core::DateLike;
+    use crate::DateLike;
 
     // test cases from http://www.deltaquants.com/day-count-conventions
     #[rstest]

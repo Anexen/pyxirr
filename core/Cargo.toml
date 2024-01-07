@@ -3,11 +3,18 @@ name = "pyxirr-core"
 version = "0.0.0"
 edition = "2021"
 
+[lib]
+doctest = false
+
 [dependencies]
 time = { version = "0.3", features = ["parsing", "macros"] }
 ndarray = { version = "0.15", optional = true }
 pyo3 = { version = "0.20", optional = true }
 numpy = { version = "0.20", optional = true }
+
+[dev-dependencies]
+rstest = "0.18.2"
+assert_approx_eq = "1.1"
 
 [features]
 vectorization = ["ndarray"]
