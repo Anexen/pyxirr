@@ -16,10 +16,10 @@ jobs:
   test:
     runs-on: "ubuntu-latest"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install dev-requirements
         run: pip install -r dev-requirements.txt
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -54,12 +54,12 @@ jobs:
             arch: aarch64
           - platform: windows-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python.constraints || matrix.python.version }}
           # allow-prereleases: ${{ matrix.python.version == "3.12" }}
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: |
             ~/.cargo/registry
@@ -71,7 +71,7 @@ jobs:
 
       - name: Build Wheels - Linux
         if: matrix.os.platform == 'ubuntu-latest'
-        uses: messense/maturin-action@v1
+        uses: PyO3/maturin-action@v1
         with:
           maturin-version: v1.3.0
           manylinux: auto
@@ -79,21 +79,21 @@ jobs:
 
       - name: Build Wheels - MacOS [aarch64]
         if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch == 'aarch64' }}
-        uses: messense/maturin-action@v1
+        uses: PyO3/maturin-action@v1
         with:
           maturin-version: v1.3.0
           args: -i python --release --target aarch64-apple-darwin --strip
 
       - name: Build Wheels - MacOS [x86_64]
         if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch != 'aarch64' }}
-        uses: messense/maturin-action@v1
+        uses: PyO3/maturin-action@v1
         with:
           maturin-version: v1.3.0
           args: -i python --release --target universal2-apple-darwin --strip
 
       - name: Build Wheels - Windows
         if: matrix.os.platform == 'windows-latest'
-        uses: messense/maturin-action@v1
+        uses: PyO3/maturin-action@v1
         with:
           maturin-version: v1.3.0
           args: -i python --release --strip
@@ -125,9 +125,9 @@ jobs:
             abi: 'cp312-cp312'
         target: [aarch64, armv7, s390x, ppc64le, ppc64]
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Build Wheels
-        uses: messense/maturin-action@v1
+        uses: PyO3/maturin-action@v1
         env:
           PYO3_CROSS_LIB_DIR: /opt/python/${{ matrix.python.abi }}/lib
         with:
@@ -136,7 +136,7 @@ jobs:
           manylinux: auto
           args: -i python3.9 --release --strip
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wheels
           path: target/wheels
@@ -153,16 +153,16 @@ jobs:
           - aarch64-unknown-linux-musl
           - armv7-unknown-linux-musleabihf
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Build Wheels - musl
-        uses: messense/maturin-action@v1
+        uses: PyO3/maturin-action@v1
         with:
           maturin-version: v1.3.0
           target: ${{ matrix.target }}
           manylinux: musllinux_1_2
           args: --release --strip -i 3.7 3.8 3.9 3.10 3.11 3.12
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wheels
           path: target/wheels
@@ -172,7 +172,7 @@ jobs:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: wheels
 

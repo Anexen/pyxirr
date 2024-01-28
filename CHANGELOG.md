@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.10.2] - 2024-01-27
+
+- (X)IRR Performance improvements
+
 ## [0.10.1] - 2023-12-08
 
 - XIRR improvements ([#49](https://github.com/Anexen/pyxirr/pull/49))
