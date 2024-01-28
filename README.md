@@ -32,9 +32,9 @@ and the [implementation from the Stack Overflow](https://stackoverflow.com/a/115
 
 ![bench](https://raw.githubusercontent.com/Anexen/pyxirr/main/docs/static/bench.png)
 
-PyXIRR is ~10-20x faster in XIRR calculation than the other implementations.
+PyXIRR is much faster in XIRR calculation than the other implementations.
 
-Powered by [github-action-benchmark](https://github.com/rhysd/github-action-benchmark) and [plotly.js](https://github.com/plotly/plotly.js).
+Powered by [github-action-benchmark](https://github.com/benchmark-action/github-action-benchmark) and [plotly.js](https://github.com/plotly/plotly.js).
 
 Live benchmarks are hosted on [Github Pages](https://anexen.github.io/pyxirr/bench).
 
