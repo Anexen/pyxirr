@@ -1,5 +1,6 @@
 const MAX_ERROR: f64 = 1e-9;
 const MAX_ITERATIONS: u32 = 50;
+const MAX_FX_TOL: f64 = 1e-3;
 
 pub fn newton_raphson<Func, Deriv>(start: f64, f: &Func, d: &Deriv) -> f64
 where
@@ -48,8 +49,8 @@ where
 
         let delta = y0 / y1;
 
-        if delta.abs() < MAX_ERROR {
-            return x - delta;
+        if delta.abs() < MAX_ERROR && y0.abs() < MAX_FX_TOL {
+            return x;
         }
 
         x -= delta;
@@ -76,8 +77,8 @@ pub fn brentq<Func>(f: &Func, xa: f64, xb: f64, iter: usize) -> f64
 where
     Func: Fn(f64) -> f64,
 {
-    let xtol = 2e-14;
-    let rtol = 8.881784197001252e-16;
+    const XTOL: f64 = 2e-14;
+    const RTOL: f64 = 8.881784197001252e-16;
 
     let mut xpre = xa;
     let mut xcur = xb;
@@ -115,11 +116,15 @@ where
             fblk = fpre;
         }
 
-        let delta = (xtol + rtol * xcur.abs()) / 2.;
+        let delta = (XTOL + RTOL * xcur.abs()) / 2.;
         let sbis = (xblk - xcur) / 2.;
 
         if fcur == 0. || sbis.abs() < delta {
-            return xcur;
+            return if fcur.abs() < MAX_FX_TOL {
+                xcur
+            } else {
+                f64::NAN
+            };
         }
 
         if spre.abs() > delta && fcur.abs() < fpre.abs() {

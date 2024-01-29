@@ -2,7 +2,7 @@ use super::{year_fraction, DayCount};
 use crate::core::{
     models::{validate, DateLike, InvalidPaymentsError},
     optimize::{brentq, newton_raphson_2},
-    utils::{self, fast_pow},
+    utils::fast_pow,
 };
 
 pub fn xirr(
@@ -20,13 +20,13 @@ pub fn xirr(
 
     let rate = newton_raphson_2(guess.unwrap_or(0.1), &fd);
 
-    if utils::is_a_good_rate(rate, f) {
+    if rate.is_finite() {
         return Ok(rate);
     }
 
     let rate = brentq(&f, -0.999999999999999, 100., 100);
 
-    if utils::is_a_good_rate(rate, f) {
+    if rate.is_finite() {
         return Ok(rate);
     }
 
@@ -34,7 +34,7 @@ pub fn xirr(
     let mut guess = -0.99999999999999;
     while guess < 1.0 {
         let rate = newton_raphson_2(guess, &fd);
-        if utils::is_a_good_rate(rate, f) {
+        if rate.is_finite() {
             return Ok(rate);
         }
         guess += step;
