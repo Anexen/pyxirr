@@ -11,13 +11,42 @@ where
     let mut x = start;
 
     for _ in 0..MAX_ITERATIONS {
-        let res = f(x);
+        let y = f(x);
 
-        if res.abs() < MAX_ERROR {
+        if y.abs() < MAX_ERROR {
             return x;
         }
 
-        let delta = res / d(x);
+        let delta = y / d(x);
+
+        if delta.abs() < MAX_ERROR {
+            return x - delta;
+        }
+
+        x -= delta;
+    }
+
+    f64::NAN
+}
+
+// a slightly modified version that accepts a callback function that
+// calculates the result and the derivative at once
+pub fn newton_raphson_2<Func>(start: f64, fd: &Func) -> f64
+where
+    Func: Fn(f64) -> (f64, f64),
+{
+    // x[n + 1] = x[n] - f(x[n])/f'(x[n])
+
+    let mut x = start;
+
+    for _ in 0..MAX_ITERATIONS {
+        let (y0, y1) = fd(x);
+
+        if y0.abs() < MAX_ERROR {
+            return x;
+        }
+
+        let delta = y0 / y1;
 
         if delta.abs() < MAX_ERROR {
             return x - delta;
