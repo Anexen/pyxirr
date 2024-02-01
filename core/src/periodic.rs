@@ -181,7 +181,6 @@ pub fn irr(values: &[f64], guess: Option<f64>) -> Result<f64, InvalidPaymentsErr
         self::npv(rate, values, Some(true))
     };
     let df = |rate| self::npv_deriv(rate, values);
-    let is_good_rate = |rate: f64| rate.is_finite() && f(rate).abs() < 1e-3;
 
     let guess = match guess {
         Some(g) => g,
@@ -193,13 +192,13 @@ pub fn irr(values: &[f64], guess: Option<f64>) -> Result<f64, InvalidPaymentsErr
 
     let rate = newton_raphson(guess, &f, &df);
 
-    if is_good_rate(rate) {
+    if utils::is_a_good_rate(rate, f) {
         return Ok(rate);
     }
 
     let rate = brentq(&f, -0.999999999999999, 100., 100);
 
-    if is_good_rate(rate) {
+    if utils::is_a_good_rate(rate, f) {
         return Ok(rate);
     }
 

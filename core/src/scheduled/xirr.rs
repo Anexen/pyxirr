@@ -1,8 +1,8 @@
 use super::{year_fraction, DayCount};
 use crate::{
     models::{validate, DateLike, InvalidPaymentsError},
-    optimize::{brentq, newton_raphson},
-    utils::{self, fast_pow},
+    optimize::{brentq, newton_raphson_2},
+    utils::fast_pow,
 };
 
 pub fn xirr(
@@ -15,32 +15,26 @@ pub fn xirr(
 
     let deltas = &day_count_factor(dates, day_count);
 
-    let f = |rate| {
-        if rate <= -1.0 {
-            // bound newton_raphson
-            return f64::INFINITY;
-        }
-        xnpv_result(amounts, deltas, rate)
-    };
-    let df = |rate| xnpv_result_deriv(amounts, deltas, rate);
+    let f = |rate| xnpv_result(amounts, deltas, rate);
+    let fd = |rate| xnpv_result_with_deriv(amounts, deltas, rate);
 
-    let rate = newton_raphson(guess.unwrap_or(0.1), &f, &df);
+    let rate = newton_raphson_2(guess.unwrap_or(0.1), &fd);
 
-    if utils::is_a_good_rate(rate, f) {
+    if rate.is_finite() {
         return Ok(rate);
     }
 
     let rate = brentq(&f, -0.999999999999999, 100., 100);
 
-    if utils::is_a_good_rate(rate, f) {
+    if rate.is_finite() {
         return Ok(rate);
     }
 
     let mut step = 0.01;
     let mut guess = -0.99999999999999;
     while guess < 1.0 {
-        let rate = newton_raphson(guess, &f, &df);
-        if utils::is_a_good_rate(rate, f) {
+        let rate = newton_raphson_2(guess, &fd);
+        if rate.is_finite() {
             return Ok(rate);
         }
         guess += step;
@@ -86,6 +80,10 @@ fn day_count_factor(dates: &[DateLike], day_count: Option<DayCount>) -> Vec<f64>
 
 // \sum_{i=1}^n \frac{P_i}{(1 + rate)^{(d_i - d_0)/365}}
 fn xnpv_result(payments: &[f64], deltas: &[f64], rate: f64) -> f64 {
+    if rate <= -1.0 {
+        // bound newton_raphson
+        return f64::INFINITY;
+    }
     payments.iter().zip(deltas).map(|(p, &e)| p * fast_pow(1.0 + rate, -e)).sum()
 }
 
@@ -93,8 +91,21 @@ fn xnpv_result(payments: &[f64], deltas: &[f64], rate: f64) -> f64 {
 // \sum_{i=1}^n P_i * (d_0 - d_i) / 365 * (1 + rate)^{((d_0 - d_i)/365 - 1)}}
 // simplify in order to reuse cached deltas (d_i - d_0)/365
 // \sum_{i=1}^n \frac{P_i * -(d_i - d_0) / 365}{(1 + rate)^{((d_i - d_0)/365 + 1)}}
-fn xnpv_result_deriv(payments: &[f64], deltas: &[f64], rate: f64) -> f64 {
-    payments.iter().zip(deltas).map(|(p, e)| p * -e * fast_pow(1.0 + rate, -e - 1.0)).sum()
+// fn xnpv_result_deriv(payments: &[f64], deltas: &[f64], rate: f64) -> f64 {
+//     payments.iter().zip(deltas).map(|(p, e)| p * -e * fast_pow(1.0 + rate, -e - 1.0)).sum()
+// }
+
+fn xnpv_result_with_deriv(payments: &[f64], deltas: &[f64], rate: f64) -> (f64, f64) {
+    if rate <= -1.0 {
+        return (f64::INFINITY, f64::INFINITY);
+    }
+    // pow is an expensive function.
+    // we can re-use the result of pow for derivative calculation
+    payments.iter().zip(deltas).fold((0.0, 0.0), |acc, (p, e)| {
+        let y0 = p * fast_pow(1.0 + rate, -e);
+        let y1 = y0 * -e / (1.0 + rate);
+        (acc.0 + y0, acc.1 + y1)
+    })
 }
 
 #[cfg(test)]

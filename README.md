@@ -32,9 +32,9 @@ and the [implementation from the Stack Overflow](https://stackoverflow.com/a/115
 
 ![bench](https://raw.githubusercontent.com/Anexen/pyxirr/main/docs/static/bench.png)
 
-PyXIRR is ~10-20x faster in XIRR calculation than the other implementations.
+PyXIRR is much faster than the other implementations.
 
-Powered by [github-action-benchmark](https://github.com/rhysd/github-action-benchmark) and [plotly.js](https://github.com/plotly/plotly.js).
+Powered by [github-action-benchmark](https://github.com/benchmark-action/github-action-benchmark) and [plotly.js](https://github.com/plotly/plotly.js).
 
 Live benchmarks are hosted on [Github Pages](https://anexen.github.io/pyxirr/bench).
 
@@ -61,16 +61,16 @@ xirr(['2020-01-01', '2021-01-01'], [-1000, 1200])
 
 # Multiple IRR problem
 
-The Multiple IRR problem occur when the signs of cash flows change more than
+The Multiple IRR problem occurs when the signs of cash flows change more than
 once. In this case, we say that the project has non-conventional cash flows.
 This leads to situation, where it can have more the one IRR or have no IRR at all.
 
-PyXIRR's approach to the Multiple IRR problem:
+PyXIRR addresses the Multiple IRR problem as follows:
 
 1. It looks for positive result around 0.1 (the same as Excel with the default guess=0.1).
 2. If it can't find a result, it uses several other attempts and selects the lowest IRR to be conservative.
 
-Here is an example of how to find multiple IRRs:
+Here is an example illustrating how to identify multiple IRRs:
 
 ```python
 import numpy as np

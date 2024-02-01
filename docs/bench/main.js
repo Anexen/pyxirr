@@ -23,7 +23,7 @@
   });
 
   const formatRatio = (x) => {
-    return "x" + Plotly.d3.format("0.2f")(x);
+    return "x" + Plotly.d3.format("0.1f")(x);
   };
   const formatDuration = (x) => {
     return Plotly.d3.format("0.4s")(x.value / 1e9) + "s";
