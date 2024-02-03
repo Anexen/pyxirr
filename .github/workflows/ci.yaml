@@ -6,11 +6,9 @@ on:
     branches: [main]
     tags: ['v*']
   workflow_dispatch:
-    inputs:
-      build:
-        description: 'Build'
-        required: true
-        default: true
+
+env:
+  MATURIN_VERSION: 1.4.0
 
 jobs:
   test:
@@ -33,11 +31,10 @@ jobs:
           pip uninstall numpy -y
           cargo test --release --features nonumpy
 
-
   build:
     needs: test
     runs-on: ${{ matrix.os.platform }}
-    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event.inputs.build }}
+    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     strategy:
       matrix:
         python:
@@ -73,7 +70,7 @@ jobs:
         if: matrix.os.platform == 'ubuntu-latest'
         uses: PyO3/maturin-action@v1
         with:
-          maturin-version: v1.3.0
+          maturin-version: ${{ env.MATURIN_VERSION }}
           manylinux: auto
           args: -i python${{ matrix.python.version }} --release --strip --sdist
 
@@ -81,21 +78,21 @@ jobs:
         if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch == 'aarch64' }}
         uses: PyO3/maturin-action@v1
         with:
-          maturin-version: v1.3.0
+          maturin-version: ${{ env.MATURIN_VERSION }}
           args: -i python --release --target aarch64-apple-darwin --strip
 
       - name: Build Wheels - MacOS [x86_64]
         if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch != 'aarch64' }}
         uses: PyO3/maturin-action@v1
         with:
-          maturin-version: v1.3.0
+          maturin-version: ${{ env.MATURIN_VERSION }}
           args: -i python --release --target universal2-apple-darwin --strip
 
       - name: Build Wheels - Windows
         if: matrix.os.platform == 'windows-latest'
         uses: PyO3/maturin-action@v1
         with:
-          maturin-version: v1.3.0
+          maturin-version: ${{ env.MATURIN_VERSION }}
           args: -i python --release --strip
 
       - name: Upload wheels
@@ -107,7 +104,7 @@ jobs:
   linux-cross:
     needs: test
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event.inputs.build }}
+    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     strategy:
       matrix:
         python:
@@ -131,10 +128,32 @@ jobs:
         env:
           PYO3_CROSS_LIB_DIR: /opt/python/${{ matrix.python.abi }}/lib
         with:
-          maturin-version: v1.3.0
+          maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.target }}
           manylinux: auto
-          args: -i python3.9 --release --strip
+          args: --release --strip -i 3.9
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels
+          path: target/wheels
+
+  wasm-emscripten:
+    needs: test
+    runs-on: ubuntu-latest
+    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
+    steps:
+      - uses: actions/checkout@v4
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: 3.1.45  # pyodide config get emscripten_version
+      - name: Build Wheel - wasm-emscripten
+        uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
+          target: wasm32-unknown-emscripten
+          rust-toolchain: nightly
+          args: --release --strip -i 3.11
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -144,7 +163,7 @@ jobs:
   linux-musl:
     needs: test
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event.inputs.build }}
+    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     strategy:
       matrix:
         target:
@@ -157,7 +176,7 @@ jobs:
       - name: Build Wheels - musl
         uses: PyO3/maturin-action@v1
         with:
-          maturin-version: v1.3.0
+          maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.target }}
           manylinux: musllinux_1_2
           args: --release --strip -i 3.7 3.8 3.9 3.10 3.11 3.12
@@ -168,7 +187,11 @@ jobs:
           path: target/wheels
 
   publish:
-    needs: [build, linux-cross, linux-musl]
+    needs:
+      - build
+      - linux-cross
+      - linux-musl
+      - wasm-emscripten
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:

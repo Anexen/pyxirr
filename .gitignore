@@ -1,4 +1,6 @@
-/target
-.mypy_cache/
+target
+.mypy_cache
 __pycache__
 *.so
+.gdb_history
+.pyodide-xbuildenv
