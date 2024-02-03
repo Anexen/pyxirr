@@ -32,9 +32,8 @@ jobs:
           cargo test --release --features nonumpy
 
   build:
-    needs: test
-    runs-on: ${{ matrix.os.platform }}
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
+    needs: test
     strategy:
       matrix:
         python:
@@ -44,12 +43,13 @@ jobs:
           - version: '3.10'
           - version: '3.11'
           - version: '3.12'
-        os:
-          - platform: ubuntu-latest
-          - platform: macos-latest
-          - platform: macos-latest
+        platform:
+          - os: ubuntu-latest
+          - os: macos-latest
+          - os: macos-latest
             arch: aarch64
-          - platform: windows-latest
+          - os: windows-latest
+    runs-on: ${{ matrix.platform.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -62,12 +62,10 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os.platform }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - run: rustup target list
+          key: ${{ runner.platform.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build Wheels - Linux
-        if: matrix.os.platform == 'ubuntu-latest'
+        if: matrix.platform.os == 'ubuntu-latest'
         uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
@@ -75,36 +73,38 @@ jobs:
           args: -i python${{ matrix.python.version }} --release --strip --sdist
 
       - name: Build Wheels - MacOS [aarch64]
-        if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch == 'aarch64' }}
+        if: ${{ matrix.platform.os == 'macos-latest' && matrix.platform.arch == 'aarch64' }}
         uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
           args: -i python --release --target aarch64-apple-darwin --strip
 
       - name: Build Wheels - MacOS [x86_64]
-        if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch != 'aarch64' }}
+        if: ${{ matrix.platform.os == 'macos-latest' && matrix.platform.arch != 'aarch64' }}
         uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
           args: -i python --release --target universal2-apple-darwin --strip
 
       - name: Build Wheels - Windows
-        if: matrix.os.platform == 'windows-latest'
+        if: matrix.platform.os == 'windows-latest'
         uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
           args: -i python --release --strip
 
+      - name: Try to install source distribution
+        run: pip install target/wheels/pyxirr-*.tar.gz
+
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.platform }}-${{ matrix.version }}
+          name: wheels-${{ matrix.platform.os }}-${{ matrix.platform.arch || 'x86_64' }}-${{ matrix.python.version }}
           path: target/wheels
 
   linux-cross:
-    needs: test
-    runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
+    needs: test
     strategy:
       matrix:
         python:
@@ -121,6 +121,7 @@ jobs:
           - version: '3.12'
             abi: 'cp312-cp312'
         target: [aarch64, armv7, s390x, ppc64le, ppc64]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Build Wheels
@@ -131,17 +132,17 @@ jobs:
           maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.target }}
           manylinux: auto
-          args: --release --strip -i python${{ matrix.version }}
+          args: --release --strip -i python${{ matrix.python.version }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.target }}-${{ matrix.version }}
+          name: wheels-${{ matrix.target }}-${{ matrix.python.version }}
           path: target/wheels
 
   wasm-emscripten:
+    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     needs: test
     runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     steps:
       - uses: actions/checkout@v4
       - uses: mymindstorm/setup-emsdk@v14
@@ -162,9 +163,8 @@ jobs:
           path: target/wheels
 
   linux-musl:
-    needs: test
-    runs-on: ubuntu-latest
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
+    needs: test
     strategy:
       matrix:
         target:
@@ -172,6 +172,7 @@ jobs:
           - i686-unknown-linux-musl
           - aarch64-unknown-linux-musl
           - armv7-unknown-linux-musleabihf
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Build Wheels - musl
@@ -188,13 +189,13 @@ jobs:
           path: target/wheels
 
   publish:
+    if: startsWith(github.ref, 'refs/tags/')
     needs:
       - build
       - linux-cross
       - linux-musl
       - wasm-emscripten
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/download-artifact@v4
         with:
