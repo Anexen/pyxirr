@@ -72,6 +72,10 @@ jobs:
           manylinux: auto
           args: -i python${{ matrix.python.version }} --release --strip --sdist
 
+      - name: Check that the source distribution installed correctly
+        if: matrix.platform.os == 'ubuntu-latest'
+        run: pip install target/wheels/pyxirr-*.tar.gz
+
       - name: Build Wheels - MacOS [aarch64]
         if: ${{ matrix.platform.os == 'macos-latest' && matrix.platform.arch == 'aarch64' }}
         uses: PyO3/maturin-action@v1
@@ -92,9 +96,6 @@ jobs:
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
           args: -i python --release --strip
-
-      - name: Try to install source distribution
-        run: pip install target/wheels/pyxirr-*.tar.gz
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
