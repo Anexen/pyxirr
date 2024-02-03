@@ -131,7 +131,7 @@ jobs:
           maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.target }}
           manylinux: auto
-          args: --release --strip -i 3.9
+          args: --release --strip -i 3.11
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
