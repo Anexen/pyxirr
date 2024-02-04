@@ -143,20 +143,24 @@ jobs:
   wasm-emscripten:
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     needs: test
+    strategy:
+      matrix:
+        version:
+          - python: '3.11'
+            emscripten: 3.1.46
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: mymindstorm/setup-emsdk@v14
         with:
-          # pip install pyodide-build
-          # pyodide config get emscripten_version
-          version: 3.1.45
+          # https://pyodide.org/en/stable/project/changelog.html
+          version: ${{ matrix.version.emscripten }}
       - uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
           target: wasm32-unknown-emscripten
           rust-toolchain: nightly
-          args: --release --strip -i python3.11
+          args: --release --strip -i python${{ matrix.version.python }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -215,4 +219,5 @@ jobs:
       - name: PyPI publish
         env:
           MATURIN_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: find . -name 'pyxirr*' | xargs -l maturin upload --skip-existing --username __token__
+        # wasm excluded because pypi doesn't support wasm wheels yet
+        run: find . -name 'pyxirr*' -not -name 'wasm' | xargs -l maturin upload --skip-existing --username __token__
