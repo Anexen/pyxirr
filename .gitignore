@@ -3,3 +3,8 @@ target
 __pycache__
 *.so
 .gdb_history
+.mypy_cache
+__pycache__
+*.so
+.gdb_history
+.pyodide-xbuildenv

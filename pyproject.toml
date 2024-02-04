@@ -30,6 +30,7 @@ include = [
     { path = "Cargo.toml", format = "sdist" },
     { path = "Cargo.lock", format = "sdist" },
     { path = ".cargo/*", format = "sdist" },
+    { path = "docs", format = "sdist" },
 ]
 
 [tool.black]

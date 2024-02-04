@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1706562288951,
+  "lastUpdate": 1707085548952,
   "repoUrl": "https://github.com/Anexen/pyxirr",
   "entries": {
     "Rust Benchmark": [
@@ -3775,6 +3775,102 @@ window.BENCHMARK_DATA = {
             "name": "bench_scipy_500",
             "value": 1361712,
             "range": "± 39716",
+            "unit": "ns/iter"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "avolk93@gmail.com",
+            "name": "Anexen",
+            "username": "Anexen"
+          },
+          "committer": {
+            "email": "avolk93@gmail.com",
+            "name": "Anexen",
+            "username": "Anexen"
+          },
+          "distinct": true,
+          "id": "931e311b06ec0f05acdabbde1e8c6ec8e7f7867d",
+          "message": "bump version to 0.10.3",
+          "timestamp": "2024-02-04T23:24:06+01:00",
+          "tree_id": "ecfcf99a3c16af134957115973485f4677d00b5f",
+          "url": "https://github.com/Anexen/pyxirr/commit/931e311b06ec0f05acdabbde1e8c6ec8e7f7867d"
+        },
+        "date": 1707085548699,
+        "tool": "cargo",
+        "benches": [
+          {
+            "name": "bench_python_100",
+            "value": 991372,
+            "range": "± 6338",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_python_1000",
+            "value": 10264432,
+            "range": "± 75164",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_python_50",
+            "value": 438349,
+            "range": "± 3840",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_python_500",
+            "value": 4867056,
+            "range": "± 30278",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_rust_100",
+            "value": 7308,
+            "range": "± 75",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_rust_1000",
+            "value": 71640,
+            "range": "± 793",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_rust_50",
+            "value": 3713,
+            "range": "± 278",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_rust_500",
+            "value": 39287,
+            "range": "± 219",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_scipy_100",
+            "value": 393335,
+            "range": "± 5347",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_scipy_1000",
+            "value": 2595898,
+            "range": "± 22480",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_scipy_50",
+            "value": 266311,
+            "range": "± 4229",
+            "unit": "ns/iter"
+          },
+          {
+            "name": "bench_scipy_500",
+            "value": 1379722,
+            "range": "± 17071",
             "unit": "ns/iter"
           }
         ]
