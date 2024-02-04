@@ -18,6 +18,7 @@ keywords = [
 ]
 include = [
     "src/**",
+    "docs/_inline/**",
     "Cargo.toml",
     "pyproject.toml",
     "LICENSE",

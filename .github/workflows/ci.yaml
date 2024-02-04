@@ -6,11 +6,9 @@ on:
     branches: [main]
     tags: ['v*']
   workflow_dispatch:
-    inputs:
-      build:
-        description: 'Build'
-        required: true
-        default: true
+
+env:
+  MATURIN_VERSION: 1.4.0
 
 jobs:
   test:
@@ -33,11 +31,9 @@ jobs:
           pip uninstall numpy -y
           cargo test --release --features nonumpy
 
-
   build:
+    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     needs: test
-    runs-on: ${{ matrix.os.platform }}
-    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event.inputs.build }}
     strategy:
       matrix:
         python:
@@ -47,12 +43,13 @@ jobs:
           - version: '3.10'
           - version: '3.11'
           - version: '3.12'
-        os:
-          - platform: ubuntu-latest
-          - platform: macos-latest
-          - platform: macos-latest
+        platform:
+          - os: ubuntu-latest
+          - os: macos-latest
+          - os: macos-latest
             arch: aarch64
-          - platform: windows-latest
+          - os: windows-latest
+    runs-on: ${{ matrix.platform.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -65,49 +62,50 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os.platform }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
-      - run: rustup target list
+          key: ${{ runner.platform.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Build Wheels - Linux
-        if: matrix.os.platform == 'ubuntu-latest'
+        if: matrix.platform.os == 'ubuntu-latest'
         uses: PyO3/maturin-action@v1
         with:
-          maturin-version: v1.3.0
+          maturin-version: ${{ env.MATURIN_VERSION }}
           manylinux: auto
           args: -i python${{ matrix.python.version }} --release --strip --sdist
 
+      - name: Check that the source distribution installed correctly
+        if: matrix.platform.os == 'ubuntu-latest'
+        run: pip install target/wheels/pyxirr-*.tar.gz
+
       - name: Build Wheels - MacOS [aarch64]
-        if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch == 'aarch64' }}
+        if: ${{ matrix.platform.os == 'macos-latest' && matrix.platform.arch == 'aarch64' }}
         uses: PyO3/maturin-action@v1
         with:
-          maturin-version: v1.3.0
+          maturin-version: ${{ env.MATURIN_VERSION }}
           args: -i python --release --target aarch64-apple-darwin --strip
 
       - name: Build Wheels - MacOS [x86_64]
-        if: ${{ matrix.os.platform == 'macos-latest' && matrix.os.arch != 'aarch64' }}
+        if: ${{ matrix.platform.os == 'macos-latest' && matrix.platform.arch != 'aarch64' }}
         uses: PyO3/maturin-action@v1
         with:
-          maturin-version: v1.3.0
+          maturin-version: ${{ env.MATURIN_VERSION }}
           args: -i python --release --target universal2-apple-darwin --strip
 
       - name: Build Wheels - Windows
-        if: matrix.os.platform == 'windows-latest'
+        if: matrix.platform.os == 'windows-latest'
         uses: PyO3/maturin-action@v1
         with:
-          maturin-version: v1.3.0
+          maturin-version: ${{ env.MATURIN_VERSION }}
           args: -i python --release --strip
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-${{ matrix.platform.os }}-${{ matrix.platform.arch || 'x86_64' }}-${{ matrix.python.version }}
           path: target/wheels
 
   linux-cross:
+    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     needs: test
-    runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event.inputs.build }}
     strategy:
       matrix:
         python:
@@ -124,6 +122,7 @@ jobs:
           - version: '3.12'
             abi: 'cp312-cp312'
         target: [aarch64, armv7, s390x, ppc64le, ppc64]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Build Wheels
@@ -131,20 +130,50 @@ jobs:
         env:
           PYO3_CROSS_LIB_DIR: /opt/python/${{ matrix.python.abi }}/lib
         with:
-          maturin-version: v1.3.0
+          maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.target }}
           manylinux: auto
-          args: -i python3.9 --release --strip
+          args: --release --strip -i python${{ matrix.python.version }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-${{ matrix.target }}-${{ matrix.python.version }}
+          path: target/wheels
+
+  wasm-emscripten:
+    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
+    needs: test
+    strategy:
+      matrix:
+        # https://pyodide.org/en/stable/project/changelog.html
+        version:
+          - python: '3.11'
+            emscripten: 3.1.46  # pyodide 0.25.*
+          - python: '3.11'
+            emscripten: 3.1.45  # pyodide 0.24.*
+          - python: '3.11'
+            emscripten: 3.1.32  # pyodide 0.23.*
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: ${{ matrix.version.emscripten }}
+      - uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
+          target: wasm32-unknown-emscripten
+          rust-toolchain: nightly
+          args: --release --strip -i python${{ matrix.version.python }}
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-wasm-emscripten-${{ matrix.version.emscripten }}
           path: target/wheels
 
   linux-musl:
+    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     needs: test
-    runs-on: ubuntu-latest
-    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event.inputs.build }}
     strategy:
       matrix:
         target:
@@ -152,29 +181,35 @@ jobs:
           - i686-unknown-linux-musl
           - aarch64-unknown-linux-musl
           - armv7-unknown-linux-musleabihf
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Build Wheels - musl
         uses: PyO3/maturin-action@v1
         with:
-          maturin-version: v1.3.0
+          maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.target }}
           manylinux: musllinux_1_2
           args: --release --strip -i 3.7 3.8 3.9 3.10 3.11 3.12
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-musl-${{ matrix.target }}
           path: target/wheels
 
   publish:
-    needs: [build, linux-cross, linux-musl]
-    runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
+    needs:
+      - build
+      - linux-cross
+      - linux-musl
+      - wasm-emscripten
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: wheels
+          name: wheels-*
+          merge-multiple: true
 
       - run: pip install maturin
 
@@ -188,4 +223,5 @@ jobs:
       - name: PyPI publish
         env:
           MATURIN_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: find . -name 'pyxirr*' | xargs -l maturin upload --skip-existing --username __token__
+        # wasm excluded because pypi doesn't support wasm wheels yet
+        run: find . -name 'pyxirr*' -not -name 'wasm' | xargs -l maturin upload --skip-existing --username __token__
