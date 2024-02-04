@@ -1,8 +1,10 @@
 # Changelog
 
-## not released
+## [0.10.3] - 2024-02-04
 
 - XIRR Performance improvements
+- Fixed building from source distribution
+- Build wheels for Pyodide (WASM wheels)
 
 ## [0.10.2] - 2024-01-27
 
