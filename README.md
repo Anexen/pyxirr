@@ -24,6 +24,10 @@ Features:
 pip install pyxirr
 ```
 
+> WASM wheels for [pyodide](https://github.com/pyodide/pyodide) are also available,
+> but unfortunately are [not supported by PyPI](https://github.com/pypi/warehouse/issues/10416).
+> You can find them on the [GitHub Releases](https://github.com/Anexen/pyxirr/releases) page.
+
 # Benchmarks
 
 Rust implementation has been tested against existing [xirr](https://pypi.org/project/xirr/) package
