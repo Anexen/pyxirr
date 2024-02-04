@@ -224,4 +224,4 @@ jobs:
         env:
           MATURIN_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         # wasm excluded because pypi doesn't support wasm wheels yet
-        run: find . -name 'pyxirr*' -not -name 'wasm' | xargs -l maturin upload --skip-existing --username __token__
+        run: find . -name 'pyxirr*' -not -name '*wasm*' | xargs -l maturin upload --skip-existing --username __token__
