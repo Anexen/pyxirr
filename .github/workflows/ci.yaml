@@ -145,15 +145,19 @@ jobs:
     needs: test
     strategy:
       matrix:
+        # https://pyodide.org/en/stable/project/changelog.html
         version:
           - python: '3.11'
-            emscripten: 3.1.46
+            emscripten: 3.1.46  # pyodide 0.25.*
+          - python: '3.11'
+            emscripten: 3.1.45  # pyodide 0.24.*
+          - python: '3.11'
+            emscripten: 3.1.32  # pyodide 0.23.*
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: mymindstorm/setup-emsdk@v14
         with:
-          # https://pyodide.org/en/stable/project/changelog.html
           version: ${{ matrix.version.emscripten }}
       - uses: PyO3/maturin-action@v1
         with:
@@ -164,7 +168,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-wasm-emscripten
+          name: wheels-wasm-emscripten-${{ matrix.version.emscripten }}
           path: target/wheels
 
   linux-musl:
