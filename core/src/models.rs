@@ -2,8 +2,22 @@ use std::{error::Error, fmt, str::FromStr};
 
 use time::{macros::format_description, Date};
 
+// time::Date::from_ordinal_date(1970, 1).unwrap().to_julian_day();
+static UNIX_EPOCH_JULIAN_DAY: i32 = 2440588;
+
 #[derive(Debug, PartialEq, Eq, Hash, PartialOrd, Ord, Clone, Copy)]
 pub struct DateLike(Date);
+
+impl DateLike {
+    pub fn from_days_since_unix_epoch(days: i32) -> Self {
+        Self(Date::from_julian_day(UNIX_EPOCH_JULIAN_DAY + days).unwrap())
+    }
+
+    pub fn from_unix_timestamp(ts: i64) -> Self {
+        let days = ts.div_euclid(86400) as i32;
+        Self::from_days_since_unix_epoch(days)
+    }
+}
 
 impl From<DateLike> for Date {
     fn from(val: DateLike) -> Self {
@@ -77,5 +91,32 @@ pub fn validate(payments: &[f64], dates: Option<&[DateLike]>) -> Result<(), Inva
         Ok(())
     } else {
         Err(InvalidPaymentsError::new("negative and positive payments are required"))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_date_like_from_integer() {
+        let dt = DateLike::from_unix_timestamp(1335020400);
+        assert_eq!(dt.0.to_string(), "2012-04-21");
+
+        let dt = DateLike::from_days_since_unix_epoch(15801);
+        assert_eq!(dt.0.to_string(), "2013-04-06");
+    }
+
+    #[test]
+    fn test_date_like_from_integer_leap_year() {
+        let dt = DateLike::from_unix_timestamp(1456749295);
+        assert_eq!(dt.0.to_string(), "2016-02-29");
+        let dt = DateLike::from_unix_timestamp(1456835356);
+        assert_eq!(dt.0.to_string(), "2016-03-01");
+
+        let dt = DateLike::from_days_since_unix_epoch(15399);
+        assert_eq!(dt.0.to_string(), "2012-02-29");
+        let dt = DateLike::from_days_since_unix_epoch(15400);
+        assert_eq!(dt.0.to_string(), "2012-03-01");
     }
 }

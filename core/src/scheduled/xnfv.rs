@@ -1,5 +1,5 @@
 use super::{year_fraction, DayCount};
-use crate::core::{
+use crate::{
     models::{validate, DateLike, InvalidPaymentsError},
     periodic::fv,
 };

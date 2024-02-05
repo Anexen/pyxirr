@@ -34,7 +34,7 @@ pyo3 = "0.20"
 numpy = "0.20"
 time = { version = "0.3", features = ["parsing", "macros"] }
 ndarray = "0.15"
-# num-complex = "0.4"
+pyxirr-core = { path = "./core", features = ["vectorization", "python"] }
 
 [dev-dependencies]
 assert_approx_eq = "1.1"
