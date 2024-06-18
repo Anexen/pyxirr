@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.10.4] - 2024-06-19
+
+- Solve XIRR analytically for 2 amounts
+- Solve IRR analytically for 2-3 amounts
+
 ## [0.10.3] - 2024-02-04
 
 - XIRR Performance improvements
