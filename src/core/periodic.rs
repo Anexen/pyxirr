@@ -438,6 +438,14 @@ pub fn irr(values: &[f64], guess: Option<f64>) -> Result<f64, InvalidPaymentsErr
     // must contain at least one positive and one negative value
     validate(values, None)?;
 
+    if values.len() == 2 {
+        return Ok(irr_analytical_2(values));
+    }
+
+    if values.len() == 3 {
+        return Ok(irr_analytical_3(values));
+    }
+
     let f = |rate| {
         if rate <= -1.0 {
             // bound newton_raphson
@@ -474,6 +482,61 @@ pub fn irr(values: &[f64], guess: Option<f64>) -> Result<f64, InvalidPaymentsErr
     let rate = brentq_grid_search(&[breakpoints], &f).next();
 
     Ok(rate.unwrap_or(f64::NAN))
+}
+
+fn irr_analytical_2(values: &[f64]) -> f64 {
+    // cf[0]/(1+r)^0 + cf[1]/(1+r)^1 = 0  => multiply by (1 + r)
+    // cf[0]*(1+r) + cf[1] = 0  => divide by cf[0] and move tho the right
+    // lets x = 1+r, a = cf[0], b = cf[1]
+    // solve a*x + b = 0
+    // x = -b/a, r = x - 1
+    -values[1] / values[0] - 1.0
+}
+
+fn irr_analytical_3(values: &[f64]) -> f64 {
+    // cf[0]/(1+r)^0 + cf[1]/(1+r)^1 + cf[2]/(1+r)^2 = 0  => multiply by (1+r)^2
+    // cf[0]*(1+r)^2 + cf[1]*(1+r) + cf[2] = 0  => quadratic equation
+    // lets x = 1+r, a = cf[0], b = cf[1], c = cf[2]
+    // solve a*x^2 + b*x + c = 0
+    // x = (-b ± sqrt(b^2-4ac))/2a, a != 0
+
+    let (a, b, c) = (values[0], values[1], values[2]);
+
+    let x = if a == 0. {
+        // 0*x^2 + bx + c = 0 =>
+        // x = -c/b
+        -c / b
+    } else {
+        let d = b.powf(2.) - 4. * a * c; // discriminant
+        if d < 0.0 {
+            // no real solutions
+            f64::NAN
+        } else if d == 0.0 {
+            // exactly one solution
+            -b / (2. * a)
+        } else {
+            let mut x1 = (-b + d.sqrt()) / (2. * a);
+            let mut x2 = (-b - d.sqrt()) / (2. * a);
+            // since x = 1 + r => r = x - 1,
+            // negative x doesn't make sense (rate will be < -1)
+            // use the first non negative value to be conservative
+            if x1 > x2 {
+                // make x2 always > x1
+                std::mem::swap(&mut x1, &mut x2);
+            }
+            if x1 > 0.0 {
+                x1
+            } else if x2 > 0.0 {
+                x2
+            } else if x1 == 0.0 || x2 == 0.0 {
+                0.0
+            } else {
+                f64::NAN
+            }
+        }
+    };
+    // x = 1 + r => r = x - 1
+    x - 1.
 }
 
 pub fn mirr(

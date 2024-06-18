@@ -38,7 +38,7 @@ ndarray = "0.15"
 
 [dev-dependencies]
 assert_approx_eq = "1.1"
-rstest = "0.18.2"
+rstest = { version = "0.18.2", default-features = false }
 pyo3 = { version = "0.20", features = ["auto-initialize"]}
 
 [features]

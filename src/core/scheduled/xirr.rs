@@ -15,6 +15,18 @@ pub fn xirr(
 
     let deltas = &day_count_factor(dates, day_count);
 
+    if amounts.len() == 2 {
+        // solve analytically:
+        // cf[0]/(1+r)^d[0] + cf[1]/(1+r)^d[1] = 0  =>
+        // cf[1]/(1+r)^d[1] = -cf[0]/(1+r)^d[0]  => rearrange
+        // cf[1]/cf[0] = -(1+r)^d[1]/(1+r)^d[0]  => simplify
+        // cf[1]/cf[0] = -(1+r)^(d[1] - d[0])  => take the root
+        // (cf[1]/cf[0])^(1/(d[1] - d[0])) = -(1 + r) => multiply by -1 and subtract 1
+        // r = -(cf[1]/cf[0])^(1/(d[1] - d[0])) - 1
+        let rate = (-amounts[1] / amounts[0]).powf(1. / (deltas[1] - deltas[0])) - 1.0;
+        return Ok(rate);
+    }
+
     let f = |rate| xnpv_result(amounts, deltas, rate);
     let fd = |rate| xnpv_result_with_deriv(amounts, deltas, rate);
 
