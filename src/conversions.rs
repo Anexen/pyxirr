@@ -1,9 +1,6 @@
 use std::str::FromStr;
 
-use numpy::{
-    datetime::{units, Datetime as datetime64},
-    PyArray1,
-};
+use numpy::PyArray1;
 use pyo3::{
     exceptions::{PyTypeError, PyValueError},
     prelude::*,
@@ -101,15 +98,6 @@ impl From<&PyDate> for DateLike {
     }
 }
 
-impl From<&datetime64<units::Days>> for DateLike {
-    fn from(value: &datetime64<units::Days>) -> Self {
-        let days_since_unix_epoch: i32 = Into::<i64>::into(*value) as i32;
-        let date = Date::from_julian_day(UNIX_EPOCH_JULIAN_DAY + days_since_unix_epoch).unwrap();
-
-        date.into()
-    }
-}
-
 impl<'s> FromPyObject<'s> for DateLike {
     fn extract(obj: &'s PyAny) -> PyResult<Self> {
         if let Ok(py_date) = obj.downcast::<PyDate>() {
@@ -126,7 +114,7 @@ impl<'s> FromPyObject<'s> for DateLike {
         match obj.get_type().name()? {
             "datetime64" => Ok(obj
                 .call_method1("astype", ("datetime64[D]",))?
-                .call_method1("astype", ("int",))?
+                .call_method1("astype", ("int32",))?
                 .extract::<DaysSinceUnixEpoch>()?
                 .into()),
 
@@ -150,11 +138,12 @@ where
 fn extract_date_series_from_numpy(series: &PyAny) -> PyResult<Vec<DateLike>> {
     Ok(series
         .call_method1("astype", ("datetime64[D]",))?
-        .downcast::<PyArray1<datetime64<units::Days>>>()?
+        .call_method1("astype", ("int32",))?
+        .downcast::<PyArray1<i32>>()?
         .readonly()
         .as_slice()?
         .iter()
-        .map(|x| x.into())
+        .map(|&x| DateLike::from(DaysSinceUnixEpoch(x)))
         .collect())
 }
 

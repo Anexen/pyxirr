@@ -1,4 +1,4 @@
-maturin==0.14.*
+maturin==1.4.*
 numpy==1.*
 pandas==1.*
 numpy-financial==1.*
