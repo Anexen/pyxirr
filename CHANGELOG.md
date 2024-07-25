@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.10.5] - 2024-07-25
+
+- Fixed segfault during conversion of datetime64 array in numpy v2
+
 ## [0.10.4] - 2024-06-19
 
 - Solve XIRR analytically for 2 amounts
