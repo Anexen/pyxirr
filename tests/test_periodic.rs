@@ -1,4 +1,4 @@
-use numpy::{pyarray, PyArrayDyn};
+use numpy::{pyarray_bound, PyArrayDyn, PyArrayMethods};
 use pyo3::{types::PyList, Python};
 use rstest::rstest;
 
@@ -84,9 +84,9 @@ fn test_fv_vectorized_multi() {
 #[rstest]
 fn test_fv_vectorized_iterable() {
     Python::with_gil(|py| {
-        let pmt = py.eval("range(-100, -400, -100)", None, None).unwrap();
+        let pmt = py.eval_bound("range(-100, -400, -100)", None, None).unwrap();
         let actual: Vec<f64> = pyxirr_call!(py, "fv", (0.05 / 12.0, 10 * 12, pmt, -100));
-        let expected = vec![15692.92889433575, 31221.15683890247, 46749.38478346919];
+        let expected = [15692.92889433575, 31221.15683890247, 46749.38478346919];
         for i in 0..actual.len() {
             assert_almost_eq!(actual[i], expected[i]);
         }
@@ -99,13 +99,16 @@ fn test_fv_vectorized_ndarray() {
     // pyarray input -> pyarray output
     // pylist input -> pylist output
     Python::with_gil(|py| {
-        let rates = pyarray!(py, [[0.05 / 12.0, 0.06 / 12.0], [0.07 / 12.0, 0.0]]);
+        let rates = pyarray_bound!(py, [[0.05 / 12.0, 0.06 / 12.0], [0.07 / 12.0, 0.0]]);
 
         let actual: &PyArrayDyn<f64> =
             pyxirr_call!(py, "fv", (rates.as_ref(), 10 * 12, -100, -100));
 
-        let expected =
-            pyarray![py, [15692.928894335748, 16569.874354049032], [17509.446881023265, 12100.0]];
+        let expected = pyarray_bound![
+            py,
+            [15692.928894335748, 16569.874354049032],
+            [17509.446881023265, 12100.0]
+        ];
 
         actual.readonly().as_array().iter().zip(expected.readonly().as_array().iter()).for_each(
             |(a, e)| {
@@ -183,7 +186,7 @@ fn test_pv_vectorized() {
 #[rstest]
 fn test_npv_works() {
     Python::with_gil(|py| {
-        let values = PyList::new(py, [-40_000., 5_000., 8_000., 12_000., 30_000.]);
+        let values = PyList::new_bound(py, [-40_000., 5_000., 8_000., 12_000., 30_000.]);
         let result: f64 = pyxirr_call!(py, "npv", (0.08, values));
         assert_almost_eq!(result, 3065.222668179);
     });
@@ -192,7 +195,7 @@ fn test_npv_works() {
 #[rstest]
 fn test_npv_start_from_zero() {
     Python::with_gil(|py| {
-        let values = PyList::new(py, [-40_000., 5_000., 8_000., 12_000., 30_000.]);
+        let values = PyList::new_bound(py, [-40_000., 5_000., 8_000., 12_000., 30_000.]);
         let result: f64 =
             pyxirr_call!(py, "npv", (0.08, values), py_dict!(py, "start_from_zero" => false));
         assert_almost_eq!(result, 2838.169137203);
@@ -202,7 +205,7 @@ fn test_npv_start_from_zero() {
 #[rstest]
 fn test_npv_zero_rate() {
     Python::with_gil(|py| {
-        let values = PyList::new(py, [-40_000., 5_000., 8_000., 12_000., 30_000.]);
+        let values = PyList::new_bound(py, [-40_000., 5_000., 8_000., 12_000., 30_000.]);
         let result: f64 =
             pyxirr_call!(py, "npv", (0, values), py_dict!(py, "start_from_zero" => false));
         assert_almost_eq!(result, 15_000.0);
@@ -333,7 +336,7 @@ fn test_ipmt_large_power() {
         let kwargs = py_dict!(py, "pmt_at_beginning" => true);
 
         let result: f64 = pyxirr_call!(py, "ipmt", (0.1479, 297, 300, -270.51), kwargs);
-        assert_almost_eq!(result, 14.779708774167800);
+        assert_almost_eq!(result, 14.7797087741678);
 
         let result: f64 = pyxirr_call!(py, "ipmt", (0.1479, 297, 300, -270.51, -100), kwargs);
         assert_almost_eq!(result, 7.358957171005);
@@ -346,7 +349,7 @@ fn test_ipmt_vec() {
         let per = (0..=13).collect::<Vec<_>>();
         let n = per.len();
         let result: Vec<Option<f64>> = pyxirr_call!(py, "ipmt", (0.0824 / 12., per, 12, 25_000));
-        let expected = vec![
+        let expected = [
             f64::NAN,
             -171.66666666666666,
             -157.89337457350777,
@@ -384,7 +387,7 @@ fn test_ipmt_vec_large_power() {
             )
         );
 
-        let expected = vec![0.0, 16.9656277018672, 8.447346936597, 14.779708774167800];
+        let expected = [0.0, 16.9656277018672, 8.447346936597, 14.7797087741678];
 
         for i in 0..expected.len() {
             assert_almost_eq!(result[i], expected[i]);
@@ -445,7 +448,7 @@ fn test_ppmt_vec() {
     Python::with_gil(|py| {
         let per = (1..6).collect::<Vec<_>>();
         let result: Vec<f64> = pyxirr_call!(py, "ppmt", (0.1 / 12., per, 24, 2000));
-        let expected = vec![
+        let expected = [
             -75.62318600836664,
             -76.25337922510303,
             -76.88882405197889,
@@ -464,7 +467,7 @@ fn test_ppmt_vec() {
             py_dict!(py, "pmt_at_beginning" => [true, false, true, false])
         );
 
-        let expected = vec![5000., 5000., 3975.2287482728307, 4173.9901856864];
+        let expected = [5000., 5000., 3975.2287482728307, 4173.9901856864];
         for i in 0..expected.len() {
             assert_almost_eq!(result[i], expected[i])
         }
@@ -579,7 +582,7 @@ fn test_rate_vec() {
 fn test_nfv() {
     // example from https://www.youtube.com/watch?v=775ljhriB8U
     Python::with_gil(|py| {
-        let amounts = PyList::new(py, [1050.0, 1350.0, 1350.0, 1450.0]);
+        let amounts = PyList::new_bound(py, [1050.0, 1350.0, 1350.0, 1450.0]);
         let result: f64 = pyxirr_call!(py, "nfv", (0.03, 6.0, amounts));
         assert_almost_eq!(result, 5750.16, 0.01);
     });
@@ -609,7 +612,7 @@ fn test_nfv() {
 ], 0.038039605693757084)]
 fn test_irr_works(#[case] input: &[f64], #[case] expected: f64) {
     Python::with_gil(|py| {
-        let values = PyList::new(py, input);
+        let values = PyList::new_bound(py, input);
         let result: f64 = pyxirr_call!(py, "irr", (values,));
         assert_almost_eq!(result, expected);
     })
@@ -620,31 +623,31 @@ fn test_irr_works(#[case] input: &[f64], #[case] expected: f64) {
 #[case(&[-87.17; 180], &[5809.3], -0.01352676905)]
 #[case(&[-172545.848122807], &[787.735232517999; 480], 0.0038401048)]
 #[case(&[
-    -12138.436076306429, 576.20775733699475, 576.20775733699475, 576.20775733699475,
-    576.20775733699475, 576.20775733699475, 576.20775733699475, 576.20775733699475,
-    576.20775733699475, 576.20775733699475, 576.20775733699475, 576.20775733699475,
-    576.20775733699475, 576.20775733699475, 576.20775733699475, 576.20775733699475,
-    576.20775733699475, 576.20775733699475, 576.20775733699475, 576.20775733699475,
-], &[-528.88945762181788], -0.01562626238348752)]
+    -12138.436076306429, 576.2077573369947, 576.2077573369947, 576.2077573369947,
+    576.2077573369947, 576.2077573369947, 576.2077573369947, 576.2077573369947,
+    576.2077573369947, 576.2077573369947, 576.2077573369947, 576.2077573369947,
+    576.2077573369947, 576.2077573369947, 576.2077573369947, 576.2077573369947,
+    576.2077573369947, 576.2077573369947, 576.2077573369947, 576.2077573369947,
+], &[-528.8894576218179], -0.01562626238348752)]
 #[case(&[
     -10351.121144852736, 450.71546738230256, 450.71546738230256, 450.71546738230256,
     450.71546738230256, 450.71546738230256, 450.71546738230256, 450.71546738230256,
     450.71546738230256, 450.71546738230256, 450.71546738230256, 450.71546738230256,
     450.71546738230256, 450.71546738230256, 450.71546738230256, 450.71546738230256,
     450.71546738230256, 450.71546738230256, 450.71546738230256, 450.71546738230256,
-], &[-654.38174757651018], -0.02792064231450042)]
+], &[-654.3817475765102], -0.02792064231450042)]
 #[case(&[
-    -15634.416942708685, 800.12182531566373, 800.12182531566373, 800.12182531566373,
-    800.12182531566373, 800.12182531566373, 800.12182531566373, 800.12182531566373,
-    800.12182531566373, 800.12182531566373, 800.12182531566373, 800.12182531566373,
-    800.12182531566373, 800.12182531566373, 800.12182531566373, 800.12182531566373,
-    800.12182531566373, 800.12182531566373, 800.12182531566373, 800.12182531566373
+    -15634.416942708685, 800.1218253156637, 800.1218253156637, 800.1218253156637,
+    800.1218253156637, 800.1218253156637, 800.1218253156637, 800.1218253156637,
+    800.1218253156637, 800.1218253156637, 800.1218253156637, 800.1218253156637,
+    800.1218253156637, 800.1218253156637, 800.1218253156637, 800.1218253156637,
+    800.1218253156637, 800.1218253156637, 800.1218253156637, 800.1218253156637
 ], &[-304.9753896431489], -0.004883289820554082)]
 fn test_irr_equal_payments(#[case] first: &[f64], #[case] other: &[f64], #[case] expected: f64) {
     let input: Vec<_> = first.iter().chain(other).collect();
 
     Python::with_gil(|py| {
-        let values = PyList::new(py, input);
+        let values = PyList::new_bound(py, input);
         let result: f64 = pyxirr_call!(py, "irr", (values,));
         assert_almost_eq!(result, expected);
     })
@@ -668,8 +671,8 @@ fn test_irr_equal_payments(#[case] first: &[f64], #[case] other: &[f64], #[case]
 #[case(&[-50.0, -100.0, 600.0, 300.0, -100.0], 1.8544178284461061)]
 fn test_irr_special_cases(#[case] input: &[f64], #[case] expected: f64) {
     Python::with_gil(|py| {
-        let values = PyList::new(py, input);
-        let rate: f64 = pyxirr_call!(py, "irr", (values,));
+        let values = PyList::new_bound(py, input);
+        let rate: f64 = pyxirr_call!(py, "irr", (values.clone(),));
         assert_almost_eq!(rate, expected);
 
         // test net present value of all cash flows equal to zero
@@ -698,8 +701,8 @@ fn test_irr_special_cases(#[case] input: &[f64], #[case] expected: f64) {
 ] , -0.13209372260468)]
 fn test_gh_46(#[case] input: &[f64], #[case] expected: f64) {
     Python::with_gil(|py| {
-        let values = PyList::new(py, input);
-        let rate: f64 = pyxirr_call!(py, "irr", (values,));
+        let values = PyList::new_bound(py, input);
+        let rate: f64 = pyxirr_call!(py, "irr", (values.clone(),));
         assert_almost_eq!(rate, expected);
 
         // test net present value of all cash flows equal to zero
@@ -716,7 +719,7 @@ fn test_gh_46(#[case] input: &[f64], #[case] expected: f64) {
 fn test_irr_samples(#[case] input: &str) {
     Python::with_gil(|py| {
         let payments = PaymentsLoader::from_csv(py, input).to_columns();
-        let rate: f64 = pyxirr_call!(py, "irr", (payments.1,));
+        let rate: f64 = pyxirr_call!(py, "irr", (payments.1.clone(),));
 
         assert_almost_eq!(rate, irr_expected_result(input));
         // test net present value of all cash flows equal to zero
@@ -730,7 +733,7 @@ fn test_irr_samples(#[case] input: &str) {
 #[rstest]
 fn test_mirr_works() {
     Python::with_gil(|py| {
-        let values = PyList::new(py, [-1000, 100, 250, 500, 500]);
+        let values = PyList::new_bound(py, [-1000, 100, 250, 500, 500]);
         let result: f64 = pyxirr_call!(py, "mirr", (values, 0.1, 0.1));
         assert_almost_eq!(result, 0.10401626745);
     });
@@ -741,16 +744,16 @@ fn test_mirr_same_sign() {
     Python::with_gil(|py| {
         let kwargs = py_dict!(py, "silent" => true);
 
-        let values = PyList::new(py, [100_000, 50_000, 25_000]);
-        let err = pyxirr_call_impl!(py, "mirr", (values, 0.1, 0.1)).unwrap_err();
-        assert!(err.is_instance(py, py.get_type::<pyxirr::InvalidPaymentsError>()));
+        let values = PyList::new_bound(py, [100_000, 50_000, 25_000]);
+        let err = pyxirr_call_impl!(py, "mirr", (values.clone(), 0.1, 0.1)).unwrap_err();
+        assert!(err.is_instance_of::<pyxirr::InvalidPaymentsError>(py));
 
         let result: Option<f64> = pyxirr_call!(py, "mirr", (values, 0.1, 0.1), kwargs);
         assert!(result.is_none());
 
-        let values = PyList::new(py, [-100_000.0, -50_000.0, -25_000.0]);
-        let err = pyxirr_call_impl!(py, "mirr", (values, 0.1, 0.1)).unwrap_err();
-        assert!(err.is_instance(py, py.get_type::<pyxirr::InvalidPaymentsError>()));
+        let values = PyList::new_bound(py, [-100_000.0, -50_000.0, -25_000.0]);
+        let err = pyxirr_call_impl!(py, "mirr", (values.clone(), 0.1, 0.1)).unwrap_err();
+        assert!(err.is_instance_of::<pyxirr::InvalidPaymentsError>(py));
 
         let result: Option<f64> = pyxirr_call!(py, "mirr", (values, 0.1, 0.1), kwargs);
         assert!(result.is_none());

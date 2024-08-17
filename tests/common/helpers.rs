@@ -1,14 +1,15 @@
 #![allow(dead_code)]
-use pyo3::{once_cell::GILOnceCell, prelude::*, types::*};
+use pyo3::{prelude::*, sync::GILOnceCell, types::*};
 
 #[macro_export]
 macro_rules! py_dict {
     ($py:expr) => {
-        ::pyo3::types::PyDict::new($py)
+        ::pyo3::types::PyDict::new_bound($py)
     };
     ($py:expr, $($key:expr => $value:expr), *) => {
         {
-            let _dict = ::pyo3::types::PyDict::new($py);
+            use pyo3::prelude::PyDictMethods;
+            let _dict = ::pyo3::types::PyDict::new_bound($py);
             $(
                 _dict.set_item($key, $value).unwrap();
             )*
@@ -21,7 +22,7 @@ macro_rules! py_dict {
 macro_rules! py_dict_merge {
     ($py:expr, $($dict:expr), *) => {
         {
-            let _dict = ::pyo3::types::PyDict::new($py);
+            let _dict = ::pyo3::types::PyDict::new_bound($py);
             $(
                 _dict.getattr("update").unwrap().call1(($dict,)).unwrap();
             )*
@@ -34,23 +35,25 @@ macro_rules! py_dict_merge {
 #[macro_export]
 macro_rules! pyxirr_call {
     ($py:expr, $name:expr, $args:expr) => {{
-        let kwargs = ::pyo3::types::PyDict::new($py);
+        let kwargs = ::pyo3::types::PyDict::new_bound($py);
         pyxirr_call!($py, $name, $args, kwargs)
     }};
-    ($py:expr, $name:expr, $args:expr, $kwargs:expr) => {
+    ($py:expr, $name:expr, $args:expr, $kwargs:expr) => {{
+        use pyo3::prelude::PyAnyMethods;
         pyxirr_call_impl!($py, $name, $args, $kwargs).unwrap().extract().unwrap()
-    };
+    }};
 }
 
 #[macro_export]
 macro_rules! pyxirr_call_impl {
     ($py:expr, $name:expr, $args:expr) => {{
-        let kwargs = ::pyo3::types::PyDict::new($py);
+        let kwargs = ::pyo3::types::PyDict::new_bound($py);
         pyxirr_call_impl!($py, $name, $args, kwargs)
     }};
     ($py:expr, $name:expr, $args:expr, $kwargs:expr) => {{
         use common::get_pyxirr_func;
-        get_pyxirr_func($py, $name).call($args, Some($kwargs))
+        use pyo3::prelude::PyAnyMethods;
+        get_pyxirr_func($py, $name).call($args, Some(&$kwargs))
     }};
 }
 
@@ -96,32 +99,32 @@ macro_rules! assert_future_value {
 
 static PYXIRR: GILOnceCell<Py<PyModule>> = GILOnceCell::new();
 
-pub fn get_pyxirr_module(py: Python) -> &PyModule {
+pub fn get_pyxirr_module(py: Python) -> &Bound<PyModule> {
     PYXIRR
         .get_or_init(py, || {
-            let module = PyModule::new(py, "pyxirr").unwrap();
-            pyxirr::pyxirr(py, module).unwrap();
+            let module = PyModule::new_bound(py, "pyxirr").unwrap();
+            pyxirr::pyxirr(py, &module).unwrap();
             module.into()
         })
-        .as_ref(py)
+        .bind(py)
 }
 
-pub fn get_pyxirr_func<'p>(py: Python<'p>, name: &str) -> &'p PyCFunction {
-    get_pyxirr_module(py).getattr(name).unwrap().downcast().unwrap()
+pub fn get_pyxirr_func<'p>(py: Python<'p>, name: &str) -> Bound<'p, PyCFunction> {
+    get_pyxirr_module(py).getattr(name).unwrap().downcast_into().unwrap()
 }
 
-pub fn pd_read_csv<'p>(py: Python<'p>, input_file: &str) -> &'p PyAny {
+pub fn pd_read_csv<'p>(py: Python<'p>, input_file: &str) -> Bound<'p, PyAny> {
     let locals = py_dict!(py,
-        "sample" => PyString::new(py, input_file),
-        "pd" => PyModule::import(py, "pandas").unwrap()
+        "sample" => PyString::new_bound(py, input_file),
+        "pd" => PyModule::import_bound(py, "pandas").unwrap()
     );
 
-    py.eval("pd.read_csv(sample, header=None, parse_dates=[0])", Some(locals), None).unwrap()
+    py.eval_bound("pd.read_csv(sample, header=None, parse_dates=[0])", Some(&locals), None).unwrap()
 }
 
 pub struct PaymentsLoader<'p> {
     py: Python<'p>,
-    data: Vec<&'p PyTuple>,
+    data: Vec<Bound<'p, PyTuple>>,
 }
 
 impl<'p> PaymentsLoader<'p> {
@@ -133,20 +136,20 @@ impl<'p> PaymentsLoader<'p> {
         }
     }
 
-    fn from_py_csv(py: Python<'p>, input_file: &str) -> PyResult<Vec<&'p PyTuple>> {
-        let strptime = py.import("datetime")?.getattr("datetime")?.getattr("strptime")?;
-        let reader = py.import("csv")?.getattr("reader")?;
-        let builtins = py.import("builtins")?;
+    fn from_py_csv(py: Python<'p>, input_file: &str) -> PyResult<Vec<Bound<'p, PyTuple>>> {
+        let strptime = py.import_bound("datetime")?.getattr("datetime")?.getattr("strptime")?;
+        let reader = py.import_bound("csv")?.getattr("reader")?;
+        let builtins = py.import_bound("builtins")?;
         let file_obj = builtins.getattr("open")?.call1((input_file,))?;
 
         let data = reader
-            .call1((file_obj,))?
+            .call1((file_obj.clone(),))?
             .iter()?
             .map(|r| {
                 let r = r.unwrap();
                 let date = strptime.call1((r.get_item(0)?, "%Y-%m-%d"))?;
                 let amount = builtins.getattr("float")?.call1((r.get_item(1)?,))?;
-                Ok(PyTuple::new(py, vec![date, amount]))
+                Ok(PyTuple::new_bound(py, vec![date, amount]))
             })
             .collect();
 
@@ -155,18 +158,18 @@ impl<'p> PaymentsLoader<'p> {
         data
     }
 
-    pub fn to_records(&self) -> &'p PyAny {
-        PyList::new(self.py, &self.data).as_ref()
+    pub fn to_records(&self) -> Bound<'p, PyAny> {
+        PyList::new_bound(self.py, &self.data).into_any()
     }
 
-    pub fn to_dict(&self) -> &'p PyAny {
-        PyDict::from_sequence(self.py, self.to_records().into()).unwrap().as_ref()
+    pub fn to_dict(&self) -> Bound<'p, PyAny> {
+        PyDict::from_sequence_bound(&self.to_records()).unwrap().into_any()
     }
 
-    pub fn to_columns(&self) -> (&'p PyAny, &'p PyAny) {
+    pub fn to_columns(&self) -> (Bound<'p, PyAny>, Bound<'p, PyAny>) {
         (
-            PyList::new(self.py, self.data.iter().map(|x| x.get_item(0).unwrap())).as_ref(),
-            PyList::new(self.py, self.data.iter().map(|x| x.get_item(1).unwrap())).as_ref(),
+            PyList::new_bound(self.py, self.data.iter().map(|x| x.get_item(0).unwrap())).into_any(),
+            PyList::new_bound(self.py, self.data.iter().map(|x| x.get_item(1).unwrap())).into_any(),
         )
     }
 }
