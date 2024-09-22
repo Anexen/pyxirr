@@ -4,3 +4,5 @@ __pycache__
 *.so
 .gdb_history
 .pyodide-xbuildenv
+.idea/*
+.vscode/*

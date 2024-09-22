@@ -8,7 +8,6 @@ readme = "README.md"
 homepage = "https://github.com/Anexen/pyxirr"
 license = "Unlicense"
 keywords = [
-    "python",
     "fast",
     "financial",
     "xirr",
@@ -30,16 +29,8 @@ crate-type = ["rlib", "cdylib"]
 doctest = false
 
 [dependencies]
-pyo3 = "0.20"
-numpy = "0.20"
 time = { version = "0.3", features = ["parsing", "macros"] }
-ndarray = "0.15"
-# num-complex = "0.4"
 
 [dev-dependencies]
 assert_approx_eq = "1.1"
-rstest = { version = "0.18.2", default-features = false }
-pyo3 = { version = "0.20", features = ["auto-initialize"]}
-
-[features]
-nonumpy = []
+rstest = { version = "0.22.0", default-features = false }

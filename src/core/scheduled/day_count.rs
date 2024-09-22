@@ -5,8 +5,6 @@ use time::{
     Date, Month,
 };
 
-#[pyo3::pyclass]
-#[pyo3(frozen)]
 #[derive(Debug, Clone, Copy)]
 #[allow(non_camel_case_types)]
 #[derive(Default)]

@@ -69,12 +69,6 @@ pub fn xnpv(
     Ok(xnpv_result(amounts, deltas, rate))
 }
 
-pub fn sign_changes(v: &[f64]) -> i32 {
-    v.windows(2)
-        .map(|p| (p[0].is_finite() && p[1].is_finite() && p[0].signum() != p[1].signum()) as i32)
-        .sum()
-}
-
 pub fn zero_crossing_points(v: &[f64]) -> Vec<usize> {
     v.windows(2)
         .enumerate()
@@ -122,18 +116,9 @@ fn xnpv_result_with_deriv(payments: &[f64], deltas: &[f64], rate: f64) -> (f64, 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use rstest::rstest;
 
-    #[rstest]
-    fn test_sign_changes() {
-        assert_eq!(sign_changes(&[1., 2., 3.]), 0);
-        assert_eq!(sign_changes(&[1., 2., -3.]), 1);
-        assert_eq!(sign_changes(&[1., -2., 3.]), 2);
-        assert_eq!(sign_changes(&[-1., 2., -3.]), 2);
-        assert_eq!(sign_changes(&[-1., -2., -3.]), 0);
-        assert_eq!(sign_changes(&[1., f64::NAN, 3.]), 0);
-    }
+    use super::*;
 
     #[rstest]
     fn test_zero_crossing_points() {
