@@ -12,19 +12,15 @@ env:
 
 jobs:
   test:
-    runs-on: "ubuntu-22.04"
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/cache@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+      - uses: actions/setup-python@v5
         with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          python-version: 3.11
       - name: Test no numpy
-        run: |
-          cargo test --release --features nonumpy
+        run: cargo test --release --features nonumpy
       - name: Install numpy v1
         run: pip install 'numpy>=1,<2' 'pandas>=1,<2'
       - name: Test numpy v1
@@ -40,12 +36,13 @@ jobs:
     strategy:
       matrix:
         python:
-          - version: '3.7'
-          - version: '3.8'
-          - version: '3.9'
-          - version: '3.10'
-          - version: '3.11'
-          - version: '3.12'
+          - version: 3.7
+          - version: 3.8
+          - version: 3.9
+          - version: 3.10
+          - version: 3.11
+          - version: 3.12
+          - version: 3.13
         platform:
           - os: ubuntu-22.04
           - os: macos-12
@@ -58,15 +55,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python.constraints || matrix.python.version }}
-          # allow-prereleases: ${{ matrix.python.version == "3.12" }}
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.platform.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-
+          # allow-prereleases: ${{ matrix.python.version == "3.13" }}
       - name: Build Wheels - Linux
         if: matrix.platform.os == 'ubuntu-22.04'
         uses: PyO3/maturin-action@v1
@@ -112,18 +101,20 @@ jobs:
     strategy:
       matrix:
         python:
-          - version: '3.7'
-            abi: 'cp37-cp37m'
-          - version: '3.8'
-            abi: 'cp38-cp38'
-          - version: '3.9'
-            abi: 'cp39-cp39'
-          - version: '3.10'
-            abi: 'cp310-cp310'
-          - version: '3.11'
-            abi: 'cp311-cp311'
-          - version: '3.12'
-            abi: 'cp312-cp312'
+          - version: 3.7
+            abi: cp37-cp37m
+          - version: 3.8
+            abi: cp38-cp38
+          - version: 3.9
+            abi: cp39-cp39
+          - version: 3.10
+            abi: cp310-cp310
+          - version: 3.11
+            abi: cp311-cp311
+          - version: 3.12
+            abi: cp312-cp312
+          - version: 3.13
+            abi: cp313-cp313
         target: [aarch64, armv7, s390x, ppc64le, ppc64]
     runs-on: ubuntu-22.04
     steps:
@@ -150,12 +141,12 @@ jobs:
       matrix:
         # https://pyodide.org/en/stable/project/changelog.html
         version:
-          - python: '3.11'
+          - python: 3.12
+            emscripten: 3.1.58  # pyodide 0.26.*
+          - python: 3.11
             emscripten: 3.1.46  # pyodide 0.25.*
-          - python: '3.11'
+          - python: 3.11
             emscripten: 3.1.45  # pyodide 0.24.*
-          - python: '3.11'
-            emscripten: 3.1.32  # pyodide 0.23.*
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -193,7 +184,7 @@ jobs:
           maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.target }}
           manylinux: musllinux_1_2
-          args: --release --strip -i 3.7 3.8 3.9 3.10 3.11 3.12
+          args: --release --strip -i 3.7 3.8 3.9 3.10 3.11 3.12 3.13
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
