@@ -18,7 +18,7 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.11
+          python-version: '3.11'
       - name: Test no numpy
         run: cargo test --release --features nonumpy
       - name: Install numpy v1
@@ -36,13 +36,13 @@ jobs:
     strategy:
       matrix:
         python:
-          - version: 3.7
-          - version: 3.8
-          - version: 3.9
-          - version: 3.10
-          - version: 3.11
-          - version: 3.12
-          - version: 3.13
+          - version: '3.7'
+          - version: '3.8'
+          - version: '3.9'
+          - version: '3.10'
+          - version: '3.11'
+          - version: '3.12'
+          - version: '3.13'
         platform:
           - os: ubuntu-22.04
           - os: macos-12
@@ -101,19 +101,19 @@ jobs:
     strategy:
       matrix:
         python:
-          - version: 3.7
+          - version: '3.7'
             abi: cp37-cp37m
-          - version: 3.8
+          - version: '3.8'
             abi: cp38-cp38
-          - version: 3.9
+          - version: '3.9'
             abi: cp39-cp39
-          - version: 3.10
+          - version: '3.10'
             abi: cp310-cp310
-          - version: 3.11
+          - version: '3.11'
             abi: cp311-cp311
-          - version: 3.12
+          - version: '3.12'
             abi: cp312-cp312
-          - version: 3.13
+          - version: '3.13'
             abi: cp313-cp313
         target: [aarch64, armv7, s390x, ppc64le, ppc64]
     runs-on: ubuntu-22.04
@@ -141,11 +141,11 @@ jobs:
       matrix:
         # https://pyodide.org/en/stable/project/changelog.html
         version:
-          - python: 3.12
+          - python: '3.12'
             emscripten: 3.1.58  # pyodide 0.26.*
-          - python: 3.11
+          - python: '3.11'
             emscripten: 3.1.46  # pyodide 0.25.*
-          - python: 3.11
+          - python: '3.11'
             emscripten: 3.1.45  # pyodide 0.24.*
     runs-on: ubuntu-22.04
     steps:
