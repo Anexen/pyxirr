@@ -3,7 +3,7 @@ use pyo3::{types::PyList, Python};
 use rstest::rstest;
 
 mod common;
-use common::{irr_expected_result, PaymentsLoader};
+use common::PaymentsLoader;
 
 const INTEREST_RATE: f64 = 0.05;
 const PERIODS: f64 = 10.0;
@@ -86,7 +86,7 @@ fn test_fv_vectorized_iterable() {
     Python::with_gil(|py| {
         let pmt = py.eval("range(-100, -400, -100)", None, None).unwrap();
         let actual: Vec<f64> = pyxirr_call!(py, "fv", (0.05 / 12.0, 10 * 12, pmt, -100));
-        let expected = vec![15692.92889433575, 31221.15683890247, 46749.38478346919];
+        let expected = [15692.92889433575, 31221.15683890247, 46749.38478346919];
         for i in 0..actual.len() {
             assert_almost_eq!(actual[i], expected[i]);
         }
@@ -333,7 +333,7 @@ fn test_ipmt_large_power() {
         let kwargs = py_dict!(py, "pmt_at_beginning" => true);
 
         let result: f64 = pyxirr_call!(py, "ipmt", (0.1479, 297, 300, -270.51), kwargs);
-        assert_almost_eq!(result, 14.779708774167800);
+        assert_almost_eq!(result, 14.7797087741678);
 
         let result: f64 = pyxirr_call!(py, "ipmt", (0.1479, 297, 300, -270.51, -100), kwargs);
         assert_almost_eq!(result, 7.358957171005);
@@ -346,7 +346,7 @@ fn test_ipmt_vec() {
         let per = (0..=13).collect::<Vec<_>>();
         let n = per.len();
         let result: Vec<Option<f64>> = pyxirr_call!(py, "ipmt", (0.0824 / 12., per, 12, 25_000));
-        let expected = vec![
+        let expected = [
             f64::NAN,
             -171.66666666666666,
             -157.89337457350777,
@@ -384,7 +384,7 @@ fn test_ipmt_vec_large_power() {
             )
         );
 
-        let expected = vec![0.0, 16.9656277018672, 8.447346936597, 14.779708774167800];
+        let expected = [0.0, 16.9656277018672, 8.447346936597, 14.7797087741678];
 
         for i in 0..expected.len() {
             assert_almost_eq!(result[i], expected[i]);
@@ -445,7 +445,7 @@ fn test_ppmt_vec() {
     Python::with_gil(|py| {
         let per = (1..6).collect::<Vec<_>>();
         let result: Vec<f64> = pyxirr_call!(py, "ppmt", (0.1 / 12., per, 24, 2000));
-        let expected = vec![
+        let expected = [
             -75.62318600836664,
             -76.25337922510303,
             -76.88882405197889,
@@ -464,7 +464,7 @@ fn test_ppmt_vec() {
             py_dict!(py, "pmt_at_beginning" => [true, false, true, false])
         );
 
-        let expected = vec![5000., 5000., 3975.2287482728307, 4173.9901856864];
+        let expected = [5000., 5000., 3975.2287482728307, 4173.9901856864];
         for i in 0..expected.len() {
             assert_almost_eq!(result[i], expected[i])
         }
@@ -620,25 +620,25 @@ fn test_irr_works(#[case] input: &[f64], #[case] expected: f64) {
 #[case(&[-87.17; 180], &[5809.3], -0.01352676905)]
 #[case(&[-172545.848122807], &[787.735232517999; 480], 0.0038401048)]
 #[case(&[
-    -12138.436076306429, 576.20775733699475, 576.20775733699475, 576.20775733699475,
-    576.20775733699475, 576.20775733699475, 576.20775733699475, 576.20775733699475,
-    576.20775733699475, 576.20775733699475, 576.20775733699475, 576.20775733699475,
-    576.20775733699475, 576.20775733699475, 576.20775733699475, 576.20775733699475,
-    576.20775733699475, 576.20775733699475, 576.20775733699475, 576.20775733699475,
-], &[-528.88945762181788], -0.01562626238348752)]
+    -12138.436076306429, 576.2077573369947, 576.2077573369947, 576.2077573369947,
+    576.2077573369947, 576.2077573369947, 576.2077573369947, 576.2077573369947,
+    576.2077573369947, 576.2077573369947, 576.2077573369947, 576.2077573369947,
+    576.2077573369947, 576.2077573369947, 576.2077573369947, 576.2077573369947,
+    576.2077573369947, 576.2077573369947, 576.2077573369947, 576.2077573369947,
+], &[-528.8894576218179], -0.01562626238348752)]
 #[case(&[
     -10351.121144852736, 450.71546738230256, 450.71546738230256, 450.71546738230256,
     450.71546738230256, 450.71546738230256, 450.71546738230256, 450.71546738230256,
     450.71546738230256, 450.71546738230256, 450.71546738230256, 450.71546738230256,
     450.71546738230256, 450.71546738230256, 450.71546738230256, 450.71546738230256,
     450.71546738230256, 450.71546738230256, 450.71546738230256, 450.71546738230256,
-], &[-654.38174757651018], -0.02792064231450042)]
+], &[-654.3817475765102], -0.02792064231450042)]
 #[case(&[
-    -15634.416942708685, 800.12182531566373, 800.12182531566373, 800.12182531566373,
-    800.12182531566373, 800.12182531566373, 800.12182531566373, 800.12182531566373,
-    800.12182531566373, 800.12182531566373, 800.12182531566373, 800.12182531566373,
-    800.12182531566373, 800.12182531566373, 800.12182531566373, 800.12182531566373,
-    800.12182531566373, 800.12182531566373, 800.12182531566373, 800.12182531566373
+    -15634.416942708685, 800.1218253156637, 800.1218253156637, 800.1218253156637,
+    800.1218253156637, 800.1218253156637, 800.1218253156637, 800.1218253156637,
+    800.1218253156637, 800.1218253156637, 800.1218253156637, 800.1218253156637,
+    800.1218253156637, 800.1218253156637, 800.1218253156637, 800.1218253156637,
+    800.1218253156637, 800.1218253156637, 800.1218253156637, 800.1218253156637
 ], &[-304.9753896431489], -0.004883289820554082)]
 fn test_irr_equal_payments(#[case] first: &[f64], #[case] other: &[f64], #[case] expected: f64) {
     let input: Vec<_> = first.iter().chain(other).collect();
@@ -666,6 +666,12 @@ fn test_irr_equal_payments(#[case] first: &[f64], #[case] other: &[f64], #[case]
 ], 0.12)]
 // https://github.com/numpy/numpy-financial/issues/28
 #[case(&[-50.0, -100.0, 600.0, 300.0, -100.0], 1.8544178284461061)]
+// https://github.com/Anexen/pyxirr/issues/56
+#[case(&[
+    0.0, -54163.55222425675, -15411.724067521238, 11824.611799779348, 13831.220768857136,
+    24713.445277451923, 42399.405170720645, 32779.24733697434, 29832.522397937253,
+    21750.50072725094, 20140.886499523196, 18357.799360554745, 10074.662845544659
+], 0.235461374465902)]
 fn test_irr_special_cases(#[case] input: &[f64], #[case] expected: f64) {
     Python::with_gil(|py| {
         let values = PyList::new(py, input);
@@ -709,16 +715,16 @@ fn test_gh_46(#[case] input: &[f64], #[case] expected: f64) {
 }
 
 #[rstest]
-#[case("tests/samples/unordered.csv")]
-#[case("tests/samples/random_100.csv")]
-#[case("tests/samples/random_1000.csv")]
-#[case("tests/samples/minus_0_993.csv")]
-fn test_irr_samples(#[case] input: &str) {
+#[case("tests/samples/unordered.csv", 0.7039842300)]
+#[case("tests/samples/random_100.csv", 2.3320600601)]
+#[case("tests/samples/random_1000.csv", 0.8607558299)]
+#[case("tests/samples/minus_0_993.csv", -0.995697224362268)]
+fn test_irr_samples(#[case] input: &str, #[case] expected: f64) {
     Python::with_gil(|py| {
         let payments = PaymentsLoader::from_csv(py, input).to_columns();
         let rate: f64 = pyxirr_call!(py, "irr", (payments.1,));
 
-        assert_almost_eq!(rate, irr_expected_result(input));
+        assert_almost_eq!(rate, expected);
         // test net present value of all cash flows equal to zero
         let npv: f64 = pyxirr_call!(py, "npv", (rate, payments.1));
         assert_almost_eq!(npv, 0.0, 1e-8);

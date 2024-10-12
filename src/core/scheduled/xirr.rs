@@ -1,8 +1,8 @@
 use super::{year_fraction, DayCount};
 use crate::core::{
-    models::{validate, DateLike, InvalidPaymentsError},
+    models::{validate, validate_length, DateLike, InvalidPaymentsError},
     optimize::{brentq, newton_raphson_2},
-    utils::fast_pow,
+    utils::{fast_pow, initial_guess},
 };
 
 pub fn xirr(
@@ -16,21 +16,14 @@ pub fn xirr(
     let deltas = &day_count_factor(dates, day_count);
 
     if amounts.len() == 2 {
-        // solve analytically:
-        // cf[0]/(1+r)^d[0] + cf[1]/(1+r)^d[1] = 0  =>
-        // cf[1]/(1+r)^d[1] = -cf[0]/(1+r)^d[0]  => rearrange
-        // cf[1]/cf[0] = -(1+r)^d[1]/(1+r)^d[0]  => simplify
-        // cf[1]/cf[0] = -(1+r)^(d[1] - d[0])  => take the root
-        // (cf[1]/cf[0])^(1/(d[1] - d[0])) = -(1 + r) => multiply by -1 and subtract 1
-        // r = -(cf[1]/cf[0])^(1/(d[1] - d[0])) - 1
-        let rate = (-amounts[1] / amounts[0]).powf(1. / (deltas[1] - deltas[0])) - 1.0;
-        return Ok(rate);
+        return Ok(xirr_analytical_2(amounts, deltas));
     }
 
     let f = |rate| xnpv_result(amounts, deltas, rate);
     let fd = |rate| xnpv_result_with_deriv(amounts, deltas, rate);
 
-    let rate = newton_raphson_2(guess.unwrap_or(0.1), &fd);
+    let guess = guess.unwrap_or_else(|| initial_guess(amounts));
+    let rate = newton_raphson_2(guess, &fd);
 
     if rate.is_finite() {
         return Ok(rate);
@@ -56,6 +49,17 @@ pub fn xirr(
     Ok(f64::NAN)
 }
 
+fn xirr_analytical_2(amounts: &[f64], deltas: &[f64]) -> f64 {
+    // solve analytically:
+    // cf[0]/(1+r)^d[0] + cf[1]/(1+r)^d[1] = 0  =>
+    // cf[1]/(1+r)^d[1] = -cf[0]/(1+r)^d[0]  => rearrange
+    // cf[1]/cf[0] = -(1+r)^d[1]/(1+r)^d[0]  => simplify
+    // cf[1]/cf[0] = -(1+r)^(d[1] - d[0])  => take the root
+    // (cf[1]/cf[0])^(1/(d[1] - d[0])) = -(1 + r) => multiply by -1 and subtract 1
+    // r = -(cf[1]/cf[0])^(1/(d[1] - d[0])) - 1
+    (-amounts[1] / amounts[0]).powf(1. / (deltas[1] - deltas[0])) - 1.0
+}
+
 /// Calculate the net present value of a series of payments at irregular intervals.
 pub fn xnpv(
     rate: f64,
@@ -63,7 +67,7 @@ pub fn xnpv(
     amounts: &[f64],
     day_count: Option<DayCount>,
 ) -> Result<f64, InvalidPaymentsError> {
-    validate(amounts, Some(dates))?;
+    validate_length(amounts, dates)?;
 
     let deltas = &day_count_factor(dates, day_count);
     Ok(xnpv_result(amounts, deltas, rate))

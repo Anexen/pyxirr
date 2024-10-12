@@ -2,10 +2,12 @@ use pyo3::{exceptions, prelude::*, types::*};
 use rstest::*;
 
 mod common;
-use common::{pd_read_csv, xirr_expected_result, PaymentsLoader};
+use common::{pd_read_csv, PaymentsLoader};
 
 type Payments = (Py<PyAny>, Py<PyAny>);
+
 const INPUT: &str = "tests/samples/unordered.csv";
+const EXPECTED: f64 = 0.16353715844;
 
 #[fixture]
 fn payments(#[default(INPUT)] input: &str) -> Payments {
@@ -40,13 +42,13 @@ fn test_extract_from_iter() {
         pyxirr_call!(py, "xirr", (dates_iter, amounts_gen))
     });
 
-    assert_almost_eq!(result, xirr_expected_result(INPUT));
+    assert_almost_eq!(result, EXPECTED);
 }
 
 #[rstest]
 fn test_extract_from_tuples(payments: Payments) {
     let result: f64 = Python::with_gil(|py| pyxirr_call!(py, "xirr", payments));
-    assert_almost_eq!(result, xirr_expected_result(INPUT));
+    assert_almost_eq!(result, EXPECTED);
 }
 
 #[rstest]
@@ -56,7 +58,7 @@ fn test_extract_from_lists() {
         let data = py.eval("map(list, zip(dates, amounts))", Some(locals), None).unwrap();
         pyxirr_call!(py, "xirr", (data,))
     });
-    assert_almost_eq!(result, xirr_expected_result(INPUT));
+    assert_almost_eq!(result, EXPECTED);
 }
 
 #[rstest]
@@ -66,7 +68,7 @@ fn test_extract_from_dict() {
         let data = PaymentsLoader::from_csv(py, input).to_dict();
         pyxirr_call!(py, "xirr", (data,))
     });
-    assert_almost_eq!(result, xirr_expected_result(input));
+    assert_almost_eq!(result, EXPECTED);
 }
 
 #[rstest]
@@ -79,20 +81,20 @@ fn test_extract_dates_from_strings() {
         let dates_iter =
             py.eval("(x.strftime('%Y-%m-%d') for x in dates)", Some(locals), None).unwrap();
         let result: f64 = pyxirr_call!(py, "xirr", (dates_iter, amounts));
-        assert_almost_eq!(result, xirr_expected_result(INPUT));
+        assert_almost_eq!(result, EXPECTED);
 
         // parse from %m/%d/%Y
         let dates_iter =
             py.eval("(x.strftime('%m/%d/%Y') for x in dates)", Some(locals), None).unwrap();
         let result: f64 = pyxirr_call!(py, "xirr", (dates_iter, amounts));
-        assert_almost_eq!(result, xirr_expected_result(INPUT));
+        assert_almost_eq!(result, EXPECTED);
 
         // parse from datetime to %Y-%m-%d
         let dates_iter = py
             .eval("(x.strftime('%Y-%m-%dT12:30:08.483694') for x in dates)", Some(locals), None)
             .unwrap();
         let result: f64 = pyxirr_call!(py, "xirr", (dates_iter, amounts));
-        assert_almost_eq!(result, xirr_expected_result(INPUT));
+        assert_almost_eq!(result, EXPECTED);
 
         // unknown format
         let dates_iter =
@@ -111,13 +113,12 @@ fn test_extract_from_numpy_object_array() {
         pyxirr_call!(py, "xirr", (data,))
     });
 
-    assert_almost_eq!(result, xirr_expected_result(INPUT));
+    assert_almost_eq!(result, EXPECTED);
 }
 
 #[rstest]
 #[cfg_attr(feature = "nonumpy", ignore)]
 fn test_extract_from_numpy_arrays() {
-    let input = "tests/samples/unordered.csv";
     let result: f64 = Python::with_gil(|py| {
         let locals = get_locals(py, Some(&["numpy"]));
         let dates =
@@ -126,25 +127,23 @@ fn test_extract_from_numpy_arrays() {
         pyxirr_call!(py, "xirr", (dates, amounts))
     });
 
-    assert_almost_eq!(result, xirr_expected_result(input));
+    assert_almost_eq!(result, EXPECTED);
 }
 
 #[rstest]
 #[cfg_attr(feature = "nonumpy", ignore)]
 fn test_extract_from_pandas_dataframe() {
-    let input = "tests/samples/unordered.csv";
     let result: f64 = Python::with_gil(|py| {
-        let data = pd_read_csv(py, input);
+        let data = pd_read_csv(py, INPUT);
         pyxirr_call!(py, "xirr", (data,))
     });
 
-    assert_almost_eq!(result, xirr_expected_result(input));
+    assert_almost_eq!(result, EXPECTED);
 }
 
 #[rstest]
 #[cfg_attr(feature = "nonumpy", ignore)]
 fn test_extract_from_pandas_series() {
-    let input = "tests/samples/unordered.csv";
     let result: f64 = Python::with_gil(|py| {
         let locals = get_locals(py, Some(&["pandas"]));
         let dates = py.eval("pandas.Series(dates)", Some(locals), None).unwrap();
@@ -152,7 +151,7 @@ fn test_extract_from_pandas_series() {
         pyxirr_call!(py, "xirr", (dates, amounts))
     });
 
-    assert_almost_eq!(result, xirr_expected_result(input));
+    assert_almost_eq!(result, EXPECTED);
 }
 
 #[rstest]
@@ -166,7 +165,7 @@ fn test_extract_from_pandas_series_with_datetime_index() {
         pyxirr_call!(py, "xirr", (dates,))
     });
 
-    assert_almost_eq!(result, xirr_expected_result(INPUT));
+    assert_almost_eq!(result, EXPECTED);
 }
 
 #[rstest]
@@ -190,24 +189,22 @@ fn test_extract_from_mixed_iterables() {
         pyxirr_call!(py, "xirr", (dates, amounts))
     });
 
-    assert_almost_eq!(result, xirr_expected_result(INPUT));
+    assert_almost_eq!(result, EXPECTED);
 }
 
 #[rstest]
 fn test_extract_from_non_float() {
     Python::with_gil(|py| {
-        let expected = xirr_expected_result(INPUT);
-
         let locals = get_locals(py, Some(&["decimal"]));
         let dates = locals.get_item("dates").unwrap();
 
         let amounts = py.eval("map(decimal.Decimal, amounts)", Some(locals), None).unwrap();
         let result: f64 = pyxirr_call!(py, "xirr", (dates, amounts));
-        assert_almost_eq!(result, expected);
+        assert_almost_eq!(result, EXPECTED);
 
         let amounts = py.eval("map(int, amounts)", Some(locals), None).unwrap();
         let result: f64 = pyxirr_call!(py, "xirr", (dates, amounts));
-        assert_almost_eq!(result, expected);
+        assert_almost_eq!(result, EXPECTED);
 
         let amounts = py.eval("map(str, amounts)", Some(locals), None).unwrap();
         let err = pyxirr_call_impl!(py, "xirr", (dates, amounts)).unwrap_err();

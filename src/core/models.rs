@@ -64,12 +64,21 @@ impl fmt::Display for InvalidPaymentsError {
 impl Error for InvalidPaymentsError {}
 
 pub fn validate(payments: &[f64], dates: Option<&[DateLike]>) -> Result<(), InvalidPaymentsError> {
-    if dates.is_some() && payments.len() != dates.unwrap_or_default().len() {
-        return Err(InvalidPaymentsError::new(
-            "the amounts and dates arrays are of different lengths",
-        ));
+    if let Some(dates) = dates {
+        validate_length(payments, dates)?;
     }
+    validate_positive_negative(payments)
+}
 
+pub fn validate_length(payments: &[f64], dates: &[DateLike]) -> Result<(), InvalidPaymentsError> {
+    if payments.len() != dates.len() {
+        Err(InvalidPaymentsError::new("the amounts and dates arrays are of different lengths"))
+    } else {
+        Ok(())
+    }
+}
+
+pub fn validate_positive_negative(payments: &[f64]) -> Result<(), InvalidPaymentsError> {
     let positive = payments.iter().any(|&p| p > 0.0);
     let negative = payments.iter().any(|&p| p < 0.0);
 
