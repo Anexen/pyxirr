@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  MATURIN_VERSION: 1.4.0
+  MATURIN_VERSION: 1.7.4
 
 jobs:
   test:
@@ -35,14 +35,7 @@ jobs:
     needs: test
     strategy:
       matrix:
-        python:
-          - version: '3.7'
-          - version: '3.8'
-          - version: '3.9'
-          - version: '3.10'
-          - version: '3.11'
-          - version: '3.12'
-          - version: '3.13'
+        python: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
         platform:
           - os: ubuntu-22.04
           - os: macos-12
@@ -54,15 +47,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python.constraints || matrix.python.version }}
-          # allow-prereleases: ${{ matrix.python.version == "3.13" }}
+          python-version: ${{ matrix.python }}
+          # allow-prereleases: ${{ matrix.python == "3.13" }}
       - name: Build Wheels - Linux
         if: matrix.platform.os == 'ubuntu-22.04'
         uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
           manylinux: auto
-          args: -i python${{ matrix.python.version }} --release --strip --sdist
+          args: -i python${{ matrix.python }} --release --strip --sdist
 
       - name: Check that the source distribution installed correctly
         if: matrix.platform.os == 'ubuntu-22.04'
@@ -92,7 +85,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.platform.os }}-${{ matrix.platform.arch || 'x86_64' }}-${{ matrix.python.version }}
+          name: wheels-${{ matrix.platform.os }}-${{ matrix.platform.arch || 'x86_64' }}-${{ matrix.python }}
           path: target/wheels
 
   linux-cross:
@@ -114,10 +107,10 @@ jobs:
           maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.target }}
           manylinux: auto
-          args: --release --strip -i python${{ matrix.python.version }}
+          args: --release --strip -i python${{ matrix.python }}
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.target }}-${{ matrix.python.version }}
+          name: wheels-${{ matrix.target }}-${{ matrix.python }}
           path: target/wheels
 
   wasm-emscripten:
