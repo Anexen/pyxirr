@@ -1,5 +1,6 @@
 [project]
 name = "pyxirr"
+version = "0.10.6"
 description-content-type = "text/markdown; charset=UTF-8; variant=GFM"
 requires-python = ">=3.7,<3.14"
 classifiers = [
