@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
-    tags: ['v*']
+    tags: ["v*"]
   workflow_dispatch:
 
 env:
@@ -15,10 +15,6 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
       - name: Test no numpy
         run: cargo test --release --features nonumpy
       - name: Install numpy v1
@@ -30,103 +26,50 @@ jobs:
       - name: Test numpy v2
         run: cargo test --release
 
-  build:
+  linux:
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     needs: test
-    strategy:
-      matrix:
-        python: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
-        os: [ubuntu-22.04, macos-13, macos-13-arm64, windows-2022]
-        exclude:
-          - os: macos-13
-            python: '3.7'
-          - os: macos-13-arm64
-            python: '3.7'
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python }}
-          # allow-prereleases: ${{ matrix.python == "3.13" }}
-      - name: Build Wheels - Linux
-        if: matrix.os == 'ubuntu-22.04'
+      # - uses: actions/setup-python@v5
+      #   with:
+      #     python-version: ${{ matrix.python }}
+      #     allow-prereleases: ${{ matrix.python == "3.13" }}
+      - name: Build Wheels
         uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
           manylinux: auto
-          args: -i python${{ matrix.python }} --release --strip --sdist
+          args: --release --strip --sdist --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13
 
       - name: Check that the source distribution installed correctly
-        if: matrix.os == 'ubuntu-22.04'
         run: pip install target/wheels/pyxirr-*.tar.gz
-
-      - name: Build Wheels - Other
-        if: matrix.os != 'ubuntu-22.04'
-        uses: PyO3/maturin-action@v1
-        with:
-          maturin-version: ${{ env.MATURIN_VERSION }}
-          args: -i python --release --strip
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.os }}-${{ matrix.python }}
+          name: wheels-linux
           path: target/wheels
 
   linux-cross:
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     needs: test
     strategy:
-      fail-fast: false
       matrix:
-        python: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
         target: [aarch64, armv7, s390x, ppc64le, ppc64]
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python }}
       - uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.target }}
           manylinux: auto
-          args: --release --strip -i python${{ matrix.python }}
+          args: --release --strip --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13
       - uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.target }}-${{ matrix.python }}
-          path: target/wheels
-
-  wasm-emscripten:
-    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
-    needs: test
-    strategy:
-      matrix:
-        # https://pyodide.org/en/stable/project/changelog.html
-        version:
-          - python: '3.12'
-            emscripten: 3.1.58  # pyodide 0.26.*
-          - python: '3.13'
-            emscripten: 4.0.9  # pyodide 0.28.*
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-      - uses: mymindstorm/setup-emsdk@v14
-        with:
-          version: ${{ matrix.version.emscripten }}
-      - uses: PyO3/maturin-action@v1
-        with:
-          maturin-version: ${{ env.MATURIN_VERSION }}
-          target: wasm32-unknown-emscripten
-          # there is an incompatibility between rust >= 1.87-nightly and emscripten < 3.1.74
-          rust-toolchain: 1.85.0-nightly
-          args: --release --strip -i python${{ matrix.version.python }}
-      - name: Upload wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-wasm-emscripten-${{ matrix.version.emscripten }}
+          name: wheels-linux-cross-${{ matrix.target }}
           path: target/wheels
 
   linux-musl:
@@ -142,25 +85,103 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - name: Build Wheels - musl
-        uses: PyO3/maturin-action@v1
+      - uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.target }}
           manylinux: musllinux_1_2
           args: --release --strip -i 3.7 3.8 3.9 3.10 3.11 3.12 3.13
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-linux-musl-${{ matrix.target }}
+          path: target/wheels
+
+  windows-2022:
+    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
+    needs: test
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
+          args: --release --strip --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows
+          path: target/wheels
+
+  macos-x86:
+    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
+    needs: test
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+      - uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
+          target: x86_64
+          args: --release --strip --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-macos-x86
+          path: target/wheels
+
+  macos-arm64:
+    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
+    needs: test
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
+          target: aarch64
+          args: --release --strip --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-macos-arm64
+          path: target/wheels
+
+  wasm-emscripten:
+    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
+    needs: test
+    strategy:
+      matrix:
+        # https://pyodide.org/en/stable/project/changelog.html
+        version:
+          - python: "3.12"
+            emscripten: 3.1.58 # pyodide 0.26.*
+          - python: "3.13"
+            emscripten: 4.0.9 # pyodide 0.28.*
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: ${{ matrix.version.emscripten }}
+      - uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
+          target: wasm32-unknown-emscripten
+          # there is an incompatibility between rust >= 1.87-nightly and emscripten < 3.1.74
+          rust-toolchain: nightly-2025-02-17
+          args: --release --strip -interpreter python${{ matrix.version.python }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-musl-${{ matrix.target }}
+          name: wheels-wasm-emscripten-${{ matrix.version.emscripten }}
           path: target/wheels
 
   publish:
     if: startsWith(github.ref, 'refs/tags/')
     needs:
-      - build
+      - linux
       - linux-cross
       - linux-musl
+      - windows
+      - macos-x86
+      - macos-arm64
       - wasm-emscripten
     runs-on: ubuntu-22.04
     steps:
