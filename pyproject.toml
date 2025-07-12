@@ -2,6 +2,7 @@
 name = "pyxirr"
 description-content-type = "text/markdown; charset=UTF-8; variant=GFM"
 requires-python = ">=3.7,<3.14"
+dynamic = ["version"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Topic :: Office/Business :: Financial",
