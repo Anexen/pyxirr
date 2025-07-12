@@ -132,7 +132,7 @@ jobs:
       - uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
-          target: ${{ matrix.platform.target }]
+          target: ${{ matrix.platform.target }}
           args: --release --strip --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13
       - uses: actions/upload-artifact@v4
         with:
