@@ -96,7 +96,7 @@ jobs:
           name: wheels-linux-musl-${{ matrix.target }}
           path: target/wheels
 
-  windows-2022:
+  windows:
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     needs: test
     runs-on: windows-2022
