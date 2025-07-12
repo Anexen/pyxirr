@@ -3,7 +3,7 @@ use std::ops::Range;
 pub(crate) fn non_zero_range(p: &[f64]) -> Range<usize> {
     let n = p.len();
     let first_non_zero_index = p.iter().position(|&x| x != 0.0).unwrap_or(n);
-    let last_non_zero_index = n - p.iter().rev().position(|&x| x != 0.0).unwrap_or(n);
+    let last_non_zero_index = n - p.iter().rev().position(|&x| x != 0.0).unwrap_or(0);
     first_non_zero_index..last_non_zero_index
 }
 

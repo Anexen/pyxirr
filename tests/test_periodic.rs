@@ -616,6 +616,21 @@ fn test_irr_works(#[case] input: &[f64], #[case] expected: f64) {
 }
 
 #[rstest]
+fn test_irr_zeros() {
+    // https://github.com/Anexen/pyxirr/issues/69
+    Python::with_gil(|py| {
+        let values = PyList::new(py, [-0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
+        let err = pyxirr_call_impl!(py, "irr", (values,)).unwrap_err();
+        assert!(err.is_instance(py, py.get_type::<pyxirr::InvalidPaymentsError>()));
+
+        // use silent=True parameter
+        let kwargs = py_dict!(py, "silent" => true);
+        let result: Option<f64> = pyxirr_call!(py, "irr", (values,), kwargs);
+        assert!(result.is_none());
+    })
+}
+
+#[rstest]
 #[case(&[87.17; 5], &[-86.43], -0.49367042606)]
 #[case(&[-87.17; 180], &[5809.3], -0.01352676905)]
 #[case(&[-172545.848122807], &[787.735232517999; 480], 0.0038401048)]
