@@ -120,7 +120,8 @@ jobs:
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
           target: wasm32-unknown-emscripten
-          rust-toolchain: nightly
+          # there is an incompatibility between rust >= 1.87-nightly and emscripten < 3.1.74
+          rust-toolchain: 1.85.0-nightly
           args: --release --strip -i python${{ matrix.version.python }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
