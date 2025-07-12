@@ -36,13 +36,13 @@ jobs:
     strategy:
       matrix:
         python: ['3.7', '3.8', '3.9', '3.10', '3.11', '3.12', '3.13']
-        platform:
-          - os: ubuntu-22.04
-          - os: macos-12
-          - os: macos-12
-            arch: aarch64
-          - os: windows-2022
-    runs-on: ${{ matrix.platform.os }}
+        os: [ubuntu-22.04, macos-13, macos-13-arm64, windows-2022]
+        exclude:
+          - os: macos-13
+            python: '3.7'
+          - os: macos-13-arm64
+            python: '3.7'
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -50,7 +50,7 @@ jobs:
           python-version: ${{ matrix.python }}
           # allow-prereleases: ${{ matrix.python == "3.13" }}
       - name: Build Wheels - Linux
-        if: matrix.platform.os == 'ubuntu-22.04'
+        if: matrix.os == 'ubuntu-22.04'
         uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
@@ -58,25 +58,11 @@ jobs:
           args: -i python${{ matrix.python }} --release --strip --sdist
 
       - name: Check that the source distribution installed correctly
-        if: matrix.platform.os == 'ubuntu-22.04'
+        if: matrix.os == 'ubuntu-22.04'
         run: pip install target/wheels/pyxirr-*.tar.gz
 
-      - name: Build Wheels - MacOS [aarch64]
-        if: ${{ matrix.platform.os == 'macos-12' && matrix.platform.arch == 'aarch64' }}
-        uses: PyO3/maturin-action@v1
-        with:
-          maturin-version: ${{ env.MATURIN_VERSION }}
-          args: -i python --release --target aarch64-apple-darwin --strip
-
-      - name: Build Wheels - MacOS [x86_64]
-        if: ${{ matrix.platform.os == 'macos-12' && matrix.platform.arch != 'aarch64' }}
-        uses: PyO3/maturin-action@v1
-        with:
-          maturin-version: ${{ env.MATURIN_VERSION }}
-          args: -i python --release --target universal2-apple-darwin --strip
-
-      - name: Build Wheels - Windows
-        if: matrix.platform.os == 'windows-2022'
+      - name: Build Wheels - Other
+        if: matrix.os != 'ubuntu-22.04'
         uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
@@ -85,7 +71,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.platform.os }}-${{ matrix.platform.arch || 'x86_64' }}-${{ matrix.python }}
+          name: wheels-${{ matrix.os }}-${{ matrix.python }}
           path: target/wheels
 
   linux-cross:
@@ -122,10 +108,8 @@ jobs:
         version:
           - python: '3.12'
             emscripten: 3.1.58  # pyodide 0.26.*
-          - python: '3.11'
-            emscripten: 3.1.46  # pyodide 0.25.*
-          - python: '3.11'
-            emscripten: 3.1.45  # pyodide 0.24.*
+          - python: '3.13'
+            emscripten: 4.0.9  # pyodide 0.28.*
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
