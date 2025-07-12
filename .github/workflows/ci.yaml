@@ -40,7 +40,7 @@ jobs:
           args: --release --strip --sdist --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13
 
       - name: Check that the source distribution installed correctly
-        run: pip install target/wheels/pyxirr-*.tar.gz
+        run: python3 -m pip install --user target/wheels/pyxirr-*.tar.gz
 
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -186,7 +186,7 @@ jobs:
           pattern: wheels-*
           merge-multiple: true
 
-      - run: pip install maturin
+      - run: pip install maturin==${{ env.MATURIN_VERSION }}
 
       - name: Release
         uses: softprops/action-gh-release@v1
