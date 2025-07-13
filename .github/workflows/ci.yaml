@@ -96,7 +96,7 @@ jobs:
   windows:
     if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
     needs: test
-    runs-on: windows-2024
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
