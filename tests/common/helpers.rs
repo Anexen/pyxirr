@@ -96,7 +96,7 @@ macro_rules! assert_future_value {
 
 static PYXIRR: GILOnceCell<Py<PyModule>> = GILOnceCell::new();
 
-pub fn get_pyxirr_module(py: Python) -> &PyModule {
+pub fn get_pyxirr_module(py: Python<'_>) -> &PyModule {
     PYXIRR
         .get_or_init(py, || {
             let module = PyModule::new(py, "pyxirr").unwrap();
