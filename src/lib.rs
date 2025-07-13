@@ -1,6 +1,6 @@
 use broadcasting::Arg;
 use conversions::{fallible_float_or_none, float_or_none, AmountArray, PyDayCount};
-use numpy::PyArrayMethods;
+use numpy::{PyArray, PyArrayMethods};
 use pyo3::{create_exception, exceptions, prelude::*, wrap_pyfunction};
 
 mod broadcasting;
@@ -36,7 +36,7 @@ macro_rules! dispatch_vectorized {
                     let ($($vars,)*) = ($($vars.view(),)*);
                     let result = $py.allow_threads(move || $vec);
                     if has_numpy_array {
-                        Arg::from(numpy::ToPyArray::to_pyarray_bound(&result, $py))
+                        Arg::from(numpy::PyArray::from_owned_array($py, result))
                     } else {
                         Arg::from(result)
                     }
@@ -57,7 +57,7 @@ macro_rules! dispatch_vectorized {
                     let ($($vars,)*) = ($($vars.view(),)*);
                     let result = $py.allow_threads(move || $vec);
                     let result = if has_numpy_array {
-                        result.map(|r| Arg::from(numpy::ToPyArray::to_pyarray_bound(&r, $py)))
+                        result.map(|r| Arg::from(numpy::PyArray::from_owned_array($py, r)))
                     } else {
                         result.map(Arg::from)
                     };
@@ -139,7 +139,7 @@ fn xnpv<'a>(
             });
 
             let result = if has_numpy_array {
-                result.map(|r| Arg::from(numpy::ToPyArray::to_pyarray_bound(&r, py)))
+                result.map(|r| Arg::from(PyArray::from_owned_array(py, r)))
             } else {
                 result.map(Arg::from)
             };
@@ -194,7 +194,7 @@ fn npv<'a>(
             let rates = view.as_array();
             let result =
                 py.allow_threads(move || rates.mapv(|r| core::npv(r, &amounts, start_from_zero)));
-            Arg::from(numpy::ToPyArray::to_pyarray_bound(&result, py))
+            Arg::from(numpy::ToPyArray::to_pyarray(&result, py))
         }
     }
 }
@@ -843,10 +843,10 @@ fn add_submodule<F>(py: Python, parent: &Bound<PyModule>, name: &str, mod_init: 
 where
     F: Fn(Python, &Bound<PyModule>) -> PyResult<()>,
 {
-    let ref child_module = PyModule::new_bound(py, name)?;
+    let ref child_module = PyModule::new(py, name)?;
     mod_init(py, child_module)?;
     parent.add(name.split('.').last().unwrap(), child_module)?;
-    py.import_bound("sys")?.getattr("modules")?.set_item(name, child_module)?;
+    py.import("sys")?.getattr("modules")?.set_item(name, child_module)?;
     Ok(())
 }
 
@@ -881,8 +881,8 @@ pub fn pyxirr(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(is_conventional_cash_flow, m)?)?;
     m.add_function(wrap_pyfunction!(zero_crossing_points, m)?)?;
 
-    m.add("InvalidPaymentsError", py.get_type_bound::<InvalidPaymentsError>())?;
-    m.add("BroadcastingError", py.get_type_bound::<BroadcastingError>())?;
+    m.add("InvalidPaymentsError", py.get_type::<InvalidPaymentsError>())?;
+    m.add("BroadcastingError", py.get_type::<BroadcastingError>())?;
 
     Ok(())
 }

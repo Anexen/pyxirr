@@ -1,4 +1,4 @@
-use std::{iter::successors, mem::MaybeUninit};
+use std::{cmp::Ordering, iter::successors, mem::MaybeUninit};
 
 use ndarray::{ArrayD, ArrayViewD};
 
@@ -435,6 +435,9 @@ fn npv_deriv(rate: f64, values: &[f64]) -> f64 {
 }
 
 pub fn irr(values: &[f64], guess: Option<f64>) -> Result<f64, InvalidPaymentsError> {
+    let values = utils::trim_zeros(values);
+    let guess = guess.unwrap_or(0.1);
+
     // must contain at least one positive and one negative value
     validate(values, None)?;
 
@@ -454,14 +457,6 @@ pub fn irr(values: &[f64], guess: Option<f64>) -> Result<f64, InvalidPaymentsErr
         self::npv(rate, values, Some(true))
     };
     let df = |rate| self::npv_deriv(rate, values);
-
-    let guess = match guess {
-        Some(g) => g,
-        None => {
-            let (outflows, inflows) = utils::sum_negatives_positives(values);
-            inflows / -outflows - 1.0
-        }
-    };
 
     let rate = newton_raphson(guess, &f, &df);
 
@@ -498,45 +493,57 @@ fn irr_analytical_3(values: &[f64]) -> f64 {
     // cf[0]*(1+r)^2 + cf[1]*(1+r) + cf[2] = 0  => quadratic equation
     // lets x = 1+r, a = cf[0], b = cf[1], c = cf[2]
     // solve a*x^2 + b*x + c = 0
-    // x = (-b ± sqrt(b^2-4ac))/2a, a != 0
-
+    // x = 1 + r => r = x - 1
     let (a, b, c) = (values[0], values[1], values[2]);
 
-    let x = if a == 0. {
+    if a == 0.0 {
         // 0*x^2 + bx + c = 0 =>
         // x = -c/b
-        -c / b
-    } else {
-        let d = b.powf(2.) - 4. * a * c; // discriminant
-        if d < 0.0 {
-            // no real solutions
+        let x = -c / b;
+        return x - 1.0;
+    };
+
+    // x = (-b ± sqrt(b^2-4ac))/2a, a != 0
+    let d = b.powf(2.) - 4. * a * c; // discriminant
+
+    match d.total_cmp(&0.0) {
+        Ordering::Less => {
+            // no solutions
             f64::NAN
-        } else if d == 0.0 {
+        }
+        Ordering::Equal => {
             // exactly one solution
-            -b / (2. * a)
-        } else {
-            let mut x1 = (-b + d.sqrt()) / (2. * a);
-            let mut x2 = (-b - d.sqrt()) / (2. * a);
-            // since x = 1 + r => r = x - 1,
-            // negative x doesn't make sense (rate will be < -1)
-            // use the first non negative value to be conservative
-            if x1 > x2 {
-                // make x2 always > x1
-                std::mem::swap(&mut x1, &mut x2);
-            }
-            if x1 > 0.0 {
-                x1
-            } else if x2 > 0.0 {
-                x2
-            } else if x1 == 0.0 || x2 == 0.0 {
-                0.0
-            } else {
-                f64::NAN
+            let x = -b / (2. * a);
+            x - 1.0
+        }
+        Ordering::Greater => {
+            // two solutions
+            let x1 = (-b + d.sqrt()) / (2. * a);
+            let x2 = (-b - d.sqrt()) / (2. * a);
+            // x = 1 + r => r = x - 1
+            let (r1, r2) = (x1 - 1.0, x2 - 1.0);
+
+            // rate < -1 doesn't make sense
+            match (r1.total_cmp(&-1.), r2.total_cmp(&-1.)) {
+                (Ordering::Less, Ordering::Less) => f64::NAN,
+                (Ordering::Equal | Ordering::Less, Ordering::Equal | Ordering::Less) => -1.0,
+                (Ordering::Greater, Ordering::Less | Ordering::Equal) => r1,
+                (Ordering::Less | Ordering::Equal, Ordering::Greater) => r2,
+                (Ordering::Greater, Ordering::Greater) => {
+                    // if both roots are non-negative,
+                    // choose the one that best approximates npv to zero
+                    let p1 = super::npv(r1, values, Some(true));
+                    let p2 = super::npv(r2, values, Some(true));
+
+                    if p1.abs() < p2.abs() {
+                        r1
+                    } else {
+                        r2
+                    }
+                }
             }
         }
-    };
-    // x = 1 + r => r = x - 1
-    x - 1.
+    }
 }
 
 pub fn mirr(

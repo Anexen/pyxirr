@@ -1,15 +1,15 @@
 #![allow(dead_code)]
-use pyo3::{prelude::*, sync::GILOnceCell, types::*};
+use pyo3::{ffi::c_str, prelude::*, sync::GILOnceCell, types::*};
 
 #[macro_export]
 macro_rules! py_dict {
     ($py:expr) => {
-        ::pyo3::types::PyDict::new_bound($py)
+        ::pyo3::types::PyDict::new($py)
     };
     ($py:expr, $($key:expr => $value:expr), *) => {
         {
             use pyo3::prelude::PyDictMethods;
-            let _dict = ::pyo3::types::PyDict::new_bound($py);
+            let _dict = ::pyo3::types::PyDict::new($py);
             $(
                 _dict.set_item($key, $value).unwrap();
             )*
@@ -22,7 +22,7 @@ macro_rules! py_dict {
 macro_rules! py_dict_merge {
     ($py:expr, $($dict:expr), *) => {
         {
-            let _dict = ::pyo3::types::PyDict::new_bound($py);
+            let _dict = ::pyo3::types::PyDict::new($py);
             $(
                 _dict.getattr("update").unwrap().call1(($dict,)).unwrap();
             )*
@@ -35,7 +35,7 @@ macro_rules! py_dict_merge {
 #[macro_export]
 macro_rules! pyxirr_call {
     ($py:expr, $name:expr, $args:expr) => {{
-        let kwargs = ::pyo3::types::PyDict::new_bound($py);
+        let kwargs = ::pyo3::types::PyDict::new($py);
         pyxirr_call!($py, $name, $args, kwargs)
     }};
     ($py:expr, $name:expr, $args:expr, $kwargs:expr) => {{
@@ -47,7 +47,7 @@ macro_rules! pyxirr_call {
 #[macro_export]
 macro_rules! pyxirr_call_impl {
     ($py:expr, $name:expr, $args:expr) => {{
-        let kwargs = ::pyo3::types::PyDict::new_bound($py);
+        let kwargs = ::pyo3::types::PyDict::new($py);
         pyxirr_call_impl!($py, $name, $args, kwargs)
     }};
     ($py:expr, $name:expr, $args:expr, $kwargs:expr) => {{
@@ -99,10 +99,10 @@ macro_rules! assert_future_value {
 
 static PYXIRR: GILOnceCell<Py<PyModule>> = GILOnceCell::new();
 
-pub fn get_pyxirr_module(py: Python) -> &Bound<PyModule> {
+pub fn get_pyxirr_module(py: Python<'_>) -> &Bound<PyModule> {
     PYXIRR
         .get_or_init(py, || {
-            let module = PyModule::new_bound(py, "pyxirr").unwrap();
+            let module = PyModule::new(py, "pyxirr").unwrap();
             pyxirr::pyxirr(py, &module).unwrap();
             module.into()
         })
@@ -115,11 +115,12 @@ pub fn get_pyxirr_func<'p>(py: Python<'p>, name: &str) -> Bound<'p, PyCFunction>
 
 pub fn pd_read_csv<'p>(py: Python<'p>, input_file: &str) -> Bound<'p, PyAny> {
     let locals = py_dict!(py,
-        "sample" => PyString::new_bound(py, input_file),
-        "pd" => PyModule::import_bound(py, "pandas").unwrap()
+        "sample" => PyString::new(py, input_file),
+        "pd" => PyModule::import(py, "pandas").unwrap()
     );
 
-    py.eval_bound("pd.read_csv(sample, header=None, parse_dates=[0])", Some(&locals), None).unwrap()
+    py.eval(c_str!("pd.read_csv(sample, header=None, parse_dates=[0])"), Some(&locals), None)
+        .unwrap()
 }
 
 pub struct PaymentsLoader<'p> {
@@ -137,19 +138,19 @@ impl<'p> PaymentsLoader<'p> {
     }
 
     fn from_py_csv(py: Python<'p>, input_file: &str) -> PyResult<Vec<Bound<'p, PyTuple>>> {
-        let strptime = py.import_bound("datetime")?.getattr("datetime")?.getattr("strptime")?;
-        let reader = py.import_bound("csv")?.getattr("reader")?;
-        let builtins = py.import_bound("builtins")?;
+        let strptime = py.import("datetime")?.getattr("datetime")?.getattr("strptime")?;
+        let reader = py.import("csv")?.getattr("reader")?;
+        let builtins = py.import("builtins")?;
         let file_obj = builtins.getattr("open")?.call1((input_file,))?;
 
         let data = reader
             .call1((file_obj.clone(),))?
-            .iter()?
+            .try_iter()?
             .map(|r| {
                 let r = r.unwrap();
                 let date = strptime.call1((r.get_item(0)?, "%Y-%m-%d"))?;
                 let amount = builtins.getattr("float")?.call1((r.get_item(1)?,))?;
-                Ok(PyTuple::new_bound(py, vec![date, amount]))
+                Ok(PyTuple::new(py, vec![date, amount]).unwrap())
             })
             .collect();
 
@@ -159,17 +160,21 @@ impl<'p> PaymentsLoader<'p> {
     }
 
     pub fn to_records(&self) -> Bound<'p, PyAny> {
-        PyList::new_bound(self.py, &self.data).into_any()
+        PyList::new(self.py, &self.data).unwrap().into_any()
     }
 
     pub fn to_dict(&self) -> Bound<'p, PyAny> {
-        PyDict::from_sequence_bound(&self.to_records()).unwrap().into_any()
+        PyDict::from_sequence(&self.to_records()).unwrap().into_any()
     }
 
     pub fn to_columns(&self) -> (Bound<'p, PyAny>, Bound<'p, PyAny>) {
         (
-            PyList::new_bound(self.py, self.data.iter().map(|x| x.get_item(0).unwrap())).into_any(),
-            PyList::new_bound(self.py, self.data.iter().map(|x| x.get_item(1).unwrap())).into_any(),
+            PyList::new(self.py, self.data.iter().map(|x| x.get_item(0).unwrap()))
+                .unwrap()
+                .into_any(),
+            PyList::new(self.py, self.data.iter().map(|x| x.get_item(1).unwrap()))
+                .unwrap()
+                .into_any(),
         )
     }
 }

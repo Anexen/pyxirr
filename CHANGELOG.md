@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.10.7] - 2025-07-13
+
+- Fixed a bug in IRR that caused a panic when all cash flows were zero ([#69](https://github.com/Anexen/pyxirr/issues/69))
+
+## [0.10.6] - 2024-10-13
+
+- IRR initial guess improvements
+- Remove "both negative and positive value" requirement for XNPV
+- Python 3.13 support
+
 ## [0.10.5] - 2024-07-25
 
 - Fixed segfault during conversion of datetime64 array in numpy v2

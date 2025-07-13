@@ -6,6 +6,7 @@ use pyo3::{
     exceptions::{PyTypeError, PyValueError},
     prelude::*,
     types::{PyIterator, PyList, PySequence, PyTuple},
+    IntoPyObjectExt,
 };
 
 use crate::conversions::float_or_none;
@@ -70,9 +71,9 @@ macro_rules! broadcast_together {
     };
 }
 
-pub fn pyiter_to_arrayd<'p, T>(pyiter: Bound<'p, PyIterator>) -> PyResult<ArrayD<T>>
+pub fn pyiter_to_arrayd<'py, T>(pyiter: Bound<'py, PyIterator>) -> PyResult<ArrayD<T>>
 where
-    T: FromPyObject<'p>,
+    T: FromPyObject<'py>,
 {
     let mut dims = Vec::new();
     let mut flat_list = Vec::new();
@@ -81,14 +82,14 @@ where
     arr.map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
-pub fn arrayd_to_pylist<'a>(
-    py: Python<'a>,
+pub fn arrayd_to_pylist<'py>(
+    py: Python<'py>,
     array: ArrayViewD<'_, f64>,
-) -> PyResult<Bound<'a, PyList>> {
-    let list = PyList::empty_bound(py);
+) -> PyResult<Bound<'py, PyList>> {
+    let list = PyList::empty(py);
     if array.ndim() == 1 {
         for &x in array {
-            list.append(float_or_none(x).to_object(py))?;
+            list.append(float_or_none(x).into_py_any(py)?)?;
         }
     } else {
         for subarray in array.axis_iter(Axis(0)) {
@@ -115,7 +116,7 @@ where
         match item.extract::<T>() {
             Ok(val) => flat_list.push(val),
             Err(_) => {
-                let sublist = item.iter()?;
+                let sublist = item.try_iter()?;
                 flatten_pyiter(sublist, shape, flat_list, depth + 1)?;
             }
         }
@@ -147,7 +148,7 @@ where
 }
 
 fn is_numpy_available() -> bool {
-    Python::with_gil(|py| py.import_bound("numpy").is_ok())
+    Python::with_gil(|py| py.import("numpy").is_ok())
 }
 
 fn pyarray_cast<'p, U: Element>(ob: &Bound<'p, PyAny>) -> PyResult<Bound<'p, PyArrayDyn<U>>> {
@@ -155,7 +156,7 @@ fn pyarray_cast<'p, U: Element>(ob: &Bound<'p, PyAny>) -> PyResult<Bound<'p, PyA
         PY_ARRAY_API.PyArray_CastToType(
             ob.py(),
             ob.as_ptr() as _,
-            U::get_dtype_bound(ob.py()).into_dtype_ptr(),
+            U::get_dtype(ob.py()).into_dtype_ptr(),
             0,
         )
     };
@@ -177,7 +178,7 @@ impl<'p> FromPyObject<'p> for Arg<'p, f64> {
             || ob.downcast::<PyIterator>().is_ok()
             || ob.downcast::<PySequence>().is_ok()
         {
-            let arr = pyiter_to_arrayd(ob.iter()?)?;
+            let arr = pyiter_to_arrayd(ob.try_iter()?)?;
             return Ok(Arg::Array(CowArray::from(arr)));
         }
 
@@ -207,7 +208,7 @@ impl<'p> FromPyObject<'p> for Arg<'p, bool> {
             || ob.downcast::<PyIterator>().is_ok()
             || ob.downcast::<PySequence>().is_ok()
         {
-            let arr = pyiter_to_arrayd(ob.iter()?)?;
+            let arr = pyiter_to_arrayd(ob.try_iter()?)?;
             return Ok(Arg::Array(CowArray::from(arr)));
         }
 
@@ -221,21 +222,19 @@ impl<'p> FromPyObject<'p> for Arg<'p, bool> {
     }
 }
 
-impl IntoPy<PyObject> for Arg<'_, f64> {
-    fn into_py(self, py: Python<'_>) -> PyObject {
-        self.to_object(py)
-    }
-}
+impl<'py> IntoPyObject<'py> for Arg<'py, f64> {
+    type Target = PyAny;
+    type Output = Bound<'py, Self::Target>;
+    type Error = PyErr;
 
-impl ToPyObject for Arg<'_, f64> {
-    fn to_object(&self, py: Python<'_>) -> PyObject {
+    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
         match self {
-            Arg::Scalar(s) => float_or_none(*s).into_py(py),
+            Arg::Scalar(s) => Ok(float_or_none(s).into_pyobject(py)?),
             Arg::Array(a) => match arrayd_to_pylist(py, a.view()) {
-                Ok(py_list) => py_list.into_py(py),
-                Err(err) => err.into_py(py),
+                Ok(py_list) => Ok(py_list.into_any()),
+                Err(err) => Err(err),
             },
-            Arg::NumpyArray(a) => a.into_py(py),
+            Arg::NumpyArray(a) => Ok(a.into_any().into_pyobject(py)?),
         }
     }
 }
@@ -271,6 +270,7 @@ impl<'p, T> From<Bound<'p, PyArrayDyn<T>>> for Arg<'p, T> {
 
 #[cfg(test)]
 mod tests {
+    use pyo3::ffi::c_str;
     use rstest::rstest;
 
     use super::*;
@@ -288,8 +288,8 @@ mod tests {
     #[rstest]
     fn test_flatten_pyiter() {
         Python::with_gil(|py| {
-            let ob = py.eval_bound("(range(i, i + 3) for i in range(3))", None, None).unwrap();
-            let array = pyiter_to_arrayd::<i64>(ob.iter().unwrap()).unwrap();
+            let ob = py.eval(c_str!("(range(i, i + 3) for i in range(3))"), None, None).unwrap();
+            let array = pyiter_to_arrayd::<i64>(ob.try_iter().unwrap()).unwrap();
             let expected = ndarray::array![[0, 1, 2], [1, 2, 3], [2, 3, 4]].into_dyn();
             assert!(array == expected)
         });
