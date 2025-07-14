@@ -13,8 +13,8 @@ static B_1: &[i32] = &[-100, 39, 59, 55, 20];
 #[bench]
 fn bench_1_irr(b: &mut Bencher) {
     Python::with_gil(|py| {
-        let payments = PyList::new(py, B_1);
-        b.iter(|| black_box(pyxirr_call_impl!(py, "irr", (payments,)).unwrap()));
+        let payments = PyList::new(py, B_1).unwrap();
+        b.iter(|| black_box(pyxirr_call_impl!(py, "irr", (&payments,)).unwrap()));
     });
 }
 
@@ -22,8 +22,8 @@ fn bench_1_irr(b: &mut Bencher) {
 fn bench_1_irr_npf(b: &mut Bencher) {
     Python::with_gil(|py| {
         let irr = py.import("numpy_financial").unwrap().getattr("irr").unwrap();
-        let payments = PyList::new(py, B_1);
-        b.iter(|| black_box(irr.call1((payments,)).unwrap()))
+        let payments = PyList::new(py, B_1).unwrap();
+        b.iter(|| black_box(irr.call1((&payments,)).unwrap()))
     });
 }
 
@@ -60,8 +60,8 @@ static B_2: &[f64] = &[
 #[bench]
 fn bench_2_irr(b: &mut Bencher) {
     Python::with_gil(|py| {
-        let payments = PyList::new(py, B_2);
-        b.iter(|| black_box(pyxirr_call_impl!(py, "irr", (payments,)).unwrap()));
+        let payments = PyList::new(py, B_2).unwrap();
+        b.iter(|| black_box(pyxirr_call_impl!(py, "irr", (&payments,)).unwrap()));
     });
 }
 
@@ -69,8 +69,8 @@ fn bench_2_irr(b: &mut Bencher) {
 fn bench_2_irr_npf(b: &mut Bencher) {
     Python::with_gil(|py| {
         let irr = py.import("numpy_financial").unwrap().getattr("irr").unwrap();
-        let payments = PyList::new(py, B_2);
-        b.iter(|| black_box(irr.call1((payments,)).unwrap()))
+        let payments = PyList::new(py, B_2).unwrap();
+        b.iter(|| black_box(irr.call1((&payments,)).unwrap()))
     });
 }
 
@@ -79,8 +79,8 @@ static B_3: &[f64] = &[10.0, 1.0, 2.0, -3.0, 4.0];
 #[bench]
 fn bench_3_irr_none(b: &mut Bencher) {
     Python::with_gil(|py| {
-        let payments = PyList::new(py, B_3);
-        b.iter(|| black_box(pyxirr_call_impl!(py, "irr", (payments,)).unwrap()));
+        let payments = PyList::new(py, B_3).unwrap();
+        b.iter(|| black_box(pyxirr_call_impl!(py, "irr", (&payments,)).unwrap()));
     });
 }
 
@@ -88,8 +88,8 @@ fn bench_3_irr_none(b: &mut Bencher) {
 fn bench_3_irr_none_npf(b: &mut Bencher) {
     Python::with_gil(|py| {
         let irr = py.import("numpy_financial").unwrap().getattr("irr").unwrap();
-        let payments = PyList::new(py, B_3);
-        b.iter(|| black_box(irr.call1((payments,)).unwrap()))
+        let payments = PyList::new(py, B_3).unwrap();
+        b.iter(|| black_box(irr.call1((&payments,)).unwrap()))
     });
 }
 
@@ -98,8 +98,8 @@ static B_4: &[i32] = &[-1000, 100, 250, 500, 500];
 #[bench]
 fn bench_4_mirr(b: &mut Bencher) {
     Python::with_gil(|py| {
-        let values = PyList::new(py, B_4);
-        b.iter(|| black_box(pyxirr_call_impl!(py, "mirr", (values, 0.1, 0.1)).unwrap()))
+        let values = PyList::new(py, B_4).unwrap();
+        b.iter(|| black_box(pyxirr_call_impl!(py, "mirr", (&values, 0.1, 0.1)).unwrap()))
     });
 }
 
@@ -107,7 +107,7 @@ fn bench_4_mirr(b: &mut Bencher) {
 fn bench_4_mirr_npf(b: &mut Bencher) {
     Python::with_gil(|py| {
         let mirr = py.import("numpy_financial").unwrap().getattr("mirr").unwrap();
-        let values = PyList::new(py, B_4);
-        b.iter(|| black_box(mirr.call1((values, 0.1, 0.1)).unwrap()))
+        let values = PyList::new(py, B_4).unwrap();
+        b.iter(|| black_box(mirr.call1((&values, 0.1, 0.1)).unwrap()))
     });
 }
