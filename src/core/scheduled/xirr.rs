@@ -141,11 +141,11 @@ mod tests {
 
     #[rstest]
     fn test_zero_crossing_points() {
-        assert_eq!(zero_crossing_points(&[1., 2., 3.]), vec![]);
+        assert_eq!(zero_crossing_points(&[1., 2., 3.]), Vec::<usize>::new());
         assert_eq!(zero_crossing_points(&[1., -2., -3.]), vec![0]);
         assert_eq!(zero_crossing_points(&[1., -2., 3.]), vec![0, 1]);
         assert_eq!(zero_crossing_points(&[-1., -2., 3.]), vec![1]);
-        assert_eq!(zero_crossing_points(&[1., f64::NAN, 3.]), vec![]);
+        assert_eq!(zero_crossing_points(&[1., f64::NAN, 3.]), Vec::<usize>::new());
 
         assert_eq!(
             zero_crossing_points(&[7., 6., -3., -4., -7., 8., 3., -6., 7., 8.]),

@@ -1,6 +1,7 @@
 use pyo3::{
+    ffi::c_str,
+    prelude::*,
     types::{PyDate, PyList},
-    IntoPy, PyResult, Python,
 };
 use rstest::rstest;
 
@@ -39,7 +40,7 @@ fn test_xnpv_samples(#[case] input: &str, #[case] expected: f64) {
 #[case::case_30_10("tests/samples/30-10.csv", 0.11143674454788119)]
 #[case::case_30_11("tests/samples/30-11.csv", -0.12606921657689435)]
 #[case::case_30_12("tests/samples/30-12.csv", -0.02578630164755525)]
-#[case::case_30_13("tests/samples/30-13.csv", -0.6590570693637554)]  // -0.02910731236366771
+#[case::case_30_13("tests/samples/30-13.csv", -0.6590570693637554)] // -0.02910731236366771
 #[case::case_30_14("tests/samples/30-14.csv", 0.6996860198137344)]
 #[case::case_30_15("tests/samples/30-15.csv", 0.02976853488940409)]
 #[case::case_30_16("tests/samples/30-16.csv", 0.44203743561153225)]
@@ -84,7 +85,7 @@ fn test_xnpv_samples(#[case] input: &str, #[case] expected: f64) {
 fn test_xirr_samples(#[case] input: &str, #[case] expected: f64) {
     let result = Python::with_gil(|py| {
         let payments = PaymentsLoader::from_csv(py, input).to_records();
-        let rate: Option<f64> = pyxirr_call!(py, "xirr", (payments,));
+        let rate: Option<f64> = pyxirr_call!(py, "xirr", (payments.clone(),));
 
         if let Some(rate) = rate {
             let xnpv: f64 = pyxirr_call!(py, "xnpv", (rate, payments));
@@ -105,8 +106,8 @@ fn test_xirr_samples(#[case] input: &str, #[case] expected: f64) {
 fn test_xirr_silent() {
     Python::with_gil(|py| {
         let args = (PyList::empty(py), PyList::empty(py));
-        let err = pyxirr_call_impl!(py, "xirr", args).unwrap_err();
-        assert!(err.is_instance(py, py.get_type::<pyxirr::InvalidPaymentsError>()));
+        let err = pyxirr_call_impl!(py, "xirr", args.clone()).unwrap_err();
+        assert!(err.is_instance_of::<pyxirr::InvalidPaymentsError>(py));
 
         let result: Option<f64> = pyxirr_call!(py, "xirr", args, py_dict!(py, "silent" => true));
         assert!(result.is_none());
@@ -142,8 +143,8 @@ fn test_xnfv() {
 #[rstest]
 fn test_xnfv_silent() {
     Python::with_gil(|py| {
-        let dates = vec!["2021-01-01", "2022-01-01"].into_py(py);
-        let amounts = vec![1000, 100].into_py(py);
+        let dates = vec!["2021-01-01", "2022-01-01"].into_pyobject(py).unwrap();
+        let amounts = vec![1000, 100].into_pyobject(py).unwrap();
         let args = (0.0250, dates, amounts);
         let kwargs = py_dict!(py);
         let result: PyResult<_> = pyxirr_call_impl!(py, "xnfv", args.clone(), kwargs);
@@ -161,20 +162,24 @@ fn test_sum_xfv_eq_xnfv() {
         let rate = 0.0250;
         let (dates, amounts) = PaymentsLoader::from_csv(py, "tests/samples/xnfv.csv").to_columns();
 
-        let xnfv_result: f64 = pyxirr_call!(py, "xnfv", (rate, dates, amounts));
+        let xnfv_result: f64 = pyxirr_call!(py, "xnfv", (rate, dates.clone(), amounts.clone()));
 
-        let builtins = py.import("builtins").unwrap();
-        let locals = py_dict!(py, "dates" => dates);
-        let min_date = py.eval("min(dates)", Some(locals), Some(builtins.dict())).unwrap();
-        let max_date = py.eval("max(dates)", Some(locals), Some(builtins.dict())).unwrap();
+        let builtins = &py.import("builtins").unwrap().dict();
+        let locals = &py_dict!(py, "dates" => dates.clone());
+        let min_date = py.eval(c_str!("min(dates)"), Some(locals), Some(builtins)).unwrap();
+        let max_date = py.eval(c_str!("max(dates)"), Some(locals), Some(builtins)).unwrap();
 
         let sum_xfv_result: f64 = dates
-            .iter()
+            .try_iter()
             .unwrap()
             .map(Result::unwrap)
-            .zip(amounts.iter().unwrap().map(Result::unwrap))
+            .zip(amounts.try_iter().unwrap().map(Result::unwrap))
             .map(|(date, amount)| -> f64 {
-                pyxirr_call!(py, "xfv", (min_date, date, max_date, rate, rate, amount))
+                pyxirr_call!(
+                    py,
+                    "xfv",
+                    (min_date.clone(), date, max_date.clone(), rate, rate, amount)
+                )
             })
             .sum();
 

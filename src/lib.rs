@@ -1,5 +1,6 @@
 use broadcasting::Arg;
 use conversions::{fallible_float_or_none, float_or_none, AmountArray, PyDayCount};
+use numpy::{PyArray, PyArrayMethods};
 use pyo3::{create_exception, exceptions, prelude::*, wrap_pyfunction};
 
 mod broadcasting;
@@ -35,7 +36,7 @@ macro_rules! dispatch_vectorized {
                     let ($($vars,)*) = ($($vars.view(),)*);
                     let result = $py.allow_threads(move || $vec);
                     if has_numpy_array {
-                        Arg::from(numpy::ToPyArray::to_pyarray(&result, $py))
+                        Arg::from(numpy::PyArray::from_owned_array($py, result))
                     } else {
                         Arg::from(result)
                     }
@@ -56,7 +57,7 @@ macro_rules! dispatch_vectorized {
                     let ($($vars,)*) = ($($vars.view(),)*);
                     let result = $py.allow_threads(move || $vec);
                     let result = if has_numpy_array {
-                        result.map(|r| Arg::from(numpy::ToPyArray::to_pyarray(&r, $py)))
+                        result.map(|r| Arg::from(numpy::PyArray::from_owned_array($py, r)))
                     } else {
                         result.map(Arg::from)
                     };
@@ -73,8 +74,8 @@ macro_rules! dispatch_vectorized {
 #[pyo3(text_signature = "(dates, amounts=None, *, guess=None, silent=False, day_count=None)")]
 fn xirr(
     py: Python,
-    dates: &PyAny,
-    amounts: Option<&PyAny>,
+    dates: &Bound<PyAny>,
+    amounts: Option<&Bound<PyAny>>,
     guess: Option<f64>,
     silent: Option<bool>,
     day_count: Option<PyDayCount>,
@@ -95,8 +96,8 @@ fn xirr(
 fn xnpv<'a>(
     py: Python<'a>,
     rate: Arg<f64, 'a>,
-    dates: &PyAny,
-    amounts: Option<&PyAny>,
+    dates: &Bound<PyAny>,
+    amounts: Option<&Bound<PyAny>>,
     silent: Option<bool>,
     day_count: Option<PyDayCount>,
 ) -> PyResult<Option<Arg<f64, 'a>>> {
@@ -138,7 +139,7 @@ fn xnpv<'a>(
             });
 
             let result = if has_numpy_array {
-                result.map(|r| Arg::from(numpy::ToPyArray::to_pyarray(&r, py)))
+                result.map(|r| Arg::from(PyArray::from_owned_array(py, r)))
             } else {
                 result.map(Arg::from)
             };
@@ -266,8 +267,8 @@ fn xfv(
 fn xnfv(
     py: Python,
     rate: f64,
-    dates: &PyAny,
-    amounts: Option<&PyAny>,
+    dates: &Bound<PyAny>,
+    amounts: Option<&Bound<PyAny>>,
     silent: Option<bool>,
     day_count: Option<PyDayCount>,
 ) -> PyResult<Option<f64>> {
@@ -492,7 +493,7 @@ mod pe {
     };
     use pyo3::prelude::*;
 
-    pub fn module(_py: Python, m: &PyModule) -> PyResult<()> {
+    pub fn module(_py: Python, m: &Bound<PyModule>) -> PyResult<()> {
         m.add_function(wrap_pyfunction!(dpi, m)?)?;
         m.add_function(wrap_pyfunction!(dpi_2, m)?)?;
         m.add_function(wrap_pyfunction!(rvpi, m)?)?;
@@ -838,11 +839,11 @@ mod pe {
     }
 }
 
-fn add_submodule<F>(py: Python, parent: &PyModule, name: &str, mod_init: F) -> PyResult<()>
+fn add_submodule<F>(py: Python, parent: &Bound<PyModule>, name: &str, mod_init: F) -> PyResult<()>
 where
-    F: Fn(Python, &PyModule) -> PyResult<()>,
+    F: Fn(Python, &Bound<PyModule>) -> PyResult<()>,
 {
-    let child_module = PyModule::new(py, name)?;
+    let ref child_module = PyModule::new(py, name)?;
     mod_init(py, child_module)?;
     parent.add(name.split('.').last().unwrap(), child_module)?;
     py.import("sys")?.getattr("modules")?.set_item(name, child_module)?;
@@ -851,7 +852,7 @@ where
 
 #[pymodule]
 #[pyo3(name = "_pyxirr")]
-pub fn pyxirr(py: Python, m: &PyModule) -> PyResult<()> {
+pub fn pyxirr(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
 
     add_submodule(py, m, "pyxirr.pe", pe::module)?;

@@ -30,16 +30,15 @@ crate-type = ["rlib", "cdylib"]
 doctest = false
 
 [dependencies]
-pyo3 = "0.20"
-numpy = "0.20"
+pyo3 = "0.25"
+numpy = "0.25"
 time = { version = "0.3", features = ["parsing", "macros"] }
 ndarray = "0.15"
-# num-complex = "0.4"
 
 [dev-dependencies]
 assert_approx_eq = "1.1"
-rstest = { version = "0.18.2", default-features = false }
-pyo3 = { version = "0.20", features = ["auto-initialize"]}
+rstest = { version = "0.25", default-features = false }
+pyo3 = { version = "0.25", features = ["auto-initialize"]}
 
 [features]
 nonumpy = []

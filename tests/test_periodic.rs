@@ -1,5 +1,5 @@
-use numpy::{pyarray, PyArrayDyn};
-use pyo3::{types::PyList, Python};
+use numpy::{pyarray, PyArrayMethods};
+use pyo3::{ffi::c_str, prelude::*, types::PyList};
 use rstest::rstest;
 
 mod common;
@@ -84,7 +84,7 @@ fn test_fv_vectorized_multi() {
 #[rstest]
 fn test_fv_vectorized_iterable() {
     Python::with_gil(|py| {
-        let pmt = py.eval("range(-100, -400, -100)", None, None).unwrap();
+        let pmt = py.eval(c_str!("range(-100, -400, -100)"), None, None).unwrap();
         let actual: Vec<f64> = pyxirr_call!(py, "fv", (0.05 / 12.0, 10 * 12, pmt, -100));
         let expected = [15692.92889433575, 31221.15683890247, 46749.38478346919];
         for i in 0..actual.len() {
@@ -101,19 +101,19 @@ fn test_fv_vectorized_ndarray() {
     Python::with_gil(|py| {
         let rates = pyarray!(py, [[0.05 / 12.0, 0.06 / 12.0], [0.07 / 12.0, 0.0]]);
 
-        let actual: &PyArrayDyn<f64> =
-            pyxirr_call!(py, "fv", (rates.as_ref(), 10 * 12, -100, -100));
+        let actual: Bound<PyAny> =
+            pyxirr_call_impl!(py, "fv", (&rates, 10 * 12, -100, -100)).unwrap();
 
         let expected =
             pyarray![py, [15692.928894335748, 16569.874354049032], [17509.446881023265, 12100.0]];
 
-        actual.readonly().as_array().iter().zip(expected.readonly().as_array().iter()).for_each(
-            |(a, e)| {
-                assert_almost_eq!(a, e);
-            },
-        );
+        let actual = actual.extract::<numpy::PyReadonlyArrayDyn<f64>>().unwrap();
 
-        let actual: &PyList =
+        actual.as_array().iter().zip(expected.readonly().as_array().iter()).for_each(|(a, e)| {
+            assert_almost_eq!(a, e);
+        });
+
+        let actual: Bound<PyList> =
             pyxirr_call!(py, "fv", (rates.to_vec().unwrap(), 10 * 12, -100, -100));
 
         actual
@@ -183,8 +183,8 @@ fn test_pv_vectorized() {
 #[rstest]
 fn test_npv_works() {
     Python::with_gil(|py| {
-        let values = PyList::new(py, [-40_000., 5_000., 8_000., 12_000., 30_000.]);
-        let result: f64 = pyxirr_call!(py, "npv", (0.08, values));
+        let values = PyList::new(py, [-40_000., 5_000., 8_000., 12_000., 30_000.]).unwrap();
+        let result: f64 = pyxirr_call!(py, "npv", (0.08, &values));
         assert_almost_eq!(result, 3065.222668179);
     });
 }
@@ -192,9 +192,9 @@ fn test_npv_works() {
 #[rstest]
 fn test_npv_start_from_zero() {
     Python::with_gil(|py| {
-        let values = PyList::new(py, [-40_000., 5_000., 8_000., 12_000., 30_000.]);
-        let result: f64 =
-            pyxirr_call!(py, "npv", (0.08, values), py_dict!(py, "start_from_zero" => false));
+        let kwargs = py_dict!(py, "start_from_zero" => false);
+        let values = PyList::new(py, [-40_000., 5_000., 8_000., 12_000., 30_000.]).unwrap();
+        let result: f64 = pyxirr_call!(py, "npv", (0.08, &values), kwargs);
         assert_almost_eq!(result, 2838.169137203);
     });
 }
@@ -202,9 +202,9 @@ fn test_npv_start_from_zero() {
 #[rstest]
 fn test_npv_zero_rate() {
     Python::with_gil(|py| {
-        let values = PyList::new(py, [-40_000., 5_000., 8_000., 12_000., 30_000.]);
-        let result: f64 =
-            pyxirr_call!(py, "npv", (0, values), py_dict!(py, "start_from_zero" => false));
+        let kwargs = py_dict!(py, "start_from_zero" => false);
+        let values = PyList::new(py, [-40_000., 5_000., 8_000., 12_000., 30_000.]).unwrap();
+        let result: f64 = pyxirr_call!(py, "npv", (0, &values), kwargs);
         assert_almost_eq!(result, 15_000.0);
     });
 }
@@ -579,8 +579,8 @@ fn test_rate_vec() {
 fn test_nfv() {
     // example from https://www.youtube.com/watch?v=775ljhriB8U
     Python::with_gil(|py| {
-        let amounts = PyList::new(py, [1050.0, 1350.0, 1350.0, 1450.0]);
-        let result: f64 = pyxirr_call!(py, "nfv", (0.03, 6.0, amounts));
+        let amounts = PyList::new(py, [1050.0, 1350.0, 1350.0, 1450.0]).unwrap();
+        let result: f64 = pyxirr_call!(py, "nfv", (0.03, 6.0, &amounts));
         assert_almost_eq!(result, 5750.16, 0.01);
     });
 }
@@ -609,8 +609,8 @@ fn test_nfv() {
 ], 0.038039605693757084)]
 fn test_irr_works(#[case] input: &[f64], #[case] expected: f64) {
     Python::with_gil(|py| {
-        let values = PyList::new(py, input);
-        let result: f64 = pyxirr_call!(py, "irr", (values,));
+        let values = PyList::new(py, input).unwrap();
+        let result: f64 = pyxirr_call!(py, "irr", (&values,));
         assert_almost_eq!(result, expected);
     })
 }
@@ -619,13 +619,13 @@ fn test_irr_works(#[case] input: &[f64], #[case] expected: f64) {
 fn test_irr_zeros() {
     // https://github.com/Anexen/pyxirr/issues/69
     Python::with_gil(|py| {
-        let values = PyList::new(py, [-0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]);
-        let err = pyxirr_call_impl!(py, "irr", (values,)).unwrap_err();
-        assert!(err.is_instance(py, py.get_type::<pyxirr::InvalidPaymentsError>()));
+        let values = PyList::new(py, [-0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]).unwrap();
+        let err = pyxirr_call_impl!(py, "irr", (&values,)).unwrap_err();
+        assert!(err.is_instance(py, &py.get_type::<pyxirr::InvalidPaymentsError>()));
 
         // use silent=True parameter
         let kwargs = py_dict!(py, "silent" => true);
-        let result: Option<f64> = pyxirr_call!(py, "irr", (values,), kwargs);
+        let result: Option<f64> = pyxirr_call!(py, "irr", (&values,), kwargs);
         assert!(result.is_none());
     })
 }
@@ -659,8 +659,8 @@ fn test_irr_equal_payments(#[case] first: &[f64], #[case] other: &[f64], #[case]
     let input: Vec<_> = first.iter().chain(other).collect();
 
     Python::with_gil(|py| {
-        let values = PyList::new(py, input);
-        let result: f64 = pyxirr_call!(py, "irr", (values,));
+        let values = PyList::new(py, input).unwrap();
+        let result: f64 = pyxirr_call!(py, "irr", (&values,));
         assert_almost_eq!(result, expected);
     })
 }
@@ -689,12 +689,12 @@ fn test_irr_equal_payments(#[case] first: &[f64], #[case] other: &[f64], #[case]
 ], 0.235461374465902)]
 fn test_irr_special_cases(#[case] input: &[f64], #[case] expected: f64) {
     Python::with_gil(|py| {
-        let values = PyList::new(py, input);
-        let rate: f64 = pyxirr_call!(py, "irr", (values,));
+        let values = PyList::new(py, input).unwrap();
+        let rate: f64 = pyxirr_call!(py, "irr", (&values,));
         assert_almost_eq!(rate, expected);
 
         // test net present value of all cash flows equal to zero
-        let npv: f64 = pyxirr_call!(py, "npv", (rate, values));
+        let npv: f64 = pyxirr_call!(py, "npv", (rate, &values));
         assert_almost_eq!(npv, 0.0);
     })
 }
@@ -719,12 +719,12 @@ fn test_irr_special_cases(#[case] input: &[f64], #[case] expected: f64) {
 ] , -0.13209372260468)]
 fn test_gh_46(#[case] input: &[f64], #[case] expected: f64) {
     Python::with_gil(|py| {
-        let values = PyList::new(py, input);
-        let rate: f64 = pyxirr_call!(py, "irr", (values,));
+        let values = PyList::new(py, input).unwrap();
+        let rate: f64 = pyxirr_call!(py, "irr", (&values,));
         assert_almost_eq!(rate, expected);
 
         // test net present value of all cash flows equal to zero
-        let npv: f64 = pyxirr_call!(py, "npv", (rate, values));
+        let npv: f64 = pyxirr_call!(py, "npv", (rate, &values));
         assert_almost_eq!(npv, 0.0, 1e-6);
     })
 }
@@ -737,7 +737,7 @@ fn test_gh_46(#[case] input: &[f64], #[case] expected: f64) {
 fn test_irr_samples(#[case] input: &str, #[case] expected: f64) {
     Python::with_gil(|py| {
         let payments = PaymentsLoader::from_csv(py, input).to_columns();
-        let rate: f64 = pyxirr_call!(py, "irr", (payments.1,));
+        let rate: f64 = pyxirr_call!(py, "irr", (payments.1.clone(),));
 
         assert_almost_eq!(rate, expected);
         // test net present value of all cash flows equal to zero
@@ -751,8 +751,8 @@ fn test_irr_samples(#[case] input: &str, #[case] expected: f64) {
 #[rstest]
 fn test_mirr_works() {
     Python::with_gil(|py| {
-        let values = PyList::new(py, [-1000, 100, 250, 500, 500]);
-        let result: f64 = pyxirr_call!(py, "mirr", (values, 0.1, 0.1));
+        let values = PyList::new(py, [-1000, 100, 250, 500, 500]).unwrap();
+        let result: f64 = pyxirr_call!(py, "mirr", (&values, 0.1, 0.1));
         assert_almost_eq!(result, 0.10401626745);
     });
 }
@@ -762,18 +762,18 @@ fn test_mirr_same_sign() {
     Python::with_gil(|py| {
         let kwargs = py_dict!(py, "silent" => true);
 
-        let values = PyList::new(py, [100_000, 50_000, 25_000]);
-        let err = pyxirr_call_impl!(py, "mirr", (values, 0.1, 0.1)).unwrap_err();
-        assert!(err.is_instance(py, py.get_type::<pyxirr::InvalidPaymentsError>()));
+        let values = PyList::new(py, [100_000, 50_000, 25_000]).unwrap();
+        let err = pyxirr_call_impl!(py, "mirr", (&values, 0.1, 0.1)).unwrap_err();
+        assert!(err.is_instance_of::<pyxirr::InvalidPaymentsError>(py));
 
-        let result: Option<f64> = pyxirr_call!(py, "mirr", (values, 0.1, 0.1), kwargs);
+        let result: Option<f64> = pyxirr_call!(py, "mirr", (&values, 0.1, 0.1), kwargs);
         assert!(result.is_none());
 
-        let values = PyList::new(py, [-100_000.0, -50_000.0, -25_000.0]);
-        let err = pyxirr_call_impl!(py, "mirr", (values, 0.1, 0.1)).unwrap_err();
-        assert!(err.is_instance(py, py.get_type::<pyxirr::InvalidPaymentsError>()));
+        let values = PyList::new(py, [-100_000.0, -50_000.0, -25_000.0]).unwrap();
+        let err = pyxirr_call_impl!(py, "mirr", (&values, 0.1, 0.1)).unwrap_err();
+        assert!(err.is_instance_of::<pyxirr::InvalidPaymentsError>(py));
 
-        let result: Option<f64> = pyxirr_call!(py, "mirr", (values, 0.1, 0.1), kwargs);
+        let result: Option<f64> = pyxirr_call!(py, "mirr", (&values, 0.1, 0.1), kwargs);
         assert!(result.is_none());
     });
 }
