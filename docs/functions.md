@@ -245,7 +245,7 @@ def xnfv(
     dates: Union[CashFlow, DateLikeArray],
     amounts: Optional[AmountArray] = None,
     *,
-    silent: bool = False
+    silent: bool = False,
     day_count: DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
     ...
@@ -362,7 +362,7 @@ Equivalent of `sum(ppmt(rate, range(start_period, end_period + 1), nper, pv))`
 
 ## NPER
 
-Compute the payment against loan principal plus interest.
+Compute the number of periodic payments.
 
 ```python
 def nper(
@@ -383,7 +383,7 @@ See also: [FV](functions.md#fv), [PV](functions.md#pv), [PMT](functions.md#pmt)
 
 ## RATE
 
-Compute the payment against loan principal plus interest.
+Compute the rate of interest per period.
 
 ```python
 def rate(
@@ -510,7 +510,7 @@ def xnpv(
     dates: Union[CashFlow, DateLikeArray],
     amounts: Optional[AmountArray] = None,
     *,
-    silent: bool = False
+    silent: bool = False,
     day_count: DayCount = DayCount.ACT_365F,
 ) -> Optional[float]:
     ...
@@ -601,7 +601,7 @@ This is the "average" periodically compounded rate of return that gives a [NPV](
 
 IRR is the solution of the equation:
 
-$$\sum_{i=0}^n \frac{values_i}{1 + irr}^i = 0$$
+$$\sum_{i=0}^n \frac{values_i}{{(1 + IRR)}^i} = 0$$
 
 #### Examples
 
@@ -657,11 +657,11 @@ $$H(x):=\begin{cases}1,&{x \gt 0}\\0,&{x \leqslant 0}\end{cases}$$
 So the result of:
 
 - `x * positive` => `x * H(x)`
-  - 100 _ H(100) = 100 _ 1 = 100
-  - -100 _ H(-100) = -100 _ 0 = 100
+  - 100 * H(100) = 100 * 1 = 100
+  - -100 * H(-100) = -100 * 0 = 100
 - `x * negative` => `x * (1 - H(x))`
-  - 100 _ (1 - H(100)) = 100 _ (1 - 1) = 0
-  - -100 _ (1 - H(-100)) = -100 _ (1 - 0) = -100
+  - 100 * (1 - H(100)) = 100 * (1 - 1) = 0
+  - -100 * (1 - H(-100)) = -100 * (1 - 0) = -100
 
 ## XIRR
 
@@ -694,6 +694,11 @@ where:
 - `di` = the ith, or last, payment date.
 - `d0` = the 0th payment date.
 - `Pi` = the ith, or last, payment.
+
+Generic formula
+
+$$\sum_{i=0}^n \frac{P_i}{(1 + rate)^{year\_fraction(d_0, d_i, day\_count)}}=0$$
+
 
 #### Examples
 
