@@ -601,7 +601,7 @@ This is the "average" periodically compounded rate of return that gives a [NPV](
 
 IRR is the solution of the equation:
 
-$$\sum_{i=0}^n \frac{values_i}{{(1 + IRR)}^i} = 0$$
+$$\sum_{i=0}^n \frac{values_i}{(1 + IRR)^i} = 0$$
 
 #### Examples
 
