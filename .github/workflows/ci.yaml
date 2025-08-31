@@ -41,6 +41,12 @@ jobs:
           maturin-version: ${{ env.MATURIN_VERSION }}
           manylinux: auto
           args: --release --strip --sdist --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13
+      - uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
+          target: ${{ matrix.target }}
+          manylinux: auto
+          args: --features extension,abi --release --strip
       - name: Check that the source distribution installed correctly
         run: python3 -m pip install --user target/wheels/pyxirr-*.tar.gz
       - name: Upload wheels
@@ -64,6 +70,12 @@ jobs:
           target: ${{ matrix.target }}
           manylinux: auto
           args: --release --strip --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13
+      - uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
+          target: ${{ matrix.target }}
+          manylinux: auto
+          args: --features extension,abi --release --strip
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-linux-cross-${{ matrix.target }}
@@ -87,7 +99,13 @@ jobs:
           maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.target }}
           manylinux: musllinux_1_2
-          args: --release --strip -i 3.7 3.8 3.9 3.10 3.11 3.12 3.13
+          args: --release --strip --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13
+      - uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
+          target: ${{ matrix.target }}
+          manylinux: musllinux_1_2
+          args: --features extension,abi --release --strip
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-linux-musl-${{ matrix.target }}
@@ -111,6 +129,10 @@ jobs:
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
           args: --release --strip --interpreter python${{ matrix.python }}
+      - uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
+          args: --features extension,abi --release --strip
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-windows-${{ matrix.python }}
@@ -135,6 +157,11 @@ jobs:
           maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.platform.target }}
           args: --release --strip --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13
+      - uses: PyO3/maturin-action@v1
+        with:
+          maturin-version: ${{ env.MATURIN_VERSION }}
+          target: ${{ matrix.platform.target }}
+          args: --features extension,abi --release --strip
       - uses: actions/upload-artifact@v4
         with:
           name: wheels-macos-${{ matrix.platform.target }}

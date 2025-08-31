@@ -3,6 +3,7 @@ use std::str::FromStr;
 use numpy::{PyArray1, PyArrayMethods};
 use pyo3::{
     exceptions::{PyTypeError, PyValueError},
+    intern,
     prelude::*,
     types::*,
 };
@@ -86,15 +87,30 @@ impl From<i64> for DateLike {
     }
 }
 
-impl From<&Bound<'_, PyDate>> for DateLike {
-    fn from(value: &Bound<'_, PyDate>) -> Self {
+impl TryFrom<&Bound<'_, PyDate>> for DateLike {
+    type Error = PyErr;
+
+    #[cfg(feature = "abi")]
+    fn try_from(value: &Bound<'_, PyDate>) -> Result<Self, Self::Error> {
+        let py = value.py();
+        let date = Date::from_calendar_date(
+            value.getattr(intern!(py, "year"))?.extract::<i32>()?,
+            value.getattr(intern!(py, "month"))?.extract::<u8>()?.try_into().unwrap(),
+            value.getattr(intern!(py, "day"))?.extract::<u8>()?,
+        );
+
+        Ok(date.unwrap().into())
+    }
+
+    #[cfg(not(feature = "abi"))]
+    fn try_from(value: &Bound<'_, PyDate>) -> Result<Self, Self::Error> {
         let date = Date::from_calendar_date(
             value.get_year(),
             value.get_month().try_into().unwrap(),
             value.get_day(),
-        )
-        .unwrap();
-        date.into()
+        );
+
+        Ok(date.unwrap().into())
     }
 }
 
@@ -112,28 +128,32 @@ impl From<&Bound<'_, PyDate>> for DateLike {
 impl<'py> FromPyObject<'py> for DateLike {
     fn extract_bound(obj: &Bound<'py, PyAny>) -> PyResult<Self> {
         if let Ok(py_date) = obj.downcast::<PyDate>() {
-            return Ok(py_date.into());
+            return py_date.try_into();
         }
 
         if let Ok(py_string) = obj.downcast::<PyString>() {
             return py_string
-                .to_str()?
+                .to_cow()?
                 .parse::<DateLike>()
                 .map_err(|e| PyValueError::new_err(e.to_string()));
         }
 
-        match obj.get_type().name()?.to_str()? {
+        let py = obj.py();
+
+        match obj.get_type().name()?.to_cow()?.as_ref() {
             "datetime64" => Ok(obj
-                .call_method1("astype", ("datetime64[D]",))?
-                .call_method1("astype", ("int32",))?
+                .call_method1(intern!(py, "astype"), (intern!(py, "datetime64[D]"),))?
+                .call_method1(intern!(py, "astype"), (intern!(py, "int32"),))?
                 .extract::<DaysSinceUnixEpoch>()?
                 .into()),
 
-            "Timestamp" => Ok(obj.call_method0("to_pydatetime")?.downcast::<PyDate>()?.into()),
+            "Timestamp" => Ok(obj
+                .call_method0(intern!(py, "to_pydatetime"))?
+                .downcast::<PyDate>()?
+                .try_into()?),
 
             other => Err(PyTypeError::new_err(format!(
-                "Type {:?} is not understood. Expected: date",
-                other
+                "Type {other:?} is not understood. Expected: date"
             ))),
         }
     }
@@ -147,9 +167,10 @@ where
 }
 
 fn extract_date_series_from_numpy(series: &Bound<PyAny>) -> PyResult<Vec<DateLike>> {
+    let py = series.py();
     Ok(series
-        .call_method1("astype", ("datetime64[D]",))?
-        .call_method1("astype", ("int32",))?
+        .call_method1(intern!(py, "astype"), (intern!(py, "datetime64[D]"),))?
+        .call_method1(intern!(py, "astype"), (intern!(py, "int32"),))?
         .downcast::<PyArray1<i32>>()?
         .readonly()
         .as_slice()?
@@ -159,37 +180,28 @@ fn extract_date_series_from_numpy(series: &Bound<PyAny>) -> PyResult<Vec<DateLik
 }
 
 pub fn extract_date_series(series: &Bound<PyAny>) -> PyResult<Vec<DateLike>> {
-    match series.get_type().name()?.to_str()? {
-        "Series" => extract_date_series_from_numpy(&series.getattr("values")?),
+    match series.get_type().name()?.to_cow()?.as_ref() {
+        "Series" => {
+            let values = series.getattr(intern!(series.py(), "values"))?;
+            extract_date_series_from_numpy(&values)
+        }
         "ndarray" => extract_date_series_from_numpy(series),
         _ => extract_iterable::<DateLike>(series),
     }
 }
 
 fn extract_amount_series_from_numpy(series: &Bound<PyAny>) -> PyResult<Vec<f64>> {
+    let py = series.py();
     Ok(series
-        .call_method1("astype", ("float64",))?
+        .call_method1(intern!(py, "astype"), (intern!(py, "float64"),))?
         .extract::<numpy::PyReadonlyArray1<f64>>()?
         .to_vec()?)
 }
 
 fn extract_records(data: &Bound<PyAny>) -> PyResult<(Vec<DateLike>, Vec<f64>)> {
-    let capacity = if let Ok(capacity) = data.len() {
-        capacity
-    } else {
-        0
-    };
-
-    let mut _dates: Vec<DateLike> = if capacity > 0 {
-        Vec::with_capacity(capacity)
-    } else {
-        Vec::new()
-    };
-    let mut _amounts: Vec<f64> = if capacity > 0 {
-        Vec::with_capacity(capacity)
-    } else {
-        Vec::new()
-    };
+    let capacity = data.len().unwrap_or(12); // pre-allocate vec
+    let mut dates: Vec<DateLike> = Vec::with_capacity(capacity);
+    let mut amounts: Vec<f64> = Vec::with_capacity(capacity);
 
     for obj in data.try_iter()? {
         let obj = obj?;
@@ -203,11 +215,11 @@ fn extract_records(data: &Bound<PyAny>) -> PyResult<(Vec<DateLike>, Vec<f64>)> {
             (obj.get_item(0)?, obj.get_item(1)?)
         };
 
-        _dates.push(tup.0.extract::<DateLike>()?);
-        _amounts.push(tup.1.extract::<f64>()?);
+        dates.push(tup.0.extract::<DateLike>()?);
+        amounts.push(tup.1.extract::<f64>()?);
     }
 
-    Ok((_dates, _amounts))
+    Ok((dates, amounts))
 }
 
 pub struct AmountArray(Vec<f64>);
@@ -233,8 +245,11 @@ impl std::ops::Deref for AmountArray {
 }
 
 pub fn extract_amount_series(series: &Bound<PyAny>) -> PyResult<Vec<f64>> {
-    match series.get_type().name()?.to_str()? {
-        "Series" => extract_amount_series_from_numpy(&series.getattr("values")?),
+    match series.get_type().name()?.to_cow()?.as_ref() {
+        "Series" => {
+            let values = series.getattr(intern!(series.py(), "values"))?;
+            extract_amount_series_from_numpy(&values)
+        }
         "ndarray" => extract_amount_series_from_numpy(series),
         _ => extract_iterable::<f64>(series),
     }
@@ -255,28 +270,25 @@ pub fn extract_payments(
         ));
     }
 
-    match dates.get_type().name()?.to_str()? {
+    let py = dates.py();
+
+    match dates.get_type().name()?.to_cow()?.as_ref() {
         "DataFrame" => {
             let frame = dates;
-            let columns = frame.getattr("columns")?;
+            let columns = frame.getattr(intern!(py, "columns"))?;
             Ok((
                 extract_date_series(&frame.get_item(columns.get_item(0)?)?)?,
                 extract_amount_series(&frame.get_item(columns.get_item(1)?)?)?,
             ))
         }
-        "Series"
-            if dates
-                .getattr("index")
-                .map(|index| {
-                    index
-                        .get_type()
-                        .name()
-                        .map(|i| i.to_str().unwrap_or_default().eq("DatetimeIndex"))
-                        .unwrap_or(false)
-                })
-                .unwrap_or_default() =>
-        {
-            Ok((extract_date_series(&dates.getattr("index")?)?, extract_amount_series(dates)?))
+        "Series" => {
+            let index = &dates.getattr(intern!(py, "index"))?;
+
+            if index.get_type().name()?.ne("DatetimeIndex") {
+                return Err(PyTypeError::new_err("Expected Series with DatetimeIndex"));
+            }
+
+            Ok((extract_date_series(index)?, extract_amount_series(dates)?))
         }
         "ndarray" => {
             let array = dates;
