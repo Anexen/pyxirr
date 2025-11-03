@@ -40,7 +40,7 @@ jobs:
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
           manylinux: auto
-          args: --release --strip --sdist --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13
+          args: --release --strip --sdist --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13 3.14
       - uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
@@ -69,7 +69,7 @@ jobs:
           maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.target }}
           manylinux: auto
-          args: --release --strip --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13
+          args: --release --strip --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13 3.14
       - uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
@@ -99,7 +99,7 @@ jobs:
           maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.target }}
           manylinux: musllinux_1_2
-          args: --release --strip --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13
+          args: --release --strip --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13 3.14
       - uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
@@ -117,7 +117,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
+        python: ["3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
@@ -156,7 +156,7 @@ jobs:
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
           target: ${{ matrix.platform.target }}
-          args: --release --strip --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13
+          args: --release --strip --interpreter 3.7 3.8 3.9 3.10 3.11 3.12 3.13 3.14
       - uses: PyO3/maturin-action@v1
         with:
           maturin-version: ${{ env.MATURIN_VERSION }}
