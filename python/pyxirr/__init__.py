@@ -1,10 +1,10 @@
 from ._pyxirr import *
 
 __doc__ = _pyxirr.__doc__
-__all__ = (
+__all__ = [
+    "__version__",
+    "pe",
     "DayCount",
-    "InvalidPaymentsError",
-    "BroadcastingError",
     "year_fraction",
     "days_between",
     "pmt",
@@ -26,4 +26,6 @@ __all__ = (
     "xirr",
     "is_conventional_cash_flow",
     "zero_crossing_points",
-)
+    "InvalidPaymentsError",
+    "BroadcastingError",
+]
