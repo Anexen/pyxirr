@@ -1,4 +1,32 @@
 from ._pyxirr import *
 
+
 __doc__ = _pyxirr.__doc__
-__all__ = _pyxirr.__all__
+__all__ = [
+    "__version__",
+    "pe",
+    "DayCount",
+    "year_fraction",
+    "days_between",
+    "pmt",
+    "ipmt",
+    "cumipmt",
+    "ppmt",
+    "cumprinc",
+    "nper",
+    "rate",
+    "fv",
+    "nfv",
+    "xfv",
+    "xnfv",
+    "pv",
+    "npv",
+    "xnpv",
+    "irr",
+    "mirr",
+    "xirr",
+    "is_conventional_cash_flow",
+    "zero_crossing_points",
+    "InvalidPaymentsError",
+    "BroadcastingError",
+]
