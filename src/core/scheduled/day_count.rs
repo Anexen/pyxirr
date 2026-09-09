@@ -152,7 +152,7 @@ fn days_between_excluding_leap_days(d1: &Date, d2: &Date) -> i32 {
 fn leap_days_between(d1: &Date, d2: &Date) -> i32 {
     let (_, mut leap_days) = normal_leap_years(d1, d2);
 
-    if is_leap_year(d1.year()) && (d1.month() as u8) > 2 {
+    if is_leap_year(d1.year()) && d1.ordinal() >= 60 {
         leap_days -= 1
     }
 
@@ -312,6 +312,25 @@ mod tests {
         let d1 = "2008-02-01".parse::<DateLike>().unwrap();
         let d2 = "2009-05-31".parse::<DateLike>().unwrap();
         assert_eq!(year_fraction(&d1, &d2, day_count), expected);
+    }
+
+    #[test]
+    fn test_nl_day_counts_at_leap_day_boundary() {
+        let before = "2020-02-28".parse::<DateLike>().unwrap();
+        let leap_day = "2020-02-29".parse::<DateLike>().unwrap();
+        let after = "2020-03-01".parse::<DateLike>().unwrap();
+
+        for day_count in [DayCount::NL_365, DayCount::NL_360] {
+            assert_eq!(days_between(&leap_day, &leap_day, day_count), 0);
+            assert_eq!(days_between(&before, &leap_day, day_count), 0);
+            assert_eq!(days_between(&leap_day, &after, day_count), 1);
+            assert_eq!(days_between(&before, &after, day_count), 1);
+            assert_eq!(
+                days_between(&before, &leap_day, day_count)
+                    + days_between(&leap_day, &after, day_count),
+                days_between(&before, &after, day_count)
+            );
+        }
     }
 
     // https://westclintech.com/SQL-Server-Financial-Functions/SQL-Server-DAYS360-function
