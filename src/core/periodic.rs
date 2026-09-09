@@ -252,6 +252,10 @@ pub fn ppmt(rate: f64, per: f64, nper: f64, pv: f64, fv: f64, pmt_at_beginning: 
         return -(fv + pv) / nper;
     }
 
+    if per == 1.0 && pmt_at_beginning {
+        return self::pmt(rate, nper, pv, fv, pmt_at_beginning);
+    }
+
     let when = convert_pmt_at_beginning(pmt_at_beginning);
     -rate * (fv + pv) * (rate + 1.).powf(per - 1.)
         / ((rate + 1.).powf(nper + when) - rate * when - 1.)
@@ -285,6 +289,8 @@ pub fn ppmt_vec(
             *r = -(fv[idx] + pv[idx]) / nper[idx];
         } else if per[idx] < 1.0 || per[idx] > nper[idx] {
             *r = f64::NAN;
+        } else if per[idx] == 1.0 && pmt_at_beginning[idx] {
+            *r = self::pmt(rate[idx], nper[idx], pv[idx], fv[idx], pmt_at_beginning[idx]);
         }
     }
 
