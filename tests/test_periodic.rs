@@ -413,6 +413,27 @@ fn test_ppmt_works() {
 }
 
 #[rstest]
+fn test_ppmt_first_annuity_due_period() {
+    Python::with_gil(|py| {
+        let rate = 0.005;
+        let nper = 12;
+        let pv = 1000;
+        let kwargs = py_dict!(py, "pmt_at_beginning" => true);
+
+        let payment: f64 = pyxirr_call!(py, "pmt", (rate, nper, pv), kwargs);
+        let interest: f64 = pyxirr_call!(py, "ipmt", (rate, 1, nper, pv), kwargs);
+        let principal: f64 = pyxirr_call!(py, "ppmt", (rate, 1, nper, pv), kwargs);
+        assert_almost_eq!(interest + principal, payment);
+
+        let principal: Vec<f64> = pyxirr_call!(py, "ppmt", (rate, [1, 2], nper, pv), kwargs);
+        assert_almost_eq!(principal[0], payment);
+
+        let cumulative: f64 = pyxirr_call!(py, "cumprinc", (rate, nper, pv, 1, nper), kwargs);
+        assert_almost_eq!(cumulative, -(pv as f64));
+    })
+}
+
+#[rstest]
 fn test_ppmt_zero_rate() {
     Python::with_gil(|py| {
         let result: f64 = pyxirr_call!(py, "ppmt", (0, 2.0, PERIODS, PAYMENT));
