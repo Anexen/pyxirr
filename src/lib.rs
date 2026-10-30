@@ -399,7 +399,7 @@ fn nper<'a>(
     )
 }
 
-/// Compute the number of periodic payments.
+/// Compute the rate of interest per period.
 #[pyfunction]
 #[pyo3(signature = (nper, pmt, pv, fv=Arg::Scalar(0.0), *, pmt_at_beginning=Arg::Scalar(false), guess=None))]
 #[pyo3(text_signature = "(nper, pmt, pv, fv=0, *, pmt_at_beginning=False, guess=None)")]
