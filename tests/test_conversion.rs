@@ -9,6 +9,25 @@ type Payments = (Py<PyAny>, Py<PyAny>);
 const INPUT: &str = "tests/samples/unordered.csv";
 const EXPECTED: f64 = 0.16353715844;
 
+#[rstest]
+#[case("npv", "[-100, 110]")]
+#[case("pv", "5, 100")]
+#[case("pmt", "5, 1000")]
+fn test_reject_string_rates(
+    #[case] function: &str,
+    #[case] arguments: &str,
+    #[values("'0.1'", "'x'", "['0.1']", "[['0.1']]", "('0.1',)", "(x for x in ['0.1'])")]
+    rate: &str,
+) {
+    Python::with_gil(|py| {
+        let locals = py_dict!(py, "npf" => common::get_pyxirr_module(py));
+        let expression =
+            std::ffi::CString::new(format!("npf.{function}({rate}, {arguments})")).unwrap();
+        let err = py.eval(&expression, Some(&locals), None).unwrap_err();
+        assert!(err.is_instance_of::<exceptions::PyTypeError>(py));
+    });
+}
+
 #[fixture]
 fn payments(#[default(INPUT)] input: &str) -> Payments {
     Python::with_gil(|py| {

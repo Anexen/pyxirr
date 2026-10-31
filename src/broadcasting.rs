@@ -5,7 +5,7 @@ use numpy::{npyffi, Element, PyArrayDescrMethods, PyArrayDyn, PyArrayMethods, PY
 use pyo3::{
     exceptions::{PyTypeError, PyValueError},
     prelude::*,
-    types::{PyIterator, PyList, PySequence, PyTuple},
+    types::{PyIterator, PyList, PySequence, PyString, PyTuple},
     IntoPyObjectExt,
 };
 
@@ -115,7 +115,11 @@ where
         max_i = i;
         match item.extract::<T>() {
             Ok(val) => flat_list.push(val),
-            Err(_) => {
+            Err(err) => {
+                // Iterating a character produces another character indefinitely.
+                if item.downcast::<PyString>().is_ok() {
+                    return Err(err);
+                }
                 let sublist = item.try_iter()?;
                 flatten_pyiter(sublist, shape, flat_list, depth + 1)?;
             }
