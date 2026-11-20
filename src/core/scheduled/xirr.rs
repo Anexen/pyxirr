@@ -19,20 +19,41 @@ pub fn xirr(
         return Ok(xirr_analytical_2(amounts, deltas));
     }
 
+    // XIRR is unchanged by a common positive cash-flow scale. Normalize before
+    // evaluating the objective and derivative so absolute solver tolerances do
+    // not depend on currency units (or reject a root after large cancellation).
+    let scale = amounts.iter().fold(0.0_f64, |acc, p| acc.max(p.abs()));
+    let normalized: Vec<f64> = amounts.iter().map(|p| p / scale).collect();
+    let amounts = normalized.as_slice();
+
     let f = |rate| xnpv_result(amounts, deltas, rate);
     let fd = |rate| xnpv_result_with_deriv(amounts, deltas, rate);
+
+    // Normalized residuals can satisfy the absolute stopping tolerance before
+    // the rate reaches machine precision. Refine accepted candidates locally.
+    let refine = |mut rate: f64| {
+        for _ in 0..3 {
+            let (value, deriv) = fd(rate);
+            let next = rate - value / deriv;
+            if !next.is_finite() || next <= -1.0 || f(next).abs() > value.abs() {
+                break;
+            }
+            rate = next;
+        }
+        rate
+    };
 
     let guess = guess.unwrap_or_else(|| initial_guess(amounts));
     let rate = newton_raphson_2(guess, &fd);
 
     if rate.is_finite() {
-        return Ok(rate);
+        return Ok(refine(rate));
     }
 
     let rate = brentq(&f, -0.999999999999999, 100., 100);
 
     if rate.is_finite() {
-        return Ok(rate);
+        return Ok(refine(rate));
     }
 
     let mut step = 0.01;
@@ -40,7 +61,7 @@ pub fn xirr(
     while guess < 1.0 {
         let rate = newton_raphson_2(guess, &fd);
         if rate.is_finite() {
-            return Ok(rate);
+            return Ok(refine(rate));
         }
         guess += step;
         step = (step * 1.1).min(0.1);
@@ -128,6 +149,66 @@ fn xnpv_result_with_deriv(payments: &[f64], deltas: &[f64], rate: f64) -> (f64, 
 mod tests {
     use super::*;
     use rstest::rstest;
+
+    #[rstest]
+    #[case(1e-12)]
+    #[case(1.0)]
+    #[case(1e6)]
+    #[case(1e12)]
+    fn test_xirr_scale_invariance(#[case] scale: f64) {
+        let dates: Vec<DateLike> =
+            ["2021-01-01", "2022-01-01", "2023-01-01"].iter().map(|d| d.parse().unwrap()).collect();
+        // An independently soluble quadratic: -100 + 144/(1+r)^2 = 0.
+        let amounts = [-100.0 * scale, 0.0, 144.0 * scale];
+        let rate = xirr(&dates, &amounts, None, None).unwrap();
+        assert!((rate - 0.2).abs() < 1e-8, "scale={scale}, rate={rate}");
+        // Preserve selection of both roots with explicit guesses.
+        let amounts = [-100.0 * scale, 230.0 * scale, -132.0 * scale];
+        for (guess, expected) in [(0.08, 0.1), (0.23, 0.2)] {
+            let rate = xirr(&dates, &amounts, Some(guess), None).unwrap();
+            assert!((rate - expected).abs() < 1e-8);
+        }
+    }
+
+    #[rstest]
+    #[case(1.0)]
+    #[case(0.001)]
+    #[case(1e6)]
+    fn test_xirr_issue_75(#[case] scale: f64) {
+        let dates: Vec<DateLike> = [
+            "2018-06-30",
+            "2019-03-31",
+            "2019-06-30",
+            "2019-09-30",
+            "2019-12-31",
+            "2020-03-31",
+            "2020-06-30",
+            "2020-09-30",
+            "2022-03-31",
+            "2023-03-31",
+            "2024-09-30",
+            "2024-09-30",
+            "2024-12-31",
+            "2024-12-31",
+            "2025-03-31",
+            "2025-12-31",
+            "2026-03-31",
+            "2026-03-31",
+        ]
+        .iter()
+        .map(|d| d.parse().unwrap())
+        .collect();
+        let amounts: Vec<f64> = [
+            -84000000., 800000., 760000., 680000., 800000., 280000., 740000., 520000., -2100000.,
+            -13000000., -3000000., -4100000., -250000., -1800000., -8400000., 1800000., 43000.,
+            -6600.,
+        ]
+        .iter()
+        .map(|p| p * scale)
+        .collect();
+        let rate = xirr(&dates, &amounts, None, None).unwrap();
+        assert!((rate - (-0.912781382229958)).abs() < 1e-10, "scale={scale}, rate={rate}");
+    }
 
     #[rstest]
     fn test_sign_changes() {
